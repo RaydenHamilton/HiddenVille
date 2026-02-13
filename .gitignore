@@ -1,0 +1,15 @@
+# Project place file
+/MeshUtils.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+#Toolchain Manager
+sourcemap.json
+rokit.toml
+wally.toml
+#Wally
+wally.lock
+Packages/
+ServerPackages/

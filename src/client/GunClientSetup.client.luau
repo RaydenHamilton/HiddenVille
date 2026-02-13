@@ -1,0 +1,6 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local gunClient = require(ReplicatedStorage.Shared.GunHandler.GunClient)
+
+ReplicatedStorage.SetupGun.OnClientEvent:Connect(function(gun)
+	gunClient.new(gun)
+end)
