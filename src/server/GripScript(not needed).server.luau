@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local ToolWelds = {}
 
 local function createGrips(Tool)
-	if Tool:FindFirstChild("Grip") and Tool:isA("Tool") then
+	if Tool:isA("Tool") then
 		local WeldName = "RightMotor6DGrip"
 
 		local function Tool_Equipped()

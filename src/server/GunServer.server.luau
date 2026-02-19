@@ -6,15 +6,15 @@ local gunServer = require(ReplicatedStorage.Shared.GunHandler.GunServer)
 SetUpTable = {}
 
 local function setup(child, character)
-	if not child:FindFirstChild("Setting") then
+	if not child:FindFirstChild("Setting") or not child:FindFirstChild("ChangeMagAndAmmo") then
 		return
 	end
 	local player = Players:GetPlayerFromCharacter(character)
-	if SetUpTable[child] == nil then
-		SetUpTable[child] = {}
-	end
-	if SetUpTable[child][character] ~= true then
-		SetUpTable[child][character] = true
+	-- if SetUpTable[child] == nil then
+	-- 	SetUpTable[child] = {}
+	-- end
+	if SetUpTable[child] ~= true then
+		SetUpTable[child] = true
 		gunServer.new(child)
 		setupClient:FireClient(player, child)
 	end

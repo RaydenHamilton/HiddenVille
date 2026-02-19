@@ -1,9 +1,9 @@
+--!strict
 local GunHandlerClient = {}
 
 GunHandlerClient.__index = GunHandlerClient
 
 function GunHandlerClient.new(tool)
-	local self = setmetatable({}, GunHandlerClient)
 	--// Services
 	local HttpService = game:GetService("HttpService")
 	local GuiService = game:GetService("GuiService")
@@ -16,7 +16,6 @@ function GunHandlerClient.new(tool)
 	local Players = game:GetService("Players")
 
 	--// References
-	-- local Events = ReplicatedStorage:WaitForChild("Events")
 	local Miscs = ReplicatedStorage:WaitForChild("Miscs")
 	local Modules = ReplicatedStorage:WaitForChild("Modules")
 	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -28,7 +27,6 @@ function GunHandlerClient.new(tool)
 	local SmokeTrail = require(Modules.SmokeTrail)
 	local DamageModule = require(Modules.DamageModule)
 	local Utilities = require(Modules.Utilities)
-
 	local Module = require(Setting)
 
 	--// Variables
@@ -45,15 +43,15 @@ function GunHandlerClient.new(tool)
 	local Mouse = Player:GetMouse()
 	local Camera = Workspace.CurrentCamera
 	local GUI = ReplicatedStorage:WaitForChild("GunGUI")
+	local GunGUI
 	local Empty = game.Players.LocalPlayer.Character.Humanoid:LoadAnimation(Tool.Empty)
 	local TouchGui
 	local TouchControlFrame
-	local JumpButton
 
 	if UserInputService.TouchEnabled then
 		TouchGui = PlayerGui:WaitForChild("TouchGui")
 		TouchControlFrame = TouchGui:WaitForChild("TouchControlFrame")
-		JumpButton = TouchControlFrame:WaitForChild("JumpButton")
+		TouchControlFrame:WaitForChild("JumpButton")
 	end
 
 	local MarkerEvent = Tool:WaitForChild("MarkerEvent")
@@ -262,13 +260,10 @@ function GunHandlerClient.new(tool)
 
 	--Viewmodel
 	local CurrentVMAnimTable
-	local CurrentVMFireAnim
-	local CurrentVMFireAnimationSpeed
 	local CurrentVMShotgunPumpinAnim
 	local CurrentVMShotgunPumpinAnimationSpeed
 
 	local Spring = Utilities.Spring
-	local OldPosition = Vector2.new()
 
 	--scope
 
@@ -296,7 +291,6 @@ function GunHandlerClient.new(tool)
 	local CrosshairHitResetTime = 0.15 -- Time in seconds for red color to show after hitting
 
 	local function SetCrosshairColor(color)
-		local GunGUI = PlayerGui:FindFirstChild("GunGUI")
 		if GunGUI and GunGUI:FindFirstChild("Crosshair") then
 			local CrossFrame = GunGUI.Crosshair:FindFirstChild("Main")
 			if CrossFrame then
@@ -309,7 +303,6 @@ function GunHandlerClient.new(tool)
 	end
 
 	local function IsAimingAtPlayer()
-		local GunGUI = PlayerGui:FindFirstChild("GunGUI")
 		if not GunGUI or not GunGUI:FindFirstChild("Crosshair") then
 			return false
 		end
@@ -344,7 +337,6 @@ function GunHandlerClient.new(tool)
 	-- Screen effect for hitting dead bodies (Da Bronx style)
 	local DeadBodyHitEffect = nil
 	local function PlayDeadBodyHitEffect()
-		local GunGUI = PlayerGui:FindFirstChild("GunGUI")
 		if not GunGUI then
 			return
 		end
@@ -353,7 +345,7 @@ function GunHandlerClient.new(tool)
 		if not DeadBodyHitEffect or not DeadBodyHitEffect.Parent then
 			DeadBodyHitEffect = Instance.new("Frame")
 			DeadBodyHitEffect.Name = "DeadBodyHitEffect"
-			DeadBodyHitEffect.Size = UDim2.new(1, 0, 1, 0)
+			DeadBodyHitEffect.Size = UDim2.fromScale(1, 1)
 			DeadBodyHitEffect.Position = UDim2.new(0, 0, 0, 0)
 			DeadBodyHitEffect.BackgroundTransparency = 1
 			DeadBodyHitEffect.BorderSizePixel = 0
@@ -363,7 +355,7 @@ function GunHandlerClient.new(tool)
 			-- Create white flash overlay
 			local flashOverlay = Instance.new("Frame")
 			flashOverlay.Name = "FlashOverlay"
-			flashOverlay.Size = UDim2.new(1, 0, 1, 0)
+			flashOverlay.Size = UDim2.fromScale(1, 1)
 			flashOverlay.Position = UDim2.new(0, 0, 0, 0)
 			flashOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Bright white
 			flashOverlay.BackgroundTransparency = 1
@@ -394,7 +386,6 @@ function GunHandlerClient.new(tool)
 			return
 		end
 
-		local GunGUI = PlayerGui:FindFirstChild("GunGUI")
 		if not GunGUI or not GunGUI:FindFirstChild("Crosshair") then
 			return
 		end
@@ -469,7 +460,7 @@ function GunHandlerClient.new(tool)
 				table.insert(Humanoids, mdl)
 			end
 		end
-		for i2, mdl2 in ipairs(mdl:GetChildren()) do
+		for _, mdl2 in ipairs(mdl:GetChildren()) do
 			PopulateHumanoids(mdl2)
 		end
 	end
@@ -522,13 +513,13 @@ function GunHandlerClient.new(tool)
 		local TargetModel = nil
 		local TargetHumanoid = nil
 		local TargetTorso = nil
-		for i, v in ipairs(Humanoids) do
+		for _, v in ipairs(Humanoids) do
 			local torso = v.Parent:FindFirstChild("HumanoidRootPart")
 				or v.Parent:FindFirstChild("Torso")
 				or v.Parent:FindFirstChild("UpperTorso")
 			if v and torso then
 				local Dist = (Character.Head.Position - torso.Position).Magnitude
-				local MousePos = Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+				local MousePos = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 				local MouseDirection = (MousePos - Character.Head.Position).Unit
 				local Offset = (((MouseDirection * Dist) + Character.Head.Position) - torso.Position).Magnitude
 				if Offset < CurrentModule.LockOnRadius and (not MinOffset or Offset < MinOffset) and v.Health > 0 then
@@ -544,94 +535,76 @@ function GunHandlerClient.new(tool)
 	end
 
 	local function UpdateGUI()
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Fill:TweenSize(
-			UDim2.new(CurrentVariables.Mag / CurrentModule.AmmoPerMag, 0, 1, 0),
+		GunGUI.Frame.Mag.Fill:TweenSize(
+			UDim2.fromScale(CurrentVariables.Mag / CurrentModule.AmmoPerMag, 1),
 			Enum.EasingDirection.Out,
 			Enum.EasingStyle.Quint,
 			0.25,
 			true
 		)
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Fill:TweenSize(
-			UDim2.new(CurrentVariables.Ammo / CurrentModule.MaxAmmo, 0, 1, 0),
+		GunGUI.Frame.Ammo.Fill:TweenSize(
+			UDim2.fromScale(CurrentVariables.Ammo / CurrentModule.MaxAmmo, 1),
 			Enum.EasingDirection.Out,
 			Enum.EasingStyle.Quint,
 			0.25,
 			true
 		)
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Fill:TweenSize(
-			UDim2.new(CurrentVariables.Heat / CurrentModule.MaxHeat, 0, 1, 0),
+		GunGUI.Frame.Heat.Fill:TweenSize(
+			UDim2.fromScale(CurrentVariables.Heat / CurrentModule.MaxHeat, 1),
 			Enum.EasingDirection.Out,
 			Enum.EasingStyle.Quint,
 			0.25,
 			true
 		)
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Current.Text = CurrentVariables.Mag
-		PlayerGui:FindFirstChild("GunGUI").AmmoWidgetContainer.ContentLayer.CurrentAmmoTxt.Text = CurrentVariables.Mag
-			.. "/"
-			.. CurrentModule.AmmoPerMag
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Max.Text = CurrentModule.AmmoPerMag
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.FireMode.Text = Tool.Name
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Current.Text = CurrentVariables.Ammo
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Max.Text = CurrentModule.MaxAmmo
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Current.Text = CurrentVariables.Heat
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Max.Text = CurrentModule.MaxHeat
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.FireMode.Text =
-			CurrentModule.FireModeTexts[CurrentVariables.FireMode]
+		GunGUI.Frame.Mag.Current.Text = CurrentVariables.Mag
+		GunGUI.AmmoWidgetContainer.ContentLayer.CurrentAmmoTxt.Text = CurrentVariables.Mag
+		GunGUI.Frame.Mag.Max.Text = CurrentModule.AmmoPerMag
+		GunGUI.Frame.Mag.FireMode.Text = Tool.Name
+		GunGUI.Frame.Ammo.Current.Text = CurrentVariables.Ammo
+		GunGUI.Frame.Ammo.Max.Text = CurrentModule.MaxAmmo
+		GunGUI.Frame.Heat.Current.Text = CurrentVariables.Heat
+		GunGUI.Frame.Heat.Max.Text = CurrentModule.MaxHeat
+		GunGUI.Frame.Heat.FireMode.Text = CurrentModule.FireModeTexts[CurrentVariables.FireMode]
 
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Current.Visible = not CommonVariables.Reloading
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Max.Visible = not CommonVariables.Reloading
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Frame.Visible = not CommonVariables.Reloading
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Reloading.Visible = CommonVariables.Reloading
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.FireMode.Visible = CurrentModule.SelectiveFireEnabled
+		GunGUI.Frame.Mag.Current.Visible = not CommonVariables.Reloading
+		GunGUI.Frame.Mag.Max.Visible = not CommonVariables.Reloading
+		GunGUI.Frame.Mag.Frame.Visible = not CommonVariables.Reloading
+		GunGUI.Frame.Mag.Reloading.Visible = CommonVariables.Reloading
+		GunGUI.Frame.Mag.FireMode.Visible = CurrentModule.SelectiveFireEnabled
 
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Current.Visible = not (CurrentVariables.Ammo <= 0)
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Max.Visible = not (CurrentVariables.Ammo <= 0)
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Frame.Visible = not (CurrentVariables.Ammo <= 0)
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.NoMoreAmmo.Visible = (CurrentVariables.Ammo <= 0)
+		GunGUI.Frame.Ammo.Current.Visible = not (CurrentVariables.Ammo <= 0)
+		GunGUI.Frame.Ammo.Max.Visible = not (CurrentVariables.Ammo <= 0)
+		GunGUI.Frame.Ammo.Frame.Visible = not (CurrentVariables.Ammo <= 0)
+		GunGUI.Frame.Ammo.NoMoreAmmo.Visible = (CurrentVariables.Ammo <= 0)
 
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Visible = CurrentModule.BatteryEnabled
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Current.Visible = not CommonVariables.Overheated
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Max.Visible = not CommonVariables.Overheated
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Frame.Visible = not CommonVariables.Overheated
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Overheated.Visible = CommonVariables.Overheated
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.FireMode.Visible = CurrentModule.SelectiveFireEnabled
+		GunGUI.Frame.Heat.Visible = CurrentModule.BatteryEnabled
+		GunGUI.Frame.Heat.Current.Visible = not CommonVariables.Overheated
+		GunGUI.Frame.Heat.Max.Visible = not CommonVariables.Overheated
+		GunGUI.Frame.Heat.Frame.Visible = not CommonVariables.Overheated
+		GunGUI.Frame.Heat.Overheated.Visible = CommonVariables.Overheated
+		GunGUI.Frame.Heat.FireMode.Visible = CurrentModule.SelectiveFireEnabled
 
-		PlayerGui:FindFirstChild("GunGUI").ChargeBar.Visible = (
-			CurrentModule.ChargedShotAdvanceEnabled or CurrentModule.HoldAndReleaseEnabled
-		)
-		PlayerGui:FindFirstChild("GunGUI").ChargeBar.Level1.Visible = not CurrentModule.HoldAndReleaseEnabled
-		PlayerGui:FindFirstChild("GunGUI").ChargeBar.Level2.Visible = not CurrentModule.HoldAndReleaseEnabled
-		PlayerGui:FindFirstChild("GunGUI").ChargeBar.Level1.Position =
-			UDim2.new(CurrentModule.Level1ChargingTime / CurrentModule.AdvancedChargingTime, 0, 0.5, 0)
-		PlayerGui:FindFirstChild("GunGUI").ChargeBar.Level2.Position =
-			UDim2.new(CurrentModule.Level2ChargingTime / CurrentModule.AdvancedChargingTime, 0, 0.5, 0)
-		PlayerGui:FindFirstChild("GunGUI").ChargeBar.Position = Module.MagCartridge and UDim2.new(1, -260, 1, -70)
-			or UDim2.new(1, -260, 1, -35)
+		GunGUI.ChargeBar.Visible = (CurrentModule.ChargedShotAdvanceEnabled or CurrentModule.HoldAndReleaseEnabled)
+		GunGUI.ChargeBar.Level1.Visible = not CurrentModule.HoldAndReleaseEnabled
+		GunGUI.ChargeBar.Level2.Visible = not CurrentModule.HoldAndReleaseEnabled
+		GunGUI.ChargeBar.Level1.Position =
+			UDim2.fromScale(CurrentModule.Level1ChargingTime / CurrentModule.AdvancedChargingTime, 0.5)
+		GunGUI.ChargeBar.Level2.Position =
+			UDim2.fromScale(CurrentModule.Level2ChargingTime / CurrentModule.AdvancedChargingTime, 0.5)
 
-		PlayerGui:FindFirstChild("GunGUI").MagCartridge.Visible = Module.MagCartridge
+		GunGUI.Frame.Mag.Visible = not CurrentModule.BatteryEnabled
+		GunGUI.Frame.Ammo.Visible = CurrentModule.LimitedAmmoEnabled
+		GunGUI.Frame.Heat.Visible = CurrentModule.BatteryEnabled
 
-		PlayerGui:FindFirstChild("GunGUI").Frame.Mag.Visible = not CurrentModule.BatteryEnabled
-		PlayerGui:FindFirstChild("GunGUI").Frame.Ammo.Visible = CurrentModule.LimitedAmmoEnabled
-		PlayerGui:FindFirstChild("GunGUI").Frame.Heat.Visible = CurrentModule.BatteryEnabled
-		--	PlayerGui:FindFirstChild("GunGUI").Frame.Size = CurrentModule.LimitedAmmoEnabled and UDim2.new(0, 250, 0, 100) or UDim2.new(0, 250, 0, 55)
-		--	PlayerGui:FindFirstChild("GunGUI").Frame.Position = (CurrentModule.ChargedShotAdvanceEnabled or CurrentModule.HoldAndReleaseEnabled) and (Module.MagCartridge and (CurrentModule.LimitedAmmoEnabled and UDim2.new(1, -260, 1, -190) or UDim2.new(1,-260,1,-140)) or (CurrentModule.LimitedAmmoEnabled and UDim2.new(1, -260, 1, -150) or UDim2.new(1, -260, 1, -105))) or (Module.MagCartridge and (CurrentModule.LimitedAmmoEnabled and UDim2.new(1, -260, 1, -150) or UDim2.new(1, -260, 1, -105)) or (CurrentModule.LimitedAmmoEnabled and UDim2.new(1, -260, 1, -110) or UDim2.new(1, -260, 1, -65)))
+		GunGUI.MobileButtons.Visible = UserInputService.TouchEnabled --For mobile version
+		local AimButton = GunGUI.MobileButtons.AimButton
+		local HoldDownButton = GunGUI.MobileButtons.HoldDownButton
+		local InspectButton = GunGUI.MobileButtons.InspectButton
+		local ReloadButton = GunGUI.MobileButtons.ReloadButton
+		local SwitchButton = GunGUI.MobileButtons.SwitchButton
+		local MeleeButton = GunGUI.MobileButtons.MeleeButton
+		local AltButton = GunGUI.MobileButtons.AltButton
 
-		PlayerGui:FindFirstChild("GunGUI").MobileButtons.Visible = UserInputService.TouchEnabled --For mobile version
-		local AimButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.AimButton
-		local FireButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.FireButton
-		local HoldDownButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.HoldDownButton
-		local InspectButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.InspectButton
-		local ReloadButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.ReloadButton
-		local SwitchButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.SwitchButton
-		local MeleeButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.MeleeButton
-		local AltButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.AltButton
-		local CrossFrame = PlayerGui:FindFirstChild("GunGUI").Crosshair.Main
-		local CrossParts = {
-			game.WaitForChild(CrossFrame, "HR"),
-			game.WaitForChild(CrossFrame, "HL"),
-			game.WaitForChild(CrossFrame, "VD"),
-			game.WaitForChild(CrossFrame, "VU"),
-		}
 		AimButton.Visible = CurrentModule.SniperEnabled or CurrentModule.IronsightEnabled
 		HoldDownButton.Visible = CurrentModule.HoldDownEnabled
 		InspectButton.Visible = CurrentModule.InspectAnimationEnabled
@@ -647,38 +620,33 @@ function GunHandlerClient.new(tool)
 
 	local function RenderMouse()
 		local Delta = UserInputService:GetMouseDelta() / CurrentModule.ScopeSensitive
-		local Offset = PlayerGui:FindFirstChild("GunGUI").Scope.AbsoluteSize.X * 0.5
+		local Offset = GunGUI.Scope.AbsoluteSize.X * 0.5
 
 		if CommonVariables.Scoping and UserInputService.MouseEnabled and UserInputService.KeyboardEnabled then --For pc version
-			PlayerGui:FindFirstChild("GunGUI").Scope.Position =
-				UDim2.new(0, Scope.p.X + (Knockback.p.Y * 1000), 0, Scope.p.Y + (Knockback.p.X * 200))
+			GunGUI.Scope.Position =
+				UDim2.fromOffset(Scope.p.X + (Knockback.p.Y * 1000), Scope.p.Y + (Knockback.p.X * 200))
 			Scope.t = Vector3.new(Mouse.X - Offset - Delta.X, Mouse.Y - Offset - Delta.Y, 0)
-			OldPosition = Vector2.new(Mouse.X, Mouse.Y)
 		elseif
 			CommonVariables.Scoping
 			and UserInputService.TouchEnabled
 			and not UserInputService.MouseEnabled
 			and not UserInputService.KeyboardEnabled
 		then --For mobile version, but in first-person view
-			PlayerGui:FindFirstChild("GunGUI").Scope.Position =
-				UDim2.new(0, Scope.p.X + (Knockback.p.Y * 1000), 0, Scope.p.Y + (Knockback.p.X * 200))
+			GunGUI.Scope.Position =
+				UDim2.fromOffset(Scope.p.X + (Knockback.p.Y * 1000), Scope.p.Y + (Knockback.p.X * 200))
 			Scope.t = Vector3.new(
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition.X - Offset - Delta.X,
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition.Y - Offset - Delta.Y,
+				GunGUI.Crosshair.AbsolutePosition.X - Offset - Delta.X,
+				GunGUI.Crosshair.AbsolutePosition.Y - Offset - Delta.Y,
 				0
-			)
-			OldPosition = Vector2.new(
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition.X,
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition.Y
 			)
 		end
 
-		PlayerGui:FindFirstChild("GunGUI").Scope.Visible = CommonVariables.Scoping
+		GunGUI.Scope.Visible = CommonVariables.Scoping
 		if not CommonVariables.Scoping then
-			PlayerGui:FindFirstChild("GunGUI").Crosshair.Main.Visible = true
+			GunGUI.Crosshair.Main.Visible = true
 			Scope.t = Vector3.new(600, 200, 0)
 		else
-			PlayerGui:FindFirstChild("GunGUI").Crosshair.Main.Visible = false
+			GunGUI.Crosshair.Main.Visible = false
 		end
 
 		if UserInputService.MouseEnabled and UserInputService.KeyboardEnabled then --For pc version
@@ -688,17 +656,16 @@ function GunHandlerClient.new(tool)
 					if CFAngles then
 						local v = WorldToScreen((Camera.CFrame * CFAngles:Inverse() * CFrame.new(0, 0, -4)).Position)
 						local v2 = Camera.ViewportSize / 2
-						PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = (v - v2).Magnitude > 0.08
-								and UDim2.new(0, v.X, 0, v.Y)
-							or UDim2.new(0, v2.X, 0, v2.Y)
+						GunGUI.Crosshair.Position = (v - v2).Magnitude > 0.08 and UDim2.fromOffset(v.X, v.Y)
+							or UDim2.fromOffset(v2.X, v2.Y)
 					else
-						PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
+						GunGUI.Crosshair.Position = UDim2.fromOffset(Mouse.X, Mouse.Y)
 					end
 				else
-					PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
+					GunGUI.Crosshair.Position = UDim2.fromOffset(Mouse.X, Mouse.Y)
 				end
 			else
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
+				GunGUI.Crosshair.Position = UDim2.fromOffset(Mouse.X, Mouse.Y)
 			end
 		elseif
 			UserInputService.TouchEnabled
@@ -706,7 +673,7 @@ function GunHandlerClient.new(tool)
 			and not UserInputService.KeyboardEnabled
 			and (Character.Head.Position - Camera.CoordinateFrame.p).Magnitude > 2
 		then --For mobile version, but in third-person view
-			PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0.5, 0, 0.2, 0)
+			GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
 		elseif
 			UserInputService.TouchEnabled
 			and not UserInputService.MouseEnabled
@@ -719,17 +686,16 @@ function GunHandlerClient.new(tool)
 					if CFAngles then
 						local v = WorldToScreen((Camera.CFrame * CFAngles:Inverse() * CFrame.new(0, 0, -4)).Position)
 						local v2 = Camera.ViewportSize / 2
-						PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = (v - v2).Magnitude > 0.08
-								and UDim2.new(0, v.X, 0, v.Y)
-							or UDim2.new(0, v2.X, 0, v2.Y)
+						GunGUI.Crosshair.Position = (v - v2).Magnitude > 0.08 and UDim2.fromOffset(v.X, v.Y)
+							or UDim2.fromOffset(v2.X, v2.Y)
 					else
-						PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0.5, 0, 0.2, 0)
+						GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
 					end
 				else
-					PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0.5, 0, 0.2, 0)
+					GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
 				end
 			else
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.Position = UDim2.new(0.5, 0, 0.2, 0)
+				GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
 			end
 		end
 
@@ -774,7 +740,7 @@ function GunHandlerClient.new(tool)
 
 	local function RenderMotion()
 		if Beam and Attach0 and Attach1 then
-			local Position = Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+			local Position = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 			local cframe =
 				CFrame.new(HandleToFire:FindFirstChild("GunFirePoint" .. CurrentFireMode).WorldPosition, Position)
 			local direction = cframe.LookVector
@@ -815,9 +781,8 @@ function GunHandlerClient.new(tool)
 	end
 
 	local function RenderTwoDeeShell(dt)
-		local TopbarOffset = (PlayerGui:FindFirstChild("GunGUI").IgnoreGuiInset and GuiService:GetGuiInset())
-			or Vector2.new(0, 0)
-		local Killzone = PlayerGui:FindFirstChild("GunGUI").AbsoluteSize.Y + TopbarOffset.Y + 100
+		local TopbarOffset = (GunGUI.IgnoreGuiInset and GuiService:GetGuiInset()) or Vector2.new(0, 0)
+		local Killzone = GunGUI.AbsoluteSize.Y + TopbarOffset.Y + 100
 		local Drag = Module.Drag ^ dt
 		for twoDeeShell, data in pairs(TwoDeeShells) do
 			if twoDeeShell.Parent then
@@ -842,7 +807,7 @@ function GunHandlerClient.new(tool)
 	-- Crosshair hit animation function
 	-- Store original values and active tweens to prevent rapid fire bugs
 	local CrosshairOriginalValues = {
-		CenterSize = UDim2.new(0, 7, 0, 7),
+		CenterSize = UDim2.fromOffset(7, 7),
 		CenterRotation = 0,
 		HR_Position = nil,
 		HL_Position = nil,
@@ -861,7 +826,6 @@ function GunHandlerClient.new(tool)
 	end
 
 	local function PlayCrosshairHitAnimation(IsHeadshot)
-		local GunGUI = PlayerGui:FindFirstChild("GunGUI")
 		if not GunGUI or not GunGUI:FindFirstChild("Crosshair") then
 			return
 		end
@@ -918,7 +882,7 @@ function GunHandlerClient.new(tool)
 				Center,
 				TweenInfo.new(punchDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 				{
-					Size = UDim2.new(0, 5 * punchScale, 0, 5 * punchScale),
+					Size = UDim2.fromOffset(5 * punchScale, 5 * punchScale),
 					Rotation = originalRotation + rotationAmount,
 				}
 			)
@@ -944,10 +908,10 @@ function GunHandlerClient.new(tool)
 		-- Animate crosshair arms (spread out then return)
 		local spreadAmount = IsHeadshot and 6 or 4
 		local spreadOffsets = {
-			HR = UDim2.new(0, spreadAmount, 0, 0),
-			HL = UDim2.new(0, -spreadAmount, 0, 0),
-			VD = UDim2.new(0, 0, 0, spreadAmount),
-			VU = UDim2.new(0, 0, 0, -spreadAmount),
+			HR = UDim2.fromOffset(spreadAmount, 0),
+			HL = UDim2.fromOffset(-spreadAmount, 0),
+			VD = UDim2.fromOffset(0, spreadAmount),
+			VU = UDim2.fromOffset(0, -spreadAmount),
 		}
 
 		for name, part in pairs(CrossParts) do
@@ -996,14 +960,14 @@ function GunHandlerClient.new(tool)
 	local function MarkHit(ClientModule, IsHeadshot)
 		if ClientModule.HitmarkerEnabled then
 			if IsHeadshot then
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.Hitmarker.ImageColor3 = ClientModule.HitmarkerColorHS
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.Hitmarker.ImageTransparency = 0
+				GunGUI.Crosshair.Hitmarker.ImageColor3 = ClientModule.HitmarkerColorHS
+				GunGUI.Crosshair.Hitmarker.ImageTransparency = 0
 				TweenService:Create(
-					PlayerGui:FindFirstChild("GunGUI").Crosshair.Hitmarker,
+					GunGUI.Crosshair.Hitmarker,
 					TweenInfo.new(ClientModule.HitmarkerFadeTimeHS, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
 					{ ImageTransparency = 1 }
 				):Play()
-				local MarkerSound = PlayerGui:FindFirstChild("GunGUI").Crosshair.MarkerSound:Clone()
+				local MarkerSound = GunGUI.Crosshair.MarkerSound:Clone()
 				MarkerSound.SoundId = "rbxassetid://"
 					.. ClientModule.HitmarkerSoundID[math.random(1, #ClientModule.HitmarkerSoundID)]
 				MarkerSound.PlaybackSpeed = ClientModule.HitmarkerSoundPitchHS
@@ -1013,14 +977,14 @@ function GunHandlerClient.new(tool)
 					MarkerSound:Destroy()
 				end)
 			else
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.Hitmarker.ImageColor3 = ClientModule.HitmarkerColor
-				PlayerGui:FindFirstChild("GunGUI").Crosshair.Hitmarker.ImageTransparency = 0
+				GunGUI.Crosshair.Hitmarker.ImageColor3 = ClientModule.HitmarkerColor
+				GunGUI.Crosshair.Hitmarker.ImageTransparency = 0
 				TweenService:Create(
-					PlayerGui:FindFirstChild("GunGUI").Crosshair.Hitmarker,
+					GunGUI.Crosshair.Hitmarker,
 					TweenInfo.new(ClientModule.HitmarkerFadeTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
 					{ ImageTransparency = 1 }
 				):Play()
-				local MarkerSound = PlayerGui:FindFirstChild("GunGUI").Crosshair.MarkerSound:Clone()
+				local MarkerSound = GunGUI.Crosshair.MarkerSound:Clone()
 				MarkerSound.SoundId = "rbxassetid://"
 					.. ClientModule.HitmarkerSoundID[math.random(1, #ClientModule.HitmarkerSoundID)]
 				MarkerSound.PlaybackSpeed = ClientModule.HitmarkerSoundPitch
@@ -1173,34 +1137,34 @@ function GunHandlerClient.new(tool)
 				Pos = Vector2.new(900, 900), --(Pos and Vector2.new(XCenter, YCenter) or Vector2.new(0, 0)) + TopbarOffset,   --(Pos and Vector2.new(XCenter, YCenter) or Vector2.new(0, 0)) + TopbarOffset
 				Vel = Vel or Vector2.new(0, 0),
 			}
-			local TwoDeeShell = PlayerGui:FindFirstChild("GunGUI").ShellSpawn --PlayerGui:FindFirstChild("GunGUI").Shell.UIGridLayout.Shell
+			local TwoDeeShell = GunGUI.ShellSpawn --GunGUI.Shell.UIGridLayout.Shell
 			if type == "bullet" then
-				TwoDeeShell = PlayerGui:FindFirstChild("GunGUI").ShellSpawn
+				TwoDeeShell = GunGUI.ShellSpawn
 			end
 			local Clone = TwoDeeShell:Clone()
 			Clone.ImageTransparency = 0
 			Clone.Rotation = Rot
 			TwoDeeShells[Clone] = Data
 			--	Clone.Position = GUI.ShellSpawn.Position
-			Clone.Parent = PlayerGui:FindFirstChild("GunGUI")
-			if shockwave then
-				Thread:Spawn(function()
-					local ShockwaveClone = PlayerGui:FindFirstChild("GunGUI").MagCartridge.UIGridLayout.Shockwave
-						:Clone()
-					local Degree = math.rad(math.random(360))
-					ShockwaveClone.Position = UDim2.new(0, XCenter, 0, YCenter)
-					ShockwaveClone.Rotation = math.deg(Degree)
-					ShockwaveClone.Parent = PlayerGui:FindFirstChild("GunGUI")
-					local Tween = TweenService:Create(
-						ShockwaveClone,
-						TweenInfo.new(0.25, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
-						{ Size = UDim2.new(0, 50, 0, 50), ImageTransparency = 1 }
-					)
-					Tween:Play()
-					Tween.Completed:Wait()
-					ShockwaveClone:Destroy()
-				end)
-			end
+			Clone.Parent = GunGUI
+			-- if shockwave then
+			-- 	Thread:Spawn(function()
+			-- 		local ShockwaveClone = GunGUI.MagCartridge.UIGridLayout.Shockwave
+			-- 			:Clone()
+			-- 		local Degree = math.rad(math.random(360))
+			-- 		ShockwaveClone.Position = UDim2.new(0, XCenter, 0, YCenter)
+			-- 		ShockwaveClone.Rotation = math.deg(Degree)
+			-- 		ShockwaveClone.Parent = GunGUI
+			-- 		local Tween = TweenService:Create(
+			-- 			ShockwaveClone,
+			-- 			TweenInfo.new(0.25, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
+			-- 			{ Size = UDim2.new(0, 50, 0, 50), ImageTransparency = 1 }
+			-- 		)
+			-- 		Tween:Play()
+			-- 		Tween.Completed:Wait()
+			-- 		ShockwaveClone:Destroy()
+			-- 	end)
+			-- end
 		end
 	end
 
@@ -1315,6 +1279,9 @@ function GunHandlerClient.new(tool)
 				Origin = ShootingHandle:FindFirstChild("GunMuzzlePoint" .. CurrentFireMode),
 			}, true)
 		end
+		if IsAimingAtPlayer() then
+			MarkHit(CurrentModule, false)
+		end
 		ProjectileHandler:SimulateProjectile(
 			Tool,
 			ShootingHandle,
@@ -1344,7 +1311,6 @@ function GunHandlerClient.new(tool)
 		end
 
 		Thread:Spawn(RecoilCamera)
-		--	CrossSpring:Accelerate(AddressTableValue(CurrentModule.ChargeAlterTable.CrossExpansion, CurrentModule.CrossExpansion))
 	end
 
 	local function Overheat()
@@ -1409,6 +1375,10 @@ function GunHandlerClient.new(tool)
 			CommonVariables.Overheated = false
 			UpdateGUI()
 		end
+	end
+
+	local function updateServerChangeMagAndAmmo()
+		ChangeMagAndAmmo:FireServer(CurrentFireMode, CurrentVariables.Mag, CurrentVariables.Ammo, CurrentVariables.Heat)
 	end
 
 	local function Reload()
@@ -1500,33 +1470,23 @@ function GunHandlerClient.new(tool)
 								if CurrentVariables.Ammo > 0 then
 									CurrentVariables.Mag = CurrentVariables.Mag + 1
 									CurrentVariables.Ammo = CurrentVariables.Ammo - 1
-									ChangeMagAndAmmo:FireServer(
-										CurrentFireMode,
-										CurrentVariables.Mag,
-										CurrentVariables.Ammo,
-										CurrentVariables.Heat
-									)
-									if Module.MagCartridge and not CurrentModule.BatteryEnabled then
-										for i = 1, CurrentVariables.Mag do
-											PlayerGui:FindFirstChild("GunGUI").MagCartridge[i].Visible = true
-										end
-									end
+									updateServerChangeMagAndAmmo()
+									-- if Module.MagCartridge and not CurrentModule.BatteryEnabled then
+									-- 	for i = 1, CurrentVariables.Mag do
+									-- 		GunGUI.MagCartridge[i].Visible = true
+									-- 	end
+									-- end
 									UpdateGUI()
 								end
 							else
 								CurrentVariables.Mag = CurrentVariables.Mag + 1
 								CurrentVariables.Ammo = CurrentVariables.Ammo - 1
-								ChangeMagAndAmmo:FireServer(
-									CurrentFireMode,
-									CurrentVariables.Mag,
-									CurrentVariables.Ammo,
-									CurrentVariables.Heat
-								)
-								if Module.MagCartridge and not CurrentModule.BatteryEnabled then
-									for i = 1, CurrentVariables.Mag do
-										PlayerGui:FindFirstChild("GunGUI").MagCartridge[i].Visible = true
-									end
-								end
+								updateServerChangeMagAndAmmo()
+								-- if Module.MagCartridge and not CurrentModule.BatteryEnabled then
+								-- 	for i = 1, CurrentVariables.Mag do
+								-- 		GunGUI.MagCartridge[i].Visible = true
+								-- 	end
+								-- end
 								UpdateGUI()
 							end
 						end
@@ -1581,26 +1541,25 @@ function GunHandlerClient.new(tool)
 					break
 				end
 			until (os.clock() - StartTime) >= ReloadTime
-			--Thread:Wait((CurrentVariables.Mag > 0 and CurrentModule.TacticalReloadAnimationEnabled) and CurrentModule.TacticalReloadTime or CurrentModule.ReloadTime)
 			if CommonVariables.ActuallyEquipped then
 				if not CurrentModule.ShotgunReload then
-					if Module.MagCartridge and Module.DropAllRemainingBullets and not CurrentModule.BatteryEnabled then
-						for i = 1, CurrentVariables.Mag do
-							local Bullet = PlayerGui:FindFirstChild("GunGUI").MagCartridge:FindFirstChild(i)
-							local Vel = Random2DDirection(
-								Module.DropVelocity,
-								math.random(Module.DropXMin, Module.DropXMax),
-								math.random(Module.DropYMin, Module.DropYMax)
-							) * (math.random() ^ 0.5)
-							CreateTwoDeeShell(
-								Bullet.Rotation,
-								Bullet.AbsolutePosition,
-								Bullet.AbsoluteSize,
-								Vel,
-								"bullet"
-							)
-						end
-					end
+					-- if Module.MagCartridge and Module.DropAllRemainingBullets and not CurrentModule.BatteryEnabled then
+					-- 	for i = 1, CurrentVariables.Mag do
+					-- 		local Bullet = GunGUI.MagCartridge:FindFirstChild(i)
+					-- 		local Vel = Random2DDirection(
+					-- 			Module.DropVelocity,
+					-- 			math.random(Module.DropXMin, Module.DropXMax),
+					-- 			math.random(Module.DropYMin, Module.DropYMax)
+					-- 		) * (math.random() ^ 0.5)
+					-- 		CreateTwoDeeShell(
+					-- 			Bullet.Rotation,
+					-- 			Bullet.AbsolutePosition,
+					-- 			Bullet.AbsoluteSize,
+					-- 			Vel,
+					-- 			"bullet"
+					-- 		)
+					-- 	end
+					-- end
 					if CurrentModule.LimitedAmmoEnabled then
 						local ammoToUse =
 							math.min(CurrentModule.AmmoPerMag - CurrentVariables.Mag, CurrentVariables.Ammo)
@@ -1609,12 +1568,7 @@ function GunHandlerClient.new(tool)
 					else
 						CurrentVariables.Mag = CurrentModule.AmmoPerMag
 					end
-					ChangeMagAndAmmo:FireServer(
-						CurrentFireMode,
-						CurrentVariables.Mag,
-						CurrentVariables.Ammo,
-						CurrentVariables.Heat
-					)
+					updateServerChangeMagAndAmmo()
 				end
 			end
 			CommonVariables.Reloading = false
@@ -1707,7 +1661,7 @@ function GunHandlerClient.new(tool)
 				end
 			until (os.clock() - StartTime) >= CurrentModule.ScopeDelay
 			if CommonVariables.ActuallyEquipped and CommonVariables.AimDown then
-				local ZoomSound = PlayerGui:FindFirstChild("GunGUI").Scope.ZoomSound:Clone()
+				local ZoomSound = GunGUI.Scope.ZoomSound:Clone()
 				ZoomSound.Parent = Player.PlayerGui
 				ZoomSound:Play()
 				ZoomSound.Ended:Connect(function()
@@ -1988,26 +1942,26 @@ function GunHandlerClient.new(tool)
 					CurrentShotgunPumpinAnim = CurrentAnimTable.ShotgunPumpinAnim
 					CurrentShotgunPumpinAnimationSpeed = CurrentModule.ShotgunPumpinSpeed
 
-					if
-						Module.MagCartridge
-						and not CurrentModule.BatteryEnabled
-						and CurrentModule.AmmoPerMag ~= math.huge
-					then
-						for _, v in pairs(PlayerGui:FindFirstChild("GunGUI").MagCartridge:GetChildren()) do
-							if not v:IsA("UIGridLayout") then
-								v:Destroy()
-							end
-						end
-						for i = 1, CurrentModule.AmmoPerMag do
-							local Bullet = PlayerGui:FindFirstChild("GunGUI").MagCartridge.UIGridLayout.Template:Clone()
-							Bullet.Name = i
-							Bullet.LayoutOrder = i
-							if i > CurrentVariables.Mag then
-								Bullet.Visible = false
-							end
-							Bullet.Parent = PlayerGui:FindFirstChild("GunGUI").MagCartridge
-						end
-					end
+					-- if
+					-- 	Module.MagCartridge
+					-- 	and not CurrentModule.BatteryEnabled
+					-- 	and CurrentModule.AmmoPerMag ~= math.huge
+					-- then
+					-- 	for _, v in pairs(GunGUI.MagCartridge:GetChildren()) do
+					-- 		if not v:IsA("UIGridLayout") then
+					-- 			v:Destroy()
+					-- 		end
+					-- 	end
+					-- 	for i = 1, CurrentModule.AmmoPerMag do
+					-- 		local Bullet = GunGUI.MagCartridge.UIGridLayout.Template:Clone()
+					-- 		Bullet.Name = i
+					-- 		Bullet.LayoutOrder = i
+					-- 		if i > CurrentVariables.Mag then
+					-- 			Bullet.Visible = false
+					-- 		end
+					-- 		Bullet.Parent = GunGUI.MagCartridge
+					-- 	end
+					-- end
 
 					SmokeTrail:StopEmission()
 
@@ -2033,12 +1987,10 @@ function GunHandlerClient.new(tool)
 					end
 
 					if CurrentModule.AmmoPerMag ~= math.huge and CurrentModule.MaxHeat ~= math.huge then
-						PlayerGui:FindFirstChild("GunGUI").Frame.Visible = true
+						GunGUI.Frame.Visible = true
 					end
 
 					UpdateGUI()
-
-					--	SetCrossSettings(CurrentModule.CrossSize, CurrentModule.CrossSpeed, CurrentModule.CrossDamper)
 
 					if
 						CommonVariables.ActuallyEquipped
@@ -2053,145 +2005,207 @@ function GunHandlerClient.new(tool)
 			end
 		end
 	end
+	local function chargeEffect()
+		CommonVariables.CanBeCooledDown = false
+		CommonVariables.Enabled = false
+		if CurrentAnimTable.InspectAnim and CurrentAnimTable.InspectAnim.IsPlaying then
+			CurrentAnimTable.InspectAnim:Stop()
+		end
 
-	local function OnFiring()
-		if CurrentModule.ChargedShotAdvanceEnabled and not CurrentModule.SelectiveFireEnabled then
-			CommonVariables.Charging = true
-			if
-				CommonVariables.ActuallyEquipped
-				and CommonVariables.Enabled
-				and CommonVariables.Charging
-				and not CommonVariables.Reloading
-				and not CommonVariables.Overheated
-				and not CommonVariables.HoldDown
-				and not CommonVariables.Switching
-				and not CommonVariables.Alting
-				and CurrentVariables.Mag > 0
-				and CurrentVariables.Heat < CurrentModule.MaxHeat
-				and Humanoid.Health > 0
-			then
-				CommonVariables.CanBeCooledDown = false
-				CommonVariables.Enabled = false
-				if CurrentAnimTable.InspectAnim and CurrentAnimTable.InspectAnim.IsPlaying then
-					CurrentAnimTable.InspectAnim:Stop()
+		if CurrentModule.AimAnimationsEnabled and CommonVariables.AimDown then
+			if CurrentAnimTable.AimChargingAnim and not CurrentAnimTable.AimChargingAnim.IsPlaying then
+				CurrentAnimTable.AimChargingAnim:Play(nil, nil, CurrentModule.AimChargingAnimationSpeed)
+			end
+		else
+			if CurrentAnimTable.ChargingAnim and not CurrentAnimTable.ChargingAnim.IsPlaying then
+				CurrentAnimTable.ChargingAnim:Play(nil, nil, CurrentModule.ChargingAnimationSpeed)
+			end
+		end
+		local ChargingSound = HandleToFire[CurrentFireMode]:FindFirstChild("ChargingSound")
+		local StartTime = os.clock()
+		while true do
+			local DeltaTime = os.clock() - StartTime
+			if CurrentVariables.ChargeLevel == 0 and DeltaTime >= CurrentModule.Level1ChargingTime then
+				CurrentVariables.ChargeLevel = 1
+				GunGUI.ChargeBar.ChargeLevel1:Play()
+			elseif CurrentVariables.ChargeLevel == 1 and DeltaTime >= CurrentModule.Level2ChargingTime then
+				CurrentVariables.ChargeLevel = 2
+				GunGUI.ChargeBar.ChargeLevel2:Play()
+			elseif CurrentVariables.ChargeLevel == 2 and DeltaTime >= CurrentModule.AdvancedChargingTime then
+				CurrentVariables.ChargeLevel = 3
+				GunGUI.ChargeBar.ChargeLevel3:Play()
+				GunGUI.ChargeBar.Shine.UIGradient.Offset = Vector2.new(-1, 0)
+				TweenService:Create(
+					GunGUI.ChargeBar.Shine.UIGradient,
+					TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+					{ Offset = Vector2.new(1, 0) }
+				):Play()
+			end
+			local ChargePercent = math.min(DeltaTime / CurrentModule.AdvancedChargingTime, 1)
+			if ChargePercent < 0.5 then --Fade from red to yellow then to green
+				GunGUI.ChargeBar.Fill.BackgroundColor3 = Color3.new(1, ChargePercent * 2, 0)
+			else
+				GunGUI.ChargeBar.Fill.BackgroundColor3 = Color3.new(1 - ((ChargePercent - 0.5) / 0.5), 1, 0)
+			end
+			GunGUI.ChargeBar.Fill.Size = UDim2.new(ChargePercent, 0, 1, 0)
+			if ChargingSound then
+				if not ChargingSound.Playing then
+					ChargingSound:Play()
 				end
-
-				if CurrentModule.AimAnimationsEnabled and CommonVariables.AimDown then
-					if CurrentAnimTable.AimChargingAnim and not CurrentAnimTable.AimChargingAnim.IsPlaying then
-						CurrentAnimTable.AimChargingAnim:Play(nil, nil, CurrentModule.AimChargingAnimationSpeed)
-					end
-				else
-					if CurrentAnimTable.ChargingAnim and not CurrentAnimTable.ChargingAnim.IsPlaying then
-						CurrentAnimTable.ChargingAnim:Play(nil, nil, CurrentModule.ChargingAnimationSpeed)
-					end
+				if CurrentModule.ChargingSoundIncreasePitch then
+					ChargingSound.PlaybackSpeed = CurrentModule.ChargingSoundPitchRange[1]
+						+ (
+							ChargePercent
+							* (CurrentModule.ChargingSoundPitchRange[2] - CurrentModule.ChargingSoundPitchRange[1])
+						)
 				end
+			end
+			Thread:Wait()
+			if not CommonVariables.ActuallyEquipped or not CommonVariables.Charging then
+				break
+			end
+		end
+		if CurrentAnimTable.AimChargingAnim and CurrentAnimTable.AimChargingAnim.IsPlaying then
+			CurrentAnimTable.AimChargingAnim:Stop(0)
+		end
+		if CurrentAnimTable.ChargingAnim and CurrentAnimTable.ChargingAnim.IsPlaying then
+			CurrentAnimTable.ChargingAnim:Stop(0)
+		end
 
-				local ChargingSound = HandleToFire[CurrentFireMode]:FindFirstChild("ChargingSound")
+		GunGUI.ChargeBar.Fill.Size = UDim2.new(0, 0, 1, 0)
+		if ChargingSound then
+			if ChargingSound.Playing then
+				ChargingSound:Stop()
+			end
+			if CurrentModule.ChargingSoundIncreasePitch then
+				ChargingSound.PlaybackSpeed = CurrentModule.ChargingSoundPitchRange[1]
+			end
+		end
+		if not CommonVariables.ActuallyEquipped then
+			CurrentVariables.ChargeLevel = 0
+			CommonVariables.Enabled = true
+		end
+	end
+
+	local function shotShellEjectSpawnLoop(): boolean
+		if not CommonVariables.ActuallyEquipped then
+			return false
+		end
+		if not CurrentModule.ShotgunPump then
+			Thread:Spawn(function()
 				local StartTime = os.clock()
-				while true do
-					local DeltaTime = os.clock() - StartTime
-					if CurrentVariables.ChargeLevel == 0 and DeltaTime >= CurrentModule.Level1ChargingTime then
-						CurrentVariables.ChargeLevel = 1
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.ChargeLevel1:Play()
-					elseif CurrentVariables.ChargeLevel == 1 and DeltaTime >= CurrentModule.Level2ChargingTime then
-						CurrentVariables.ChargeLevel = 2
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.ChargeLevel2:Play()
-					elseif CurrentVariables.ChargeLevel == 2 and DeltaTime >= CurrentModule.AdvancedChargingTime then
-						CurrentVariables.ChargeLevel = 3
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.ChargeLevel3:Play()
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.Shine.UIGradient.Offset = Vector2.new(-1, 0)
-						TweenService:Create(
-							PlayerGui:FindFirstChild("GunGUI").ChargeBar.Shine.UIGradient,
-							TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-							{ Offset = Vector2.new(1, 0) }
-						):Play()
-					end
-					local ChargePercent = math.min(DeltaTime / CurrentModule.AdvancedChargingTime, 1)
-					if ChargePercent < 0.5 then --Fade from red to yellow then to green
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.BackgroundColor3 =
-							Color3.new(1, ChargePercent * 2, 0)
-					else
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.BackgroundColor3 =
-							Color3.new(1 - ((ChargePercent - 0.5) / 0.5), 1, 0)
-					end
-					PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.Size = UDim2.new(ChargePercent, 0, 1, 0)
-					if ChargingSound then
-						if not ChargingSound.Playing then
-							ChargingSound:Play()
-						end
-						if CurrentModule.ChargingSoundIncreasePitch then
-							ChargingSound.PlaybackSpeed = CurrentModule.ChargingSoundPitchRange[1]
-								+ (
-									ChargePercent
-									* (
-										CurrentModule.ChargingSoundPitchRange[2]
-										- CurrentModule.ChargingSoundPitchRange[1]
-									)
-								)
-						end
-					end
+				repeat
 					Thread:Wait()
-					if not CommonVariables.ActuallyEquipped or not CommonVariables.Charging then
+					if not CommonVariables.ActuallyEquipped then
 						break
 					end
+				until (os.clock() - StartTime) >= CurrentModule.BulletShellDelay
+				if CommonVariables.ActuallyEquipped then
+					EjectShell(((Camera.Focus.p - Camera.CoordinateFrame.p).Magnitude <= 1) and HandleToFire)
 				end
-				if CurrentAnimTable.AimChargingAnim and CurrentAnimTable.AimChargingAnim.IsPlaying then
-					CurrentAnimTable.AimChargingAnim:Stop(0)
-				end
-				if CurrentAnimTable.ChargingAnim and CurrentAnimTable.ChargingAnim.IsPlaying then
-					CurrentAnimTable.ChargingAnim:Stop(0)
-				end
+			end)
+		end
+		return true
+	end
 
-				PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.Size = UDim2.new(0, 0, 1, 0)
-				if ChargingSound then
-					if ChargingSound.Playing then
-						ChargingSound:Stop()
-					end
-					if CurrentModule.ChargingSoundIncreasePitch then
-						ChargingSound.PlaybackSpeed = CurrentModule.ChargingSoundPitchRange[1]
-					end
+	local function gunCoolDown()
+		Thread:Spawn(function()
+			CurrentVariables.ShotID = CurrentVariables.ShotID + 1
+			local LastShotID = CurrentVariables.ShotID
+			local Interrupted = false
+			local CooldownTime = CurrentModule.TimeBeforeCooldown
+			local StartTime = os.clock()
+			repeat
+				Thread:Wait()
+				if LastShotID ~= CurrentVariables.ShotID then
+					break
 				end
-				if not CommonVariables.ActuallyEquipped then
-					CurrentVariables.ChargeLevel = 0
-					CommonVariables.Enabled = true
-				end
-				if
-					CommonVariables.ActuallyEquipped
-					and not CommonVariables.Enabled
-					and not CommonVariables.Charging
-					and not CommonVariables.Reloading
-					and not CommonVariables.Overheated
-					and not CommonVariables.HoldDown
-					and not CommonVariables.Switching
-					and not CommonVariables.Alting
-					and CurrentVariables.Mag > 0
-					and CurrentVariables.Heat < CurrentModule.MaxHeat
-					and Humanoid.Health > 0
-				then
-					for i = 1, (CurrentModule.BurstFireEnabled and (AddressTableValue(
+			until (os.clock() - StartTime) >= CooldownTime
+			if LastShotID ~= CurrentVariables.ShotID then
+				Interrupted = true
+			end
+			if not Interrupted then
+				CommonVariables.CanBeCooledDown = true
+			end
+		end)
+	end
+
+	local function setUpFiringAnimation()
+		if not CurrentModule.ShotgunPump then
+			HandleToFire = (HandleToFire == Handle and CurrentModule.DualFireEnabled) and Handle2 or Handle
+
+			if CurrentModule.AimAnimationsEnabled then
+				CurrentAimFireAnim = (
+					CurrentAimFireAnim == CurrentAnimTable.AimFireAnim
+					and CurrentModule.SecondaryFireAnimationEnabled
+				)
+						and CurrentAnimTable.AimSecondaryFireAnim
+					or CurrentAnimTable.AimFireAnim
+				CurrentAimFireAnimationSpeed = (
+					CurrentAimFireAnimationSpeed == CurrentModule.AimFireAnimationSpeed
+					and CurrentModule.SecondaryFireAnimationEnabled
+				)
+						and CurrentModule.AimSecondaryFireAnimationSpeed
+					or CurrentModule.AimFireAnimationSpeed
+			end
+
+			CurrentFireAnim = (
+				CurrentFireAnim == CurrentAnimTable.FireAnim and CurrentModule.SecondaryFireAnimationEnabled
+			)
+					and CurrentAnimTable.SecondaryFireAnim
+				or CurrentAnimTable.FireAnim
+			CurrentFireAnimationSpeed = (
+				CurrentFireAnimationSpeed == CurrentModule.FireAnimationSpeed
+				and CurrentModule.SecondaryFireAnimationEnabled
+			)
+					and CurrentModule.SecondaryFireAnimationSpeed
+				or CurrentModule.FireAnimationSpeed
+		end
+	end
+
+	local function gunDoneCharging()
+		return CommonVariables.ActuallyEquipped
+			and not CommonVariables.Enabled
+			and not CommonVariables.Charging
+			and not CommonVariables.Reloading
+			and not CommonVariables.Overheated
+			and not CommonVariables.HoldDown
+			and not CommonVariables.Switching
+			and not CommonVariables.Alting
+			and CurrentVariables.Mag > 0
+			and CurrentVariables.Heat < CurrentModule.MaxHeat
+			and Humanoid.Health > 0
+	end
+
+	local function gunCanFire()
+		return CommonVariables.ActuallyEquipped
+			and CommonVariables.Enabled
+			and not CommonVariables.Reloading
+			and not CommonVariables.Overheated
+			and not CommonVariables.HoldDown
+			and not CommonVariables.Switching
+			and not CommonVariables.Alting
+			and CurrentVariables.Mag > 0
+			and CurrentVariables.Heat < CurrentModule.MaxHeat
+			and Humanoid.Health > 0
+	end
+
+	local function OnFiring()
+		-- this is for charging up your gun
+		if CurrentModule.ChargedShotAdvanceEnabled and not CurrentModule.SelectiveFireEnabled then
+			CommonVariables.Charging = true
+			if gunCanFire() then
+				chargeEffect()
+				if gunDoneCharging() then
+					for _ = 1, (CurrentModule.BurstFireEnabled and (AddressTableValue(
 						CurrentModule.ChargeAlterTable.BulletPerBurst,
 						CurrentModule.BulletPerBurst
 					)) or 1) do
-						if not CommonVariables.ActuallyEquipped then
-							break
-						end
 						local CLDirections = {}
 						local SVDirections = {}
-						if not CurrentModule.ShotgunPump then
-							Thread:Spawn(function()
-								local StartTime = os.clock()
-								repeat
-									Thread:Wait()
-									if not CommonVariables.ActuallyEquipped then
-										break
-									end
-								until (os.clock() - StartTime) >= CurrentModule.BulletShellDelay
-								if CommonVariables.ActuallyEquipped then
-									EjectShell(
-										((Camera.Focus.p - Camera.CoordinateFrame.p).Magnitude <= 1) and HandleToFire
-									)
-								end
-							end)
+						local success = shotShellEjectSpawnLoop()
+						if not success then
+							break
 						end
 						CommonVariables.CurrentRate = CommonVariables.CurrentRate
 							+ CurrentModule.SmokeTrailRateIncrement
@@ -2199,10 +2213,7 @@ function GunHandlerClient.new(tool)
 							CurrentModule.ChargeAlterTable.BulletPerShot,
 							CurrentModule.BulletPerShot
 						)) or 1) do
-							local Position =
-								Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
-							local Spread =
-								AddressTableValue(CurrentModule.ChargeAlterTable.Spread, CurrentModule.Spread)
+							local Position = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 							local CurrentSpread = 0 -- Spread removed
 							local cframe = (Camera.Focus.p - Camera.CoordinateFrame.p).Magnitude <= 1
 									and CFrame.new(
@@ -2242,8 +2253,7 @@ function GunHandlerClient.new(tool)
 						if
 							AddressTableValue(CurrentModule.ChargeAlterTable.SelfKnockback, CurrentModule.SelfKnockback)
 						then
-							local KnockbackPosition =
-								Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+							local KnockbackPosition = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 							SelfKnockback(KnockbackPosition, Torso.Position)
 						end
 						Fire(HandleToFire, VMHandleToFire, CLDirections, SVDirections)
@@ -2275,57 +2285,35 @@ function GunHandlerClient.new(tool)
 									)
 								)
 						else
-							if
-								Module.MagCartridge
-								and not CurrentModule.BatteryEnabled
-								and CurrentModule.AmmoPerMag ~= math.huge
-							then
-								local Bullet = PlayerGui:FindFirstChild("GunGUI").MagCartridge
-									:FindFirstChild(CurrentVariables.Mag)
-								if Module.Ejection then
-									local Vel = Random2DDirection(
-										Module.Velocity,
-										math.random(Module.XMin, Module.XMax),
-										math.random(Module.YMin, Module.YMax)
-									) * (math.random() ^ 0.5)
-									CreateTwoDeeShell(
-										Bullet.Rotation,
-										Bullet.AbsolutePosition,
-										Bullet.AbsoluteSize,
-										Vel,
-										"shell",
-										Module.Shockwave
-									)
-								end
-								Bullet.Visible = false
-							end
+							-- if
+							-- 	Module.MagCartridge
+							-- 	and not CurrentModule.BatteryEnabled
+							-- 	and CurrentModule.AmmoPerMag ~= math.huge
+							-- then
+							-- 	local Bullet = GunGUI.MagCartridge
+							-- 		:FindFirstChild(CurrentVariables.Mag)
+							-- 	if Module.Ejection then
+							-- 		local Vel = Random2DDirection(
+							-- 			Module.Velocity,
+							-- 			math.random(Module.XMin, Module.XMax),
+							-- 			math.random(Module.YMin, Module.YMax)
+							-- 		) * (math.random() ^ 0.5)
+							-- 		CreateTwoDeeShell(
+							-- 			Bullet.Rotation,
+							-- 			Bullet.AbsolutePosition,
+							-- 			Bullet.AbsoluteSize,
+							-- 			Vel,
+							-- 			"shell",
+							-- 			Module.Shockwave
+							-- 		)
+							-- 	end
+							-- 	Bullet.Visible = false
+							-- end
 							CurrentVariables.Mag = CurrentVariables.Mag - 1
 						end
-						ChangeMagAndAmmo:FireServer(
-							CurrentFireMode,
-							CurrentVariables.Mag,
-							CurrentVariables.Ammo,
-							CurrentVariables.Heat
-						)
-						Thread:Spawn(function()
-							CurrentVariables.ShotID = CurrentVariables.ShotID + 1
-							local LastShotID = CurrentVariables.ShotID
-							local Interrupted = false
-							local CooldownTime = CurrentModule.TimeBeforeCooldown
-							local StartTime = os.clock()
-							repeat
-								Thread:Wait()
-								if LastShotID ~= CurrentVariables.ShotID then
-									break
-								end
-							until (os.clock() - StartTime) >= CooldownTime
-							if LastShotID ~= CurrentVariables.ShotID then
-								Interrupted = true
-							end
-							if not Interrupted then
-								CommonVariables.CanBeCooledDown = true
-							end
-						end)
+
+						updateServerChangeMagAndAmmo()
+						gunCoolDown()
 						UpdateGUI()
 						if CurrentModule.BurstFireEnabled then
 							local BurstRate =
@@ -2337,11 +2325,7 @@ function GunHandlerClient.new(tool)
 									break
 								end
 							until (os.clock() - StartTime) >= BurstRate
-							--Thread:Wait(BurstRate)
 						end
-						--[[if not CommonVariables.ActuallyEquipped then
-						break
-					end]]
 						if CurrentModule.BatteryEnabled then
 							if CurrentVariables.Heat >= CurrentModule.MaxHeat then
 								break
@@ -2352,37 +2336,7 @@ function GunHandlerClient.new(tool)
 							end
 						end
 					end
-					if not CurrentModule.ShotgunPump then
-						HandleToFire = (HandleToFire == Handle and CurrentModule.DualFireEnabled) and Handle2 or Handle
-
-						if CurrentModule.AimAnimationsEnabled then
-							CurrentAimFireAnim = (
-								CurrentAimFireAnim == CurrentAnimTable.AimFireAnim
-								and CurrentModule.SecondaryFireAnimationEnabled
-							)
-									and CurrentAnimTable.AimSecondaryFireAnim
-								or CurrentAnimTable.AimFireAnim
-							CurrentAimFireAnimationSpeed = (
-								CurrentAimFireAnimationSpeed == CurrentModule.AimFireAnimationSpeed
-								and CurrentModule.SecondaryFireAnimationEnabled
-							)
-									and CurrentModule.AimSecondaryFireAnimationSpeed
-								or CurrentModule.AimFireAnimationSpeed
-						end
-
-						CurrentFireAnim = (
-							CurrentFireAnim == CurrentAnimTable.FireAnim
-							and CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and CurrentAnimTable.SecondaryFireAnim
-							or CurrentAnimTable.FireAnim
-						CurrentFireAnimationSpeed = (
-							CurrentFireAnimationSpeed == CurrentModule.FireAnimationSpeed
-							and CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and CurrentModule.SecondaryFireAnimationSpeed
-							or CurrentModule.FireAnimationSpeed
-					end
+					setUpFiringAnimation()
 					Thread:Wait(AddressTableValue(CurrentModule.ChargeAlterTable.FireRate, CurrentModule.FireRate))
 					if
 						CurrentModule.BatteryEnabled and CurrentVariables.Heat >= CurrentModule.MaxHeat
@@ -2490,142 +2444,25 @@ function GunHandlerClient.new(tool)
 					end
 				end
 			end
+
+		-- this is for when your gun is chared and ready to fire
 		elseif CurrentModule.HoldAndReleaseEnabled and not CurrentModule.SelectiveFireEnabled then
 			CommonVariables.Charging = true
-			if
-				CommonVariables.ActuallyEquipped
-				and CommonVariables.Enabled
-				and CommonVariables.Charging
-				and not CommonVariables.Reloading
-				and not CommonVariables.Overheated
-				and not CommonVariables.HoldDown
-				and not CommonVariables.Switching
-				and not CommonVariables.Alting
-				and CurrentVariables.Mag > 0
-				and CurrentVariables.Heat < CurrentModule.MaxHeat
-				and Humanoid.Health > 0
-			then
-				CommonVariables.CanBeCooledDown = false
-				CommonVariables.Enabled = false
-				if CurrentAnimTable.InspectAnim and CurrentAnimTable.InspectAnim.IsPlaying then
-					CurrentAnimTable.InspectAnim:Stop()
-				end
-
-				if CurrentModule.AimAnimationsEnabled and CommonVariables.AimDown then
-					if CurrentAnimTable.AimChargingAnim and not CurrentAnimTable.AimChargingAnim.IsPlaying then
-						CurrentAnimTable.AimChargingAnim:Play(nil, nil, CurrentModule.AimChargingAnimationSpeed)
-					end
-				else
-					if CurrentAnimTable.ChargingAnim and not CurrentAnimTable.ChargingAnim.IsPlaying then
-						CurrentAnimTable.ChargingAnim:Play(nil, nil, CurrentModule.ChargingAnimationSpeed)
-					end
-				end
-
-				local ChargingSound = HandleToFire[CurrentFireMode]:FindFirstChild("ChargingSound")
-				local StartTime = os.clock()
-				while true do
-					local DeltaTime = os.clock() - StartTime
-					if not CommonVariables.Charged and DeltaTime >= CurrentModule.HoldingTime then
-						CommonVariables.Charged = true
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.ChargeLevel3:Play()
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.Shine.UIGradient.Offset = Vector2.new(-1, 0)
-						TweenService:Create(
-							GUI.ChargeBar.Shine.UIGradient,
-							TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-							{ Offset = Vector2.new(1, 0) }
-						):Play()
-					end
-					local ChargePercent = math.min(DeltaTime / CurrentModule.HoldingTime, 1)
-					if ChargePercent < 0.5 then --Fade from red to yellow then to green
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.BackgroundColor3 =
-							Color3.new(1, ChargePercent * 2, 0)
-					else
-						PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.BackgroundColor3 =
-							Color3.new(1 - ((ChargePercent - 0.5) / 0.5), 1, 0)
-					end
-					PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.Size = UDim2.new(ChargePercent, 0, 1, 0)
-					if ChargingSound then
-						if not ChargingSound.Playing then
-							ChargingSound:Play()
-						end
-						if CurrentModule.ChargingSoundIncreasePitch then
-							ChargingSound.PlaybackSpeed = CurrentModule.ChargingSoundPitchRange[1]
-								+ (
-									ChargePercent
-									* (
-										CurrentModule.ChargingSoundPitchRange[2]
-										- CurrentModule.ChargingSoundPitchRange[1]
-									)
-								)
-						end
-					end
-					Thread:Wait()
-					if not CommonVariables.ActuallyEquipped or not CommonVariables.Charging then
-						break
-					end
-				end
-				if CurrentAnimTable.AimChargingAnim and CurrentAnimTable.AimChargingAnim.IsPlaying then
-					CurrentAnimTable.AimChargingAnim:Stop(0)
-				end
-				if CurrentAnimTable.ChargingAnim and CurrentAnimTable.ChargingAnim.IsPlaying then
-					CurrentAnimTable.ChargingAnim:Stop(0)
-				end
-
-				PlayerGui:FindFirstChild("GunGUI").ChargeBar.Fill.Size = UDim2.new(0, 0, 1, 0)
-				if ChargingSound then
-					if ChargingSound.Playing then
-						ChargingSound:Stop()
-					end
-					if CurrentModule.ChargingSoundIncreasePitch then
-						ChargingSound.PlaybackSpeed = CurrentModule.ChargingSoundPitchRange[1]
-					end
-				end
-				if not CommonVariables.ActuallyEquipped then
+			if gunCanFire() then
+				chargeEffect()
+				if gunDoneCharging() and CommonVariables.Charged then
 					CommonVariables.Charged = false
-					CommonVariables.Enabled = true
-				end
-				if
-					CommonVariables.ActuallyEquipped
-					and not CommonVariables.Enabled
-					and not CommonVariables.Charging
-					and CommonVariables.Charged
-					and not CommonVariables.Reloading
-					and not CommonVariables.Overheated
-					and not CommonVariables.HoldDown
-					and not CommonVariables.Switching
-					and not CommonVariables.Alting
-					and CurrentVariables.Mag > 0
-					and CurrentVariables.Heat < CurrentModule.MaxHeat
-					and Humanoid.Health > 0
-				then
-					CommonVariables.Charged = false
-					for i = 1, (CurrentModule.BurstFireEnabled and CurrentModule.BulletPerBurst or 1) do
-						if not CommonVariables.ActuallyEquipped then
-							break
-						end
+					for _ = 1, (CurrentModule.BurstFireEnabled and CurrentModule.BulletPerBurst or 1) do
 						local CLDirections = {}
 						local SVDirections = {}
-						if not CurrentModule.ShotgunPump then
-							Thread:Spawn(function()
-								local StartTime = os.clock()
-								repeat
-									Thread:Wait()
-									if not CommonVariables.ActuallyEquipped then
-										break
-									end
-								until (os.clock() - StartTime) >= CurrentModule.BulletShellDelay
-								if CommonVariables.ActuallyEquipped then
-									EjectShell(
-										((Camera.Focus.p - Camera.CoordinateFrame.p).Magnitude <= 1) and HandleToFire
-									)
-								end
-							end)
+						local success = shotShellEjectSpawnLoop()
+						if not success then
+							break
 						end
 						CommonVariables.CurrentRate = CommonVariables.CurrentRate
 							+ CurrentModule.SmokeTrailRateIncrement
 						for ii = 1, (CurrentModule.ShotgunEnabled and CurrentModule.BulletPerShot or 1) do
-							local Position =
-								Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+							local Position = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 							local CurrentSpread = 0 -- Spread removed
 							local cframe = (Camera.Focus.p - Camera.CoordinateFrame.p).Magnitude <= 1
 									and CFrame.new(
@@ -2663,8 +2500,7 @@ function GunHandlerClient.new(tool)
 							table.insert(SVDirections, SvDirection)
 						end
 						if CurrentModule.SelfKnockback then
-							local KnockbackPosition =
-								Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+							local KnockbackPosition = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 							SelfKnockback(KnockbackPosition, Torso.Position)
 						end
 						Fire(HandleToFire, VMHandleToFire, CLDirections, SVDirections)
@@ -2678,57 +2514,34 @@ function GunHandlerClient.new(tool)
 							CurrentVariables.Heat = CurrentVariables.Heat
 								+ Random.new():NextInteger(CurrentModule.HeatPerFireMin, CurrentModule.HeatPerFireMax)
 						else
-							if
-								Module.MagCartridge
-								and not CurrentModule.BatteryEnabled
-								and CurrentModule.AmmoPerMag ~= math.huge
-							then
-								local Bullet = PlayerGui:FindFirstChild("GunGUI").MagCartridge
-									:FindFirstChild(CurrentVariables.Mag)
-								if Module.Ejection then
-									local vel = Random2DDirection(
-										Module.Velocity,
-										math.random(Module.XMin, Module.XMax),
-										math.random(Module.YMin, Module.YMax)
-									) * (math.random() ^ 0.5)
-									CreateTwoDeeShell(
-										Bullet.Rotation,
-										Bullet.AbsolutePosition,
-										Bullet.AbsoluteSize,
-										vel,
-										"shell",
-										Module.Shockwave
-									)
-								end
-								Bullet.Visible = false
-							end
+							-- if
+							-- 	Module.MagCartridge
+							-- 	and not CurrentModule.BatteryEnabled
+							-- 	and CurrentModule.AmmoPerMag ~= math.huge
+							-- then
+							-- 	local Bullet = GunGUI.MagCartridge
+							-- 		:FindFirstChild(CurrentVariables.Mag)
+							-- 	if Module.Ejection then
+							-- 		local vel = Random2DDirection(
+							-- 			Module.Velocity,
+							-- 			math.random(Module.XMin, Module.XMax),
+							-- 			math.random(Module.YMin, Module.YMax)
+							-- 		) * (math.random() ^ 0.5)
+							-- 		CreateTwoDeeShell(
+							-- 			Bullet.Rotation,
+							-- 			Bullet.AbsolutePosition,
+							-- 			Bullet.AbsoluteSize,
+							-- 			vel,
+							-- 			"shell",
+							-- 			Module.Shockwave
+							-- 		)
+							-- 	end
+							-- 	Bullet.Visible = false
+							-- end
 							CurrentVariables.Mag = CurrentVariables.Mag - 1
 						end
-						ChangeMagAndAmmo:FireServer(
-							CurrentFireMode,
-							CurrentVariables.Mag,
-							CurrentVariables.Ammo,
-							CurrentVariables.Heat
-						)
-						Thread:Spawn(function()
-							CurrentVariables.ShotID = CurrentVariables.ShotID + 1
-							local LastShotID = CurrentVariables.ShotID
-							local Interrupted = false
-							local CooldownTime = CurrentModule.TimeBeforeCooldown
-							local StartTime = os.clock()
-							repeat
-								Thread:Wait()
-								if LastShotID ~= CurrentVariables.ShotID then
-									break
-								end
-							until (os.clock() - StartTime) >= CooldownTime
-							if LastShotID ~= CurrentVariables.ShotID then
-								Interrupted = true
-							end
-							if not Interrupted then
-								CommonVariables.CanBeCooledDown = true
-							end
-						end)
+						updateServerChangeMagAndAmmo()
+						gunCoolDown()
 						UpdateGUI()
 						if CurrentModule.BurstFireEnabled then
 							local StartTime = os.clock()
@@ -2738,11 +2551,7 @@ function GunHandlerClient.new(tool)
 									break
 								end
 							until (os.clock() - StartTime) >= CurrentModule.BurstRate
-							--Thread:Wait(CurrentModule.BurstRate)
 						end
-						--[[if not CommonVariables.ActuallyEquipped then
-						break
-					end]]
 						if CurrentModule.BatteryEnabled then
 							if CurrentVariables.Heat >= CurrentModule.MaxHeat then
 								break
@@ -2753,37 +2562,7 @@ function GunHandlerClient.new(tool)
 							end
 						end
 					end
-					if not CurrentModule.ShotgunPump then
-						HandleToFire = (HandleToFire == Handle and CurrentModule.DualFireEnabled) and Handle2 or Handle
-
-						if CurrentModule.AimAnimationsEnabled then
-							CurrentAimFireAnim = (
-								CurrentAimFireAnim == CurrentAnimTable.AimFireAnim
-								and CurrentModule.SecondaryFireAnimationEnabled
-							)
-									and CurrentAnimTable.AimSecondaryFireAnim
-								or CurrentAnimTable.AimFireAnim
-							CurrentAimFireAnimationSpeed = (
-								CurrentAimFireAnimationSpeed == CurrentModule.AimFireAnimationSpeed
-								and CurrentModule.SecondaryFireAnimationEnabled
-							)
-									and CurrentModule.AimSecondaryFireAnimationSpeed
-								or CurrentModule.AimFireAnimationSpeed
-						end
-
-						CurrentFireAnim = (
-							CurrentFireAnim == CurrentAnimTable.FireAnim
-							and CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and CurrentAnimTable.SecondaryFireAnim
-							or CurrentAnimTable.FireAnim
-						CurrentFireAnimationSpeed = (
-							CurrentFireAnimationSpeed == CurrentModule.FireAnimationSpeed
-							and CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and CurrentModule.SecondaryFireAnimationSpeed
-							or CurrentModule.FireAnimationSpeed
-					end
+					setUpFiringAnimation()
 					Thread:Wait(CurrentModule.FireRate)
 					if
 						CurrentModule.BatteryEnabled and CurrentVariables.Heat >= CurrentModule.MaxHeat
@@ -2893,19 +2672,7 @@ function GunHandlerClient.new(tool)
 		else
 			CommonVariables.Down = true
 			local IsChargedShot = false
-			if
-				CommonVariables.ActuallyEquipped
-				and CommonVariables.Enabled
-				and CommonVariables.Down
-				and not CommonVariables.Reloading
-				and not CommonVariables.Overheated
-				and not CommonVariables.HoldDown
-				and not CommonVariables.Switching
-				and not CommonVariables.Alting
-				and CurrentVariables.Mag > 0
-				and CurrentVariables.Heat < CurrentModule.MaxHeat
-				and Humanoid.Health > 0
-			then
+			if gunCanFire() then
 				CommonVariables.CanBeCooledDown = false
 				CommonVariables.Enabled = false
 				if CurrentAnimTable.InspectAnim and CurrentAnimTable.InspectAnim.IsPlaying then
@@ -2932,46 +2699,19 @@ function GunHandlerClient.new(tool)
 					end
 					Thread:Wait(CurrentModule.DelayBeforeFiring)
 				end
-				while
-					CommonVariables.ActuallyEquipped
-					and not CommonVariables.Reloading
-					and not CommonVariables.Overheated
-					and not CommonVariables.HoldDown
-					and (CommonVariables.Down or IsChargedShot)
-					and not CommonVariables.Switching
-					and not CommonVariables.Alting
-					and CurrentVariables.Mag > 0
-					and CurrentVariables.Heat < CurrentModule.MaxHeat
-					and Humanoid.Health > 0
-				do
+				while (CommonVariables.Down or IsChargedShot) and gunDoneCharging() do
 					IsChargedShot = false
-					for i = 1, ((CurrentModule.SelectiveFireEnabled and (CurrentVariables.FireModes[CurrentVariables.FireMode] ~= true and CurrentVariables.FireModes[CurrentVariables.FireMode] or 1)) or (CurrentModule.BurstFireEnabled and CurrentModule.BulletPerBurst) or 1) do
-						if not CommonVariables.ActuallyEquipped then
-							break
-						end
+					for _ = 1, ((CurrentModule.SelectiveFireEnabled and (CurrentVariables.FireModes[CurrentVariables.FireMode] ~= true and CurrentVariables.FireModes[CurrentVariables.FireMode] or 1)) or (CurrentModule.BurstFireEnabled and CurrentModule.BulletPerBurst) or 1) do
 						local CLDirections = {}
 						local SVDirections = {}
-						if not CurrentModule.ShotgunPump then
-							Thread:Spawn(function()
-								local StartTime = os.clock()
-								repeat
-									Thread:Wait()
-									if not CommonVariables.ActuallyEquipped then
-										break
-									end
-								until (os.clock() - StartTime) >= CurrentModule.BulletShellDelay
-								if CommonVariables.ActuallyEquipped then
-									EjectShell(
-										((Camera.Focus.p - Camera.CoordinateFrame.p).Magnitude <= 1) and HandleToFire
-									)
-								end
-							end)
+						local success = shotShellEjectSpawnLoop()
+						if not success then
+							break
 						end
 						CommonVariables.CurrentRate = CommonVariables.CurrentRate
 							+ CurrentModule.SmokeTrailRateIncrement
 						for ii = 1, (CurrentModule.ShotgunEnabled and CurrentModule.BulletPerShot or 1) do
-							local Position =
-								Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+							local Position = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 							local Spread = 0 -- Spread removed
 							local cframe = CFrame.new(
 								Tool.Handle:FindFirstChild("GunFirePoint" .. CurrentFireMode).WorldPosition,
@@ -3004,8 +2744,7 @@ function GunHandlerClient.new(tool)
 							table.insert(SVDirections, SvDirection)
 						end
 						if CurrentModule.SelfKnockback then
-							local KnockbackPosition =
-								Get3DPosition(PlayerGui:FindFirstChild("GunGUI").Crosshair.AbsolutePosition)
+							local KnockbackPosition = Get3DPosition(GunGUI.Crosshair.AbsolutePosition)
 							SelfKnockback(KnockbackPosition, Torso.Position)
 						end
 						Fire(HandleToFire, VMHandleToFire, CLDirections, SVDirections)
@@ -3019,56 +2758,33 @@ function GunHandlerClient.new(tool)
 							CurrentVariables.Heat = CurrentVariables.Heat
 								+ Random.new():NextInteger(CurrentModule.HeatPerFireMin, CurrentModule.HeatPerFireMax)
 						else
-							if
-								Module.MagCartridge
-								and not CurrentModule.BatteryEnabled
-								and CurrentModule.AmmoPerMag ~= math.huge
-							then
-								local Bullet = PlayerGui:FindFirstChild("GunGUI").MagCartridge
-									:FindFirstChild(CurrentVariables.Mag)
-								if Module.Ejection then
-									local Vel = Random2DDirection(
-										Module.Velocity,
-										math.random(Module.XMin, Module.XMax),
-										math.random(Module.YMin, Module.YMax)
-									) * (math.random() ^ 0.5)
-									CreateTwoDeeShell(
-										Bullet.Rotation,
-										Bullet.AbsolutePosition,
-										Bullet.AbsoluteSize,
-										Vel,
-										"shell",
-										Module.Shockwave
-									)
-								end
-							end
+							-- if
+							-- 	Module.MagCartridge
+							-- 	and not CurrentModule.BatteryEnabled
+							-- 	and CurrentModule.AmmoPerMag ~= math.huge
+							-- then
+							-- 	local Bullet = GunGUI.MagCartridge
+							-- 		:FindFirstChild(CurrentVariables.Mag)
+							-- 	if Module.Ejection then
+							-- 		local Vel = Random2DDirection(
+							-- 			Module.Velocity,
+							-- 			math.random(Module.XMin, Module.XMax),
+							-- 			math.random(Module.YMin, Module.YMax)
+							-- 		) * (math.random() ^ 0.5)
+							-- 		CreateTwoDeeShell(
+							-- 			Bullet.Rotation,
+							-- 			Bullet.AbsolutePosition,
+							-- 			Bullet.AbsoluteSize,
+							-- 			Vel,
+							-- 			"shell",
+							-- 			Module.Shockwave
+							-- 		)
+							-- 	end
+							-- end
 							CurrentVariables.Mag = CurrentVariables.Mag - 1
 						end
-						ChangeMagAndAmmo:FireServer(
-							CurrentFireMode,
-							CurrentVariables.Mag,
-							CurrentVariables.Ammo,
-							CurrentVariables.Heat
-						)
-						Thread:Spawn(function()
-							CurrentVariables.ShotID = CurrentVariables.ShotID + 1
-							local LastShotID = CurrentVariables.ShotID
-							local Interrupted = false
-							local CooldownTime = CurrentModule.TimeBeforeCooldown
-							local StartTime = os.clock()
-							repeat
-								Thread:Wait()
-								if LastShotID ~= CurrentVariables.ShotID then
-									break
-								end
-							until (os.clock() - StartTime) >= CooldownTime
-							if LastShotID ~= CurrentVariables.ShotID then
-								Interrupted = true
-							end
-							if not Interrupted then
-								CommonVariables.CanBeCooledDown = true
-							end
-						end)
+						updateServerChangeMagAndAmmo()
+						gunCoolDown()
 						UpdateGUI()
 						if CurrentModule.BurstFireEnabled and not CurrentModule.SelectiveFireEnabled then
 							local StartTime = os.clock()
@@ -3078,7 +2794,6 @@ function GunHandlerClient.new(tool)
 									break
 								end
 							until (os.clock() - StartTime) >= CurrentModule.BurstRate
-							--Thread:Wait(CurrentModule.BurstRate)
 						end
 						if CurrentModule.SelectiveFireEnabled then
 							local StartTime = os.clock()
@@ -3088,11 +2803,7 @@ function GunHandlerClient.new(tool)
 									break
 								end
 							until (os.clock() - StartTime) >= CurrentModule.BurstRates[CurrentVariables.FireMode]
-							--Thread:Wait(CurrentModule.BurstRates[CurrentVariables.FireMode])
 						end
-						--[[if not CommonVariables.ActuallyEquipped then
-						break
-					end]]
 						if CurrentModule.BatteryEnabled then
 							if CurrentVariables.Heat >= CurrentModule.MaxHeat then
 								break
@@ -3103,37 +2814,7 @@ function GunHandlerClient.new(tool)
 							end
 						end
 					end
-					if not CurrentModule.ShotgunPump then
-						HandleToFire = (HandleToFire == Handle and CurrentModule.DualFireEnabled) and Handle2 or Handle
-
-						if CurrentModule.AimAnimationsEnabled then
-							CurrentAimFireAnim = (
-								CurrentAimFireAnim == CurrentAnimTable.AimFireAnim
-								and CurrentModule.SecondaryFireAnimationEnabled
-							)
-									and CurrentAnimTable.AimSecondaryFireAnim
-								or CurrentAnimTable.AimFireAnim
-							CurrentAimFireAnimationSpeed = (
-								CurrentAimFireAnimationSpeed == CurrentModule.AimFireAnimationSpeed
-								and CurrentModule.SecondaryFireAnimationEnabled
-							)
-									and CurrentModule.AimSecondaryFireAnimationSpeed
-								or CurrentModule.AimFireAnimationSpeed
-						end
-
-						CurrentFireAnim = (
-							CurrentFireAnim == CurrentAnimTable.FireAnim
-							and CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and CurrentAnimTable.SecondaryFireAnim
-							or CurrentAnimTable.FireAnim
-						CurrentFireAnimationSpeed = (
-							CurrentFireAnimationSpeed == CurrentModule.FireAnimationSpeed
-							and CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and CurrentModule.SecondaryFireAnimationSpeed
-							or CurrentModule.FireAnimationSpeed
-					end
+					setUpFiringAnimation()
 					Thread:Wait(
 						CurrentModule.SelectiveFireEnabled and CurrentModule.FireRates[CurrentVariables.FireMode]
 							or CurrentModule.FireRate
@@ -3166,9 +2847,6 @@ function GunHandlerClient.new(tool)
 						end
 					end
 				end
-				--[[if HandleToFire[CurrentFireMode].FireSound.Playing and HandleToFire[CurrentFireMode].FireSound.Looped then
-				HandleToFire[CurrentFireMode].FireSound:Stop()
-			end]]
 				if CurrentModule.MinigunEnabled then
 					if
 						CommonVariables.ActuallyEquipped
@@ -3292,6 +2970,7 @@ function GunHandlerClient.new(tool)
 		if CommonVariables.CurrentRate >= CurrentModule.MaximumRate and CurrentModule.SmokeTrailEnabled then
 			Thread:Spawn(function()
 				SmokeTrail:StopEmission()
+				print(HandleToFire:FindFirstAncestorOfClass("Tool").Name)
 				SmokeTrail:EmitSmokeTrail(
 					HandleToFire["SmokeTrail" .. CurrentFireMode],
 					VMHandleToFire["SmokeTrail" .. CurrentFireMode],
@@ -3301,7 +2980,7 @@ function GunHandlerClient.new(tool)
 		end
 	end
 
-	local function OnMeleeSequenceTriggered(ShootingHandle, Range)
+	local function OnMeleeSequenceTriggered(ShootingHandle)
 		local Direction = ((ShootingHandle["MeleeHitPoint" .. CurrentFireMode].WorldCFrame * CFrame.new(
 			0,
 			0,
@@ -3371,7 +3050,6 @@ function GunHandlerClient.new(tool)
 				and (CurrentVMAnimTable.VMMeleeAttackAnim and CurrentVMAnimTable.VMMeleeAttackAnim.Length > 0)
 			then
 				local Connection
-				local VMConnection
 				if
 					CommonVariables.ActuallyEquipped
 					and CommonVariables.Enabled
@@ -3423,104 +3101,93 @@ function GunHandlerClient.new(tool)
 	end
 
 	local function OnUnequipping()
-		Empty:Stop()
-		if CurrentModule.ChargedShotAdvanceEnabled then
-			CommonVariables.Charging = false
-		end
-		if CurrentModule.HoldAndReleaseEnabled then
-			CommonVariables.Charged = false
-		end
-		CommonVariables.Equipped = false
-		CommonVariables.ActuallyEquipped = false
-
-		PlayerGui:FindFirstChild("GunGUI"):Destroy()
-
-		for _, conn in ipairs(connections) do
-			conn:Disconnect()
-		end
-		connections = {}
-
-		if Module.WalkSpeedRedutionEnabled then
-			Humanoid.WalkSpeed = Humanoid.WalkSpeed + Module.WalkSpeedRedution
-		else
-			Humanoid.WalkSpeed = Humanoid.WalkSpeed
-		end
-		UserInputService.MouseIconEnabled = true
-		RunService:UnbindFromRenderStep(BindToStepName)
-		for i, v in pairs(KeyframeConnections) do
-			v:Disconnect()
-			table.remove(KeyframeConnections, i)
-		end
-		table.clear(VMKeyframes)
-		for i, v in pairs(VMKeyframeConnections) do
-			v:Disconnect()
-			table.remove(VMKeyframeConnections, i)
-		end
-		LockedEntity = nil
-		if Beam then
-			Beam:Destroy()
-			Beam = nil
-		end
-		if Attach0 then
-			Attach0:Destroy()
-			Attach0 = nil
-		end
-		if Attach1 then
-			Attach1:Destroy()
-			Attach1 = nil
-		end
-		for _, a in pairs(CurrentAnimTable) do
-			if a and a.IsPlaying then
-				a:Stop()
+		Thread:Spawn(function()
+			print(Tool.Name .. " Stopped")
+			Empty:Stop()
+			if CurrentModule.ChargedShotAdvanceEnabled then
+				CommonVariables.Charging = false
 			end
-		end
-
-		for _, s in pairs(Handle[CurrentFireMode]:GetChildren()) do
-			if s:IsA("Sound") and s.IsPlaying then
-				s:Stop()
+			if CurrentModule.HoldAndReleaseEnabled then
+				CommonVariables.Charged = false
 			end
-		end
-		if Handle2 then
-			for _, s in pairs(Handle2[CurrentFireMode]:GetChildren()) do
+			CommonVariables.Equipped = false
+			CommonVariables.ActuallyEquipped = false
+
+			GunGUI:Destroy()
+
+			for _, conn in ipairs(connections) do
+				conn:Disconnect()
+			end
+			connections = {}
+
+			if Module.WalkSpeedRedutionEnabled then
+				Humanoid.WalkSpeed = Humanoid.WalkSpeed + Module.WalkSpeedRedution
+			else
+				Humanoid.WalkSpeed = Humanoid.WalkSpeed
+			end
+			UserInputService.MouseIconEnabled = true
+			RunService:UnbindFromRenderStep(BindToStepName)
+			for i, v in pairs(KeyframeConnections) do
+				v:Disconnect()
+				table.remove(KeyframeConnections, i)
+			end
+			table.clear(VMKeyframes)
+			for i, v in pairs(VMKeyframeConnections) do
+				v:Disconnect()
+				table.remove(VMKeyframeConnections, i)
+			end
+			LockedEntity = nil
+			if Beam then
+				Beam:Destroy()
+				Beam = nil
+			end
+			if Attach0 then
+				Attach0:Destroy()
+				Attach0 = nil
+			end
+			if Attach1 then
+				Attach1:Destroy()
+				Attach1 = nil
+			end
+			for _, a in pairs(CurrentAnimTable) do
+				if a and a.IsPlaying then
+					a:Stop()
+				end
+			end
+
+			for _, s in pairs(Handle[CurrentFireMode]:GetChildren()) do
 				if s:IsA("Sound") and s.IsPlaying then
 					s:Stop()
 				end
 			end
-		end
-		if CommonVariables.AimDown then
-			TweenService:Create(
-				Camera,
-				TweenInfo.new(
-					CurrentModule.TweenLengthNAD,
-					CurrentModule.EasingStyleNAD,
-					CurrentModule.EasingDirectionNAD
-				),
-				{ FieldOfView = 70 }
-			):Play()
-			--SetCrossScale(1)
+			if Handle2 then
+				for _, s in pairs(Handle2[CurrentFireMode]:GetChildren()) do
+					if s:IsA("Sound") and s.IsPlaying then
+						s:Stop()
+					end
+				end
+			end
+			if CommonVariables.AimDown then
+				TweenService:Create(
+					Camera,
+					TweenInfo.new(
+						CurrentModule.TweenLengthNAD,
+						CurrentModule.EasingStyleNAD,
+						CurrentModule.EasingDirectionNAD
+					),
+					{ FieldOfView = 70 }
+				):Play()
+				--SetCrossScale(1)
 
-			CommonVariables.Scoping = false
-			Player.CameraMode = Enum.CameraMode.Classic
-			UserInputService.MouseDeltaSensitivity = CommonVariables.InitialSensitivity
-			CommonVariables.AimDown = false
-		end
+				CommonVariables.Scoping = false
+				Player.CameraMode = Enum.CameraMode.Classic
+				UserInputService.MouseDeltaSensitivity = CommonVariables.InitialSensitivity
+				CommonVariables.AimDown = false
+			end
 
-		Viewmodel = nil
-		FakeCamera = nil
+			FakeCamera = nil
+		end)
 	end
-
-	--aiming
-
-	--[[local AimButton = PlayerGui:WaitForChild("GunGUI").MobileButtons.AimButton
-local FireButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.FireButton
-local HoldDownButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.HoldDownButton
-local InspectButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.InspectButton
-local ReloadButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.ReloadButton
-local SwitchButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.SwitchButton
-local MeleeButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.MeleeButton
-local AltButton = PlayerGui:FindFirstChild("GunGUI").MobileButtons.AltButton
-local CrossFrame = PlayerGui:FindFirstChild("GunGUI").Crosshair.Main
-local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(CrossFrame, "HL"), game.WaitForChild(CrossFrame, "VD"), game.WaitForChild(CrossFrame, "VU")}]]
 
 	UserInputService.InputBegan:Connect(function(Input, GameProcessed)
 		if GameProcessed then
@@ -3641,7 +3308,7 @@ local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(Cross
 						end
 					until (os.clock() - StartTime) >= CurrentModule.ScopeDelay
 					if CommonVariables.ActuallyEquipped and CommonVariables.AimDown then
-						local ZoomSound = PlayerGui:FindFirstChild("GunGUI").Scope.ZoomSound:Clone()
+						local ZoomSound = GunGUI.Scope.ZoomSound:Clone()
 						ZoomSound.Parent = Player.PlayerGui
 						ZoomSound:Play()
 						ZoomSound.Ended:Connect(function()
@@ -3713,7 +3380,7 @@ local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(Cross
 			existingGunGUI:Destroy()
 		end
 
-		local GunGUI = GUI:Clone()
+		GunGUI = GUI:Clone()
 		GunGUI.Parent = Player.PlayerGui
 
 		-- Center the crosshair on the cursor by setting AnchorPoint to center
@@ -3722,7 +3389,6 @@ local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(Cross
 		end
 
 		if UserInputService.TouchEnabled then
-			local GunGUI = Player.PlayerGui:WaitForChild("GunGUI")
 			local MobileButtons = GunGUI:WaitForChild("MobileButtons")
 			MobileButtons.Visible = true
 
@@ -3741,30 +3407,13 @@ local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(Cross
 			CurrentFireAnim:Stop()
 			Empty:Play()
 		end
-		-- if Module.MagCartridge and not CurrentModule.BatteryEnabled and CurrentModule.AmmoPerMag ~= math.huge then
-		-- 	for i = 1, CurrentModule.AmmoPerMag do
-		-- 		local Bullet = PlayerGui:FindFirstChild("GunGUI").MagCartridge.UIGridLayout.Template:Clone()
-		-- 		Bullet.Name = i
-		-- 		Bullet.LayoutOrder = i
-		-- 		Bullet.Parent = PlayerGui:FindFirstChild("GunGUI").MagCartridge
-		-- 	end
-		-- end
 
 		CommonVariables.Equipped = true
-		--[[if JumpButton then
-		AimButton:Clone().Parent = JumpButton
-		AimButton:Clone().Parent = JumpButton
-		AimButton:Clone().Parent = JumpButton
-		AimButton:Clone().Parent = JumpButton
-		AimButton:Clone().Parent = JumpButton
-		AimButton:Clone().Parent = JumpButton
-		AimButton:Clone().Parent = JumpButton
-	end]]
 		if CurrentModule.AmmoPerMag ~= math.huge and CurrentModule.MaxHeat ~= math.huge then
-			PlayerGui:FindFirstChild("GunGUI").Frame.Visible = true
+			GunGUI.Frame.Visible = true
 		end
 		Player.CharacterRemoving:Connect(function()
-			PlayerGui:FindFirstChild("GunGUI"):Destroy()
+			GunGUI:Destroy()
 		end)
 		UpdateGUI()
 
@@ -3776,8 +3425,6 @@ local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(Cross
 				error('"Dual" setting is enabled but "VMHandle2" is missing!')
 			end
 		end
-
-		--
 
 		Handle[CurrentFireMode].EquippedSound:Play()
 		if Module.WalkSpeedRedutionEnabled then
@@ -3852,11 +3499,18 @@ local CrossParts = {game.WaitForChild(CrossFrame, "HR"), game.WaitForChild(Cross
 	end)
 
 	Tool.Unequipped:Connect(OnUnequipping)
-
+	Character.Destroying:Connect(OnUnequipping)
 	Humanoid.Died:Connect(OnUnequipping)
 
 	Tool.AncestryChanged:Connect(function()
-		if not Tool:IsDescendantOf(game) then
+		if
+			not Tool:IsDescendantOf(game)
+			or Tool:IsDescendantOf(Workspace) and (not Tool:FindFirstAncestorOfClass("Model") or not Players:GetPlayerFromCharacter(
+				Tool:FindFirstAncestorOfClass("Model")
+			))
+			or not Tool:IsDescendantOf(Workspace)
+		then
+			print("Parent Change")
 			OnUnequipping()
 		end
 	end)

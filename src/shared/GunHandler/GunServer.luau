@@ -2,7 +2,6 @@ local GunHanlderServer = {}
 
 function GunHanlderServer.new(Tool)
 	local Workspace = game:GetService("Workspace")
-	local Players = game:GetService("Players")
 	local Debris = game:GetService("Debris")
 
 	local Tool = Tool
@@ -208,7 +207,7 @@ function GunHanlderServer.new(Tool)
 		end
 	end
 
-	ChangeMagAndAmmo.OnServerEvent:Connect(function(Player, Id, Mag, Ammo, Heat)
+	ChangeMagAndAmmo.OnServerEvent:Connect(function(_, Id, Mag, Ammo, Heat)
 		if ValueFolder:FindFirstChild(Id) then
 			ValueFolder[Id].Mag.Value = Mag
 			ValueFolder[Id].Ammo.Value = Ammo
