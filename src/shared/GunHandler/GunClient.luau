@@ -42,6 +42,7 @@ function ClientGunHandler.new(tool: Tool)
 
 	--// Variables
 	self.Tool = tool
+	self.LastHit = 0
 	self.AnimationFolder = self.Tool:WaitForChild("AnimationFolder")
 	self.ValueFolder = self.Tool:WaitForChild("ValueFolder")
 	self.Player = Players.LocalPlayer
@@ -56,7 +57,8 @@ function ClientGunHandler.new(tool: Tool)
 	self.GunGUI = nil
 	self.Empty = self.Humanoid:LoadAnimation(self.Tool:FindFirstChild("Empty"))
 	self.Handle = self.Tool:WaitForChild(self.Module.PrimaryHandle)
-
+	self.BeamEnd = self.Tool:FindFirstChild("End", true) :: Attachment?
+	self.BeamOrigin = self.Tool:FindFirstChild("Origin", true) :: Attachment?
 	--// connections
 	self.MarkerEvent = self.Tool:WaitForChild("MarkerEvent")
 	self.ChangeMagAndAmmo = self.Tool:WaitForChild("ChangeMagAndAmmo")
@@ -100,8 +102,6 @@ function ClientGunHandler.new(tool: Tool)
 		HoldDown = false,
 		Reloading = false,
 		Inspecting = false,
-		Charging = false,
-		Charged = false,
 		Overheated = false,
 		CanBeCooledDown = true,
 		Switching = false,
@@ -179,7 +179,6 @@ function ClientGun:LoadAnims()
 			Heat = (Folder:FindFirstChild("Heat") :: IntValue).Value,
 			MaxAmmo = self.SettingModules[i].MaxAmmo,
 			ElapsedCooldownTime = 0,
-			ChargeLevel = 0,
 			FireModes = self.SettingModules[i].FireModes,
 			FireMode = 1,
 			ShotsForDepletion = 0,
@@ -215,7 +214,6 @@ function ClientGun:LoadAnims()
 		Aiming = Color3.fromRGB(150, 150, 150), -- Gray when aiming at someone
 		Hit = Color3.fromRGB(199, 2, 2), -- Red when shot someone
 	}
-	self.CurrentCrosshairState = "Idle"
 	self.CrosshairHitResetTime = 0.15 -- Time in seconds for red color to show after hitting
 	-- Crosshair hit animation function
 	-- Store original values and active tweens to prevent rapid fire bugs
@@ -288,10 +286,7 @@ function ClientGun:LoadAnims()
 			AnimTable.AimSecondaryFireAnim = v.ThirdPerson:WaitForChild("AimSecondaryFireAnim")
 			AnimTable.AimSecondaryFireAnim = self.Humanoid:LoadAnimation(AnimTable.AimSecondaryFireAnim)
 		end
-		if self.SettingModules[i].AimAnimationsEnabled and self.SettingModules[i].AimChargingAnimationID ~= nil then
-			AnimTable.AimChargingAnim = v.ThirdPerson:WaitForChild("AimChargingAnim")
-			AnimTable.AimChargingAnim = self.Humanoid:LoadAnimation(AnimTable.AimChargingAnim)
-		end
+
 		if
 			self.SettingModules[i].TacticalReloadAnimationEnabled
 			and self.SettingModules[i].TacticalReloadAnimationID ~= nil
@@ -318,10 +313,6 @@ function ClientGun:LoadAnims()
 		if self.SettingModules[i].MinigunRevDownAnimationID ~= nil then
 			AnimTable.MinigunRevDownAnim = v.ThirdPerson:WaitForChild("MinigunRevDownAnim")
 			AnimTable.MinigunRevDownAnim = self.Humanoid:LoadAnimation(AnimTable.MinigunRevDownAnim)
-		end
-		if self.SettingModules[i].ChargingAnimationEnabled and self.SettingModules[i].ChargingAnimationID ~= nil then
-			AnimTable.ChargingAnim = v.ThirdPerson:WaitForChild("ChargingAnim")
-			AnimTable.ChargingAnim = self.Humanoid:LoadAnimation(AnimTable.ChargingAnim)
 		end
 		if self.SettingModules[i].SelectiveFireEnabled and self.SettingModules[i].SwitchAnimationID ~= nil then
 			AnimTable.SwitchAnim = v.ThirdPerson:WaitForChild("SwitchAnim")
@@ -433,7 +424,7 @@ end
 
 function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	-- Check cooldown first to prevent spam
-	local currentTime = tick()
+	local currentTime = elapsedTime()
 	if currentTime - self.LastFlingTime < self.FLING_COOLDOWN then
 		return
 	end
@@ -465,12 +456,7 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 
 				-- Show red crosshair when hitting dead body
 				self:SetCrosshairColor(self.CrossHairColors.Hit)
-				self.CurrentCrosshairState = "Hit"
-				task.delay(self.CrosshairHitResetTime, function()
-					if self.CurrentCrosshairState == "Hit" then
-						self.CurrentCrosshairState = "Idle"
-					end
-				end)
+				self.LastHit = elapsedTime()
 
 				-- Play screen effect
 				self:PlayDeadBodyHitEffect()
@@ -489,17 +475,8 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	end
 end
 
-function ClientGun:AddressTableValue(v1, v2)
-	if v1 ~= nil and self.CurrentModule.ChargedShotAdvanceEnabled then
-		return (
-			(self.CurrentVariables.ChargeLevel == 1 and v1.Level1)
-			or (self.CurrentVariables.ChargeLevel == 2 and v1.Level2)
-			or (self.CurrentVariables.ChargeLevel == 3 and v1.Level3)
-			or v2
-		)
-	else
-		return v2
-	end
+function ClientGun:AddressTableValue(v2)
+	return v2
 end
 
 function ClientGun:PopulateHumanoids(mdl)
@@ -634,16 +611,6 @@ function ClientGun:UpdateGUI()
 	self.GunGUI.Frame.Heat.Overheated.Visible = self.CommonVariables.Overheated
 	self.GunGUI.Frame.Heat.FireMode.Visible = self.CurrentModule.SelectiveFireEnabled
 
-	self.GunGUI.ChargeBar.Visible = (
-		self.CurrentModule.ChargedShotAdvanceEnabled or self.CurrentModule.HoldAndReleaseEnabled
-	)
-	self.GunGUI.ChargeBar.Level1.Visible = not self.CurrentModule.HoldAndReleaseEnabled
-	self.GunGUI.ChargeBar.Level2.Visible = not self.CurrentModule.HoldAndReleaseEnabled
-	self.GunGUI.ChargeBar.Level1.Position =
-		UDim2.fromScale(self.CurrentModule.Level1ChargingTime / self.CurrentModule.AdvancedChargingTime, 0.5)
-	self.GunGUI.ChargeBar.Level2.Position =
-		UDim2.fromScale(self.CurrentModule.Level2ChargingTime / self.CurrentModule.AdvancedChargingTime, 0.5)
-
 	self.GunGUI.Frame.Mag.Visible = not self.CurrentModule.BatteryEnabled
 	self.GunGUI.Frame.Ammo.Visible = self.CurrentModule.LimitedAmmoEnabled
 	self.GunGUI.Frame.Heat.Visible = self.CurrentModule.BatteryEnabled
@@ -665,7 +632,8 @@ function ClientGun:UpdateGUI()
 end
 
 function ClientGun:RenderMouse()
-	self.GunGUI.Crosshair.Main.Visible = false
+	self.GunGUI.Crosshair.Main.Visible = true
+	self.Scope.t = Vector3.new(600, 200, 0)
 
 	if UserInputService.MouseEnabled and UserInputService.KeyboardEnabled then --For pc version
 		self.GunGUI.Crosshair.Position = UDim2.fromOffset(self.Mouse.X, self.Mouse.Y)
@@ -678,7 +646,7 @@ function ClientGun:RenderMouse()
 	end
 
 	if
-		self:AddressTableValue(self.CurrentModule.ChargeAlterTable.Homing, self.CurrentModule.Homing)
+		self:AddressTableValue(self.CurrentModule.Homing)
 		and self.CurrentModule.LockOnOnHovering
 		and not self.CurrentModule.HitscanMode
 	then
@@ -690,14 +658,12 @@ function ClientGun:RenderMouse()
 		end
 	end
 
-	-- Update crosshair color based on state (only if not in hit state)
-	if self.CurrentCrosshairState ~= "Hit" then
+	-- Update Crosshair if not hitting someone
+	if elapsedTime() - self.LastHit - self.CrosshairHitResetTime >= 0 then
 		if self:IsAimingAtPlayer() then
 			self:SetCrosshairColor(self.CrossHairColors.Aiming)
-			self.CurrentCrosshairState = "Aiming"
 		else
 			self:SetCrosshairColor(self.CrossHairColors.Idle)
-			self.CurrentCrosshairState = "Idle"
 		end
 	end
 end
@@ -729,16 +695,9 @@ function ClientGun:RenderMotion()
 				self.Attach0,
 				self.Attach1,
 				self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-				direction
-					* self:AddressTableValue(
-						self.CurrentModule.ChargeAlterTable.BulletSpeed,
-						self.CurrentModule.BulletSpeed
-					),
+				direction * self:AddressTableValue(self.CurrentModule.BulletSpeed),
 				3,
-				self:AddressTableValue(
-					self.CurrentModule.ChargeAlterTable.BulletAcceleration,
-					self.CurrentModule.BulletAcceleration
-				)
+				self:AddressTableValue(self.CurrentModule.BulletAcceleration)
 			)
 		end
 	end
@@ -946,14 +905,8 @@ function ClientGun:MarkHit(ClientModule, IsHeadshot)
 	self:PlayCrosshairHitAnimation(IsHeadshot)
 
 	-- Set crosshair to red temporarily when hitting someone
-	self.CurrentCrosshairState = "Hit"
 	self:SetCrosshairColor(self.CrossHairColors.Hit)
-	task.delay(self.CrosshairHitResetTime, function()
-		if self.CurrentCrosshairState == "Hit" then
-			self.CurrentCrosshairState = "Idle" -- Will be updated to correct state in next RenderMouse call
-		end
-	end)
-	--end)
+	self.LastHit = elapsedTime()
 end
 
 function ClientGun:EjectShell(ShootingHandle)
@@ -1006,7 +959,7 @@ end
 
 function ClientGun:RecoilCamera()
 	if self.CurrentModule.CameraRecoilingEnabled then
-		local Recoil = self:AddressTableValue(self.CurrentModule.ChargeAlterTable.Recoil, self.CurrentModule.Recoil)
+		local Recoil = self:AddressTableValue(self.CurrentModule.Recoil)
 		local CurrentRecoil = Recoil
 		local RecoilX = math.rad(
 			CurrentRecoil
@@ -1046,18 +999,9 @@ function ClientGun:RecoilCamera()
 end
 
 function ClientGun:SelfKnockback(p1, p2)
-	local SelfKnockbackPower = self:AddressTableValue(
-		self.CurrentModule.ChargeAlterTable.SelfKnockbackPower,
-		self.CurrentModule.SelfKnockbackPower
-	)
-	local SelfKnockbackMultiplier = self:AddressTableValue(
-		self.CurrentModule.ChargeAlterTable.SelfKnockbackMultiplier,
-		self.CurrentModule.SelfKnockbackMultiplier
-	)
-	local SelfKnockbackRedution = self:AddressTableValue(
-		self.CurrentModule.ChargeAlterTable.SelfKnockbackRedution,
-		self.CurrentModule.SelfKnockbackRedution
-	)
+	local SelfKnockbackPower = self:AddressTableValue(self.CurrentModule.SelfKnockbackPower)
+	local SelfKnockbackMultiplier = self:AddressTableValue(self.CurrentModule.SelfKnockbackMultiplier)
+	local SelfKnockbackRedution = self:AddressTableValue(self.CurrentModule.SelfKnockbackRedution)
 	local Power = self.Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall
 			and SelfKnockbackPower * SelfKnockbackMultiplier * (1 - SelfKnockbackRedution)
 		or SelfKnockbackPower * SelfKnockbackMultiplier
@@ -1092,66 +1036,6 @@ function ClientGun:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, 
 	local BloodEffectFolder = VisualEffects2.BloodEffect
 	local ExplosionEffectFolder = VisualEffects2.ExplosionEffect
 	local GoreEffectFolder = VisualEffects2.GoreEffect
-	if self.CurrentModule.ChargedShotAdvanceEnabled then
-		if self.CurrentVariables.ChargeLevel == 1 then
-			if ShootingHandle[self.CurrentFireMode]:FindFirstChild("FireSoundsLvl1") then
-				FireSounds = ShootingHandle[self.CurrentFireMode].FireSoundsLvl1
-			end
-			if VisualEffects2:FindFirstChild("MuzzleEffectLvl1") then
-				MuzzleFolder = VisualEffects2.MuzzleEffectLvl1
-			end
-			if VisualEffects2:FindFirstChild("HitEffectLvl1") then
-				HitEffectFolder = VisualEffects2.HitEffectLvl1
-			end
-			if VisualEffects2:FindFirstChild("BloodEffectLvl1") then
-				BloodEffectFolder = VisualEffects2.BloodEffectLvl1
-			end
-			if VisualEffects2:FindFirstChild("ExplosionEffectLvl1") then
-				ExplosionEffectFolder = VisualEffects2.ExplosionEffectLvl1
-			end
-			if VisualEffects2:FindFirstChild("GoreEffectLvl1") then
-				GoreEffectFolder = VisualEffects2.GoreEffectLvl1
-			end
-		elseif self.CurrentVariables.ChargeLevel == 2 then
-			if ShootingHandle[self.CurrentFireMode]:FindFirstChild("FireSoundsLvl2") then
-				FireSounds = ShootingHandle[self.CurrentFireMode].FireSoundsLvl2
-			end
-			if VisualEffects2:FindFirstChild("MuzzleEffectLvl2") then
-				MuzzleFolder = VisualEffects2.MuzzleEffectLvl2
-			end
-			if VisualEffects2:FindFirstChild("HitEffectLvl2") then
-				HitEffectFolder = VisualEffects2.HitEffectLvl2
-			end
-			if VisualEffects2:FindFirstChild("BloodEffectLvl2") then
-				BloodEffectFolder = VisualEffects2.BloodEffectLvl2
-			end
-			if VisualEffects2:FindFirstChild("ExplosionEffectLvl2") then
-				ExplosionEffectFolder = VisualEffects2.ExplosionEffectLvl2
-			end
-			if VisualEffects2:FindFirstChild("GoreEffectLvl2") then
-				GoreEffectFolder = VisualEffects2.GoreEffectLvl2
-			end
-		elseif self.CurrentVariables.ChargeLevel == 3 then
-			if ShootingHandle[self.CurrentFireMode]:FindFirstChild("FireSoundsLvl3") then
-				FireSounds = ShootingHandle[self.CurrentFireMode].FireSoundsLvl3
-			end
-			if VisualEffects2:FindFirstChild("MuzzleEffectLvl3") then
-				MuzzleFolder = VisualEffects2.MuzzleEffectLvl3
-			end
-			if VisualEffects2:FindFirstChild("HitEffectLvl3") then
-				HitEffectFolder = VisualEffects2.HitEffectLvl3
-			end
-			if VisualEffects2:FindFirstChild("BloodEffectLvl3") then
-				BloodEffectFolder = VisualEffects2.BloodEffectLvl3
-			end
-			if VisualEffects2:FindFirstChild("ExplosionEffectLvl3") then
-				ExplosionEffectFolder = VisualEffects2.ExplosionEffectLvl3
-			end
-			if VisualEffects2:FindFirstChild("GoreEffectLvl3") then
-				GoreEffectFolder = VisualEffects2.GoreEffectLvl3
-			end
-		end
-	end
 	local Tracks = FireSounds:GetChildren()
 	local Chosen = math.random(1, #Tracks)
 	local Track = Tracks[Chosen]
@@ -1196,7 +1080,6 @@ function ClientGun:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, 
 			BloodEffectFolder = BloodEffectFolder,
 			ExplosionEffectFolder = ExplosionEffectFolder,
 			GoreEffect = GoreEffectFolder,
-			ChargeLevel = self.CurrentVariables.ChargeLevel,
 			LockedEntity = self.LockedEntity,
 		},
 		true
@@ -1619,10 +1502,7 @@ function ClientGun:OnAlting()
 						self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
 						Vector3.new(),
 						3,
-						self:AddressTableValue(
-							self.CurrentModule.ChargeAlterTable.BulletAcceleration,
-							self.CurrentModule.BulletAcceleration
-						)
+						self:AddressTableValue(self.CurrentModule.BulletAcceleration)
 					)
 				end
 
@@ -1647,85 +1527,6 @@ function ClientGun:OnAlting()
 				end
 			end
 		end
-	end
-end
-
-function ClientGun:chargeEffect()
-	self.CommonVariables.CanBeCooledDown = false
-	self.CommonVariables.Enabled = false
-	if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
-		self.CurrentAnimTable.InspectAnim:Stop()
-	end
-
-	if self.CurrentAnimTable.ChargingAnim and not self.CurrentAnimTable.ChargingAnim.IsPlaying then
-		self.CurrentAnimTable.ChargingAnim:Play(nil, nil, self.CurrentModule.ChargingAnimationSpeed)
-	end
-	local ChargingSound = self.HandleToFire[self.CurrentFireMode]:FindFirstChild("ChargingSound")
-	local StartTime = os.clock()
-	while true do
-		local DeltaTime = os.clock() - StartTime
-		if self.CurrentVariables.ChargeLevel == 0 and DeltaTime >= self.CurrentModule.Level1ChargingTime then
-			self.CurrentVariables.ChargeLevel = 1
-			self.GunGUI.ChargeBar.ChargeLevel1:Play()
-		elseif self.CurrentVariables.ChargeLevel == 1 and DeltaTime >= self.CurrentModule.Level2ChargingTime then
-			self.CurrentVariables.ChargeLevel = 2
-			self.GunGUI.ChargeBar.ChargeLevel2:Play()
-		elseif self.CurrentVariables.ChargeLevel == 2 and DeltaTime >= self.CurrentModule.AdvancedChargingTime then
-			self.CurrentVariables.ChargeLevel = 3
-			self.GunGUI.ChargeBar.ChargeLevel3:Play()
-			self.GunGUI.ChargeBar.Shine.UIGradient.Offset = Vector2.new(-1, 0)
-			TweenService:Create(
-				self.GunGUI.ChargeBar.Shine.UIGradient,
-				TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-				{ Offset = Vector2.new(1, 0) }
-			):Play()
-		end
-		local ChargePercent = math.min(DeltaTime / self.CurrentModule.AdvancedChargingTime, 1)
-		if ChargePercent < 0.5 then --Fade from red to yellow then to green
-			self.GunGUI.ChargeBar.Fill.BackgroundColor3 = Color3.new(1, ChargePercent * 2, 0)
-		else
-			self.GunGUI.ChargeBar.Fill.BackgroundColor3 = Color3.new(1 - ((ChargePercent - 0.5) / 0.5), 1, 0)
-		end
-		self.GunGUI.ChargeBar.Fill.Size = UDim2.new(ChargePercent, 0, 1, 0)
-		if ChargingSound then
-			if not ChargingSound.Playing then
-				ChargingSound:Play()
-			end
-			if self.CurrentModule.ChargingSoundIncreasePitch then
-				ChargingSound.PlaybackSpeed = self.CurrentModule.ChargingSoundPitchRange[1]
-					+ (
-						ChargePercent
-						* (
-							self.CurrentModule.ChargingSoundPitchRange[2]
-							- self.CurrentModule.ChargingSoundPitchRange[1]
-						)
-					)
-			end
-		end
-		self.Thread:Wait()
-		if not self.CommonVariables.ActuallyEquipped or not self.CommonVariables.Charging then
-			break
-		end
-	end
-	if self.CurrentAnimTable.AimChargingAnim and self.CurrentAnimTable.AimChargingAnim.IsPlaying then
-		self.CurrentAnimTable.AimChargingAnim:Stop(0)
-	end
-	if self.CurrentAnimTable.ChargingAnim and self.CurrentAnimTable.ChargingAnim.IsPlaying then
-		self.CurrentAnimTable.ChargingAnim:Stop(0)
-	end
-
-	self.GunGUI.ChargeBar.Fill.Size = UDim2.new(0, 0, 1, 0)
-	if ChargingSound then
-		if ChargingSound.Playing then
-			ChargingSound:Stop()
-		end
-		if self.CurrentModule.ChargingSoundIncreasePitch then
-			ChargingSound.PlaybackSpeed = self.CurrentModule.ChargingSoundPitchRange[1]
-		end
-	end
-	if not self.CommonVariables.ActuallyEquipped then
-		self.CurrentVariables.ChargeLevel = 0
-		self.CommonVariables.Enabled = true
 	end
 end
 
@@ -1812,7 +1613,6 @@ end
 function ClientGun:gunDoneCharging()
 	return self.CommonVariables.ActuallyEquipped
 		and not self.CommonVariables.Enabled
-		and not self.CommonVariables.Charging
 		and not self.CommonVariables.Reloading
 		and not self.CommonVariables.Overheated
 		and not self.CommonVariables.HoldDown
@@ -1837,726 +1637,257 @@ function ClientGun:gunCanFire()
 end
 
 function ClientGun:OnFiring()
-	-- this is for charging up your gun
-	if self.CurrentModule.ChargedShotAdvanceEnabled and not self.CurrentModule.SelectiveFireEnabled then
-		self.CommonVariables.Charging = true
-		if self:gunCanFire() then
-			self:chargeEffect()
-			if self:gunDoneCharging() then
-				for _ = 1, (self.CurrentModule.BurstFireEnabled and (self:AddressTableValue(
-					self.CurrentModule.ChargeAlterTable.BulletPerBurst,
-					self.CurrentModule.BulletPerBurst
-				)) or 1) do
-					local CLDirections = {}
-					local SVDirections = {}
-					local success = self:shotShellEjectSpawnLoop()
-					if not success then
-						break
-					end
-					self.CommonVariables.CurrentRate = self.CommonVariables.CurrentRate
-						+ self.CurrentModule.SmokeTrailRateIncrement
-					for ii = 1, (self.CurrentModule.ShotgunEnabled and (self:AddressTableValue(
-						self.CurrentModule.ChargeAlterTable.BulletPerShot,
-						self.CurrentModule.BulletPerShot
-					)) or 1) do
-						local Position = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
-						local CurrentSpread = 0 -- Spread removed
-						local cframe = (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1
-								and CFrame.new(
-									self.VMHandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-									Position
-								)
-							or CFrame.new(
-								self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-								Position
-							)
-						local svCframe = CFrame.new(
-							self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-							Position
-						)
-
-						if self.CurrentModule.ShotgunPattern and self.CurrentModule.SpreadPattern then
-							local X, Y =
-								self.CurrentModule.SpreadPattern[ii][1], self.CurrentModule.SpreadPattern[ii][2]
-							local SpreadPattern = CFrame.Angles(
-								math.rad(self.CurrentSpread * Y / 50),
-								math.rad(CurrentSpread * X / 50),
-								0
-							)
-							cframe = cframe * SpreadPattern
-							svCframe = svCframe * SpreadPattern
-						else
-							local SpreadNormal = CFrame.Angles(
-								math.rad(math.random(-self.CurrentSpread, CurrentSpread) / 50),
-								math.rad(math.random(-self.CurrentSpread, CurrentSpread) / 50),
-								0
-							)
-							cframe = cframe * SpreadNormal
-							svCframe = svCframe * SpreadNormal
-						end
-
-						local ClDirection = cframe.LookVector
-						local SvDirection = svCframe.LookVector
-						table.insert(CLDirections, ClDirection)
-						table.insert(SVDirections, SvDirection)
-					end
-					if
-						self:AddressTableValue(
-							self.CurrentModule.ChargeAlterTable.SelfKnockback,
-							self.CurrentModule.SelfKnockback
-						)
-					then
-						local KnockbackPosition = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
-						self:SelfKnockback(KnockbackPosition, self.Torso.Position)
-					end
-					self:Fire(self.HandleToFire, self.VMHandleToFire, CLDirections, SVDirections)
-					if self.CurrentModule.BatteryEnabled then
-						self.CurrentVariables.ShotsForDepletion = self.CurrentVariables.ShotsForDepletion + 1
-						if self.CurrentVariables.ShotsForDepletion >= self.CurrentModule.ShotsForDepletion then
-							self.CurrentVariables.ShotsForDepletion = 0
-							self.CurrentVariables.Ammo = self.CurrentVariables.Ammo
-								- Random.new():NextInteger(
-									self:AddressTableValue(
-										self.CurrentModule.ChargeAlterTable.MinDepletion,
-										self.CurrentModule.MinDepletion
-									),
-									self:AddressTableValue(
-										self.CurrentModule.ChargeAlterTable.MaxDepletion,
-										self.CurrentModule.MaxDepletion
-									)
-								)
-						end
-						self.CurrentVariables.Heat = self.CurrentVariables.Heat
-							+ Random.new():NextInteger(
-								self:AddressTableValue(
-									self.CurrentModule.ChargeAlterTable.HeatPerFireMin,
-									self.CurrentModule.HeatPerFireMin
-								),
-								self:AddressTableValue(
-									self.CurrentModule.ChargeAlterTable.HeatPerFireMax,
-									self.CurrentModule.HeatPerFireMax
-								)
-							)
-					else
-						self.CurrentVariables.Mag = self.CurrentVariables.Mag - 1
-					end
-
-					self:updateServerChangeMagAndAmmo()
-					self:gunCoolDown()
-					self:UpdateGUI()
-					if self.CurrentModule.BurstFireEnabled then
-						local BurstRate = self:AddressTableValue(
-							self.CurrentModule.ChargeAlterTable.BurstRate,
-							self.CurrentModule.BurstRate
-						)
-						local StartTime = os.clock()
-						repeat
-							self.Thread:Wait()
-							if not self.CommonVariables.ActuallyEquipped then
-								break
-							end
-						until (os.clock() - StartTime) >= BurstRate
-					end
-					if self.CurrentModule.BatteryEnabled then
-						if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
-							break
-						end
-					else
-						if self.CurrentVariables.Mag <= 0 then
-							break
-						end
-					end
-				end
-				self:setUpFiringAnimation()
-				self.Thread:Wait(
-					self:AddressTableValue(self.CurrentModule.ChargeAlterTable.FireRate, self.CurrentModule.FireRate)
-				)
-				if
-					self.CurrentModule.BatteryEnabled and self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat
-					or self.CurrentVariables.Mag <= 0
-				then
-					if
-						self.CommonVariables.CurrentRate >= self.CurrentModule.MaximumRate
-						and self.CurrentModule.SmokeTrailEnabled
-					then
-						self.Thread:Spawn(function()
-							self.SmokeTrail:StopEmission()
-							self.SmokeTrail:EmitSmokeTrail(
-								self.HandleToFire["SmokeTrail" .. self.CurrentFireMode],
-								self.VMHandleToFire["SmokeTrail" .. self.CurrentFireMode],
-								self.CurrentModule.MaximumTime
-							)
-						end)
-					end
-				end
-				if self.CurrentModule.ShotgunPump then
-					if self.CommonVariables.ActuallyEquipped then
-						if self.CurrentShotgunPumpinAnim then
-							self.CurrentShotgunPumpinAnim:Play(nil, nil, self.CurrentShotgunPumpinAnimationSpeed)
-						end
-						if self.HandleToFire[self.CurrentFireMode]:FindFirstChild("PumpSound") then
-							self.HandleToFire[self.CurrentFireMode].PumpSound:Play()
-						end
-						self.Thread:Spawn(function()
-							local StartTime = os.clock()
-							repeat
-								self.Thread:Wait()
-								if not self.CurrentVariables.ActuallyEquipped then
-									break
-								end
-							until (os.clock() - StartTime) >= self.CurrentModule.BulletShellDelay
-							if self.CurrentVariables.ActuallyEquipped then
-								self:EjectShell(
-									((self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1)
-										and self.HandleToFire
-								)
-							end
-						end)
-					end
-					self.HandleToFire = (self.HandleToFire == self.Handle and self.CurrentModule.DualFireEnabled)
-							and self.Handle2
-						or self.Handle
-
-					if self.CurrentModule.AimAnimationsEnabled then
-						self.CurrentAimFireAnim = (
-							self.CurrentAimFireAnim == self.CurrentAnimTable.AimFireAnim
-							and self.Module.SecondaryFireAnimationEnabled
-						)
-								and self.CurrentAnimTable.AimSecondaryFireAnim
-							or self.CurrentAnimTable.AimFireAnim
-						self.CurrentAimFireAnimationSpeed = (
-							self.CurrentAimFireAnimationSpeed == self.Module.AimFireAnimationSpeed
-							and self.Module.SecondaryFireAnimationEnabled
-						)
-								and self.Module.AimSecondaryFireAnimationSpeed
-							or self.Module.AimFireAnimationSpeed
-					end
-
-					self.CurrentFireAnim = (
-						self.CurrentFireAnim == self.CurrentAnimTable.FireAnim
-						and self.CurrentModule.SecondaryFireAnimationEnabled
-					)
-							and self.CurrentAnimTable.SecondaryFireAnim
-						or self.CurrentAnimTable.FireAnim
-					self.CurrentFireAnimationSpeed = (
-						self.CurrentFireAnimationSpeed == self.CurrentModule.FireAnimationSpeed
-						and self.CurrentModule.SecondaryFireAnimationEnabled
-					)
-							and self.CurrentModule.SecondaryFireAnimationSpeed
-						or self.CurrentModule.FireAnimationSpeed
-
-					self.CurrentShotgunPumpinAnim = (
-						self.CurrentShotgunPumpinAnim == self.CurrentAnimTable.ShotgunPumpinAnim
-						and self.CurrentModule.SecondaryShotgunPump
-					)
-							and self.CurrentAnimTable.SecondaryShotgunPumpinAnim
-						or self.CurrentAnimTable.ShotgunPumpinAnim
-					self.CurrentShotgunPumpinAnimationSpeed = (
-						self.CurrentShotgunPumpinAnimationSpeed == self.CurrentModule.ShotgunPumpinAnimationSpeed
-						and self.CurrentModule.SecondaryShotgunPump
-					)
-							and self.CurrentModule.SecondaryShotgunPumpinAnimationSpeed
-						or self.CurrentModule.ShotgunPumpinAnimationSpeed
-
-					self.Thread:Wait(self.CurrentModule.ShotgunPumpinSpeed)
-				end
-				self.CurrentVariables.ChargeLevel = 0
-				self.CommonVariables.Enabled = true
-				if self.CommonVariables.ActuallyEquipped then
-					if self.CurrentModule.BatteryEnabled then
-						if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
-							self:Overheat()
-						end
-					else
-						if self.Module.AutoReload then
-							if self.CurrentVariables.Mag <= 0 then
-								self:Reload()
-							end
-						end
-					end
-				end
-			end
+	self.CommonVariables.Down = true
+	if self:gunCanFire() then
+		self.CommonVariables.CanBeCooledDown = false
+		self.CommonVariables.Enabled = false
+		if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
+			self.CurrentAnimTable.InspectAnim:Stop()
 		end
 
-		-- this is for when your gun is chared and ready to fire
-	elseif self.CurrentModule.HoldAndReleaseEnabled and not self.CurrentModule.SelectiveFireEnabled then
-		self.CommonVariables.Charging = true
-		if self:gunCanFire() then
-			self:chargeEffect()
-			if self:gunDoneCharging() and self.CommonVariables.Charged then
-				self.CommonVariables.Charged = false
-				for _ = 1, (self.CurrentModule.BurstFireEnabled and self.CurrentModule.BulletPerBurst or 1) do
-					local CLDirections = {}
-					local SVDirections = {}
-					local success = self:shotShellEjectSpawnLoop()
-					if not success then
-						break
-					end
-					self.CommonVariables.CurrentRate = self.CommonVariables.CurrentRate
-						+ self.CurrentModule.SmokeTrailRateIncrement
-					for ii = 1, (self.CurrentModule.ShotgunEnabled and self.CurrentModule.BulletPerShot or 1) do
-						local Position = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
-						local CurrentSpread = 0 -- Spread removed
-						local cframe = (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1
-								and CFrame.new(
-									self.VMHandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-									Position
-								)
-							or CFrame.new(
-								self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-								Position
-							)
-						local svCframe = CFrame.new(
-							self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-							Position
-						)
-
-						if self.CurrentModule.ShotgunPattern and self.CurrentModule.SpreadPattern then
-							local X, Y =
-								self.CurrentModule.SpreadPattern[ii][1], self.CurrentModule.SpreadPattern[ii][2]
-							local SpreadPattern = CFrame.Angles(
-								math.rad(self.CurrentSpread * Y / 50),
-								math.rad(CurrentSpread * X / 50),
-								0
-							)
-							cframe = cframe * SpreadPattern
-							svCframe = svCframe * SpreadPattern
-						else
-							local SpreadNormal = CFrame.Angles(
-								math.rad(math.random(-self.CurrentSpread, CurrentSpread) / 50),
-								math.rad(math.random(-self.CurrentSpread, CurrentSpread) / 50),
-								0
-							)
-							cframe = cframe * SpreadNormal
-							svCframe = svCframe * SpreadNormal
-						end
-
-						local ClDirection = cframe.LookVector
-						local SvDirection = svCframe.LookVector
-						table.insert(CLDirections, ClDirection)
-						table.insert(SVDirections, SvDirection)
-					end
-					if self.CurrentModule.SelfKnockback then
-						local KnockbackPosition = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
-						self:SelfKnockback(KnockbackPosition, self.Torso.Position)
-					end
-					self:Fire(self.HandleToFire, self.VMHandleToFire, CLDirections, SVDirections)
-					if self.CurrentModule.BatteryEnabled then
-						self.CurrentVariables.ShotsForDepletion = self.CurrentVariables.ShotsForDepletion + 1
-						if self.CurrentVariables.ShotsForDepletion >= self.CurrentModule.ShotsForDepletion then
-							self.CurrentVariables.ShotsForDepletion = 0
-							self.CurrentVariables.Ammo = self.CurrentVariables.Ammo
-								- Random.new()
-									:NextInteger(self.CurrentModule.MinDepletion, self.CurrentModule.MaxDepletion)
-						end
-						self.CurrentVariables.Heat = self.CurrentVariables.Heat
-							+ Random.new()
-								:NextInteger(self.CurrentModule.HeatPerFireMin, self.CurrentModule.HeatPerFireMax)
-					else
-						self.CurrentVariables.Mag = self.CurrentVariables.Mag - 1
-					end
-					self:updateServerChangeMagAndAmmo()
-					self:gunCoolDown()
-					self:UpdateGUI()
-					if self.CurrentModule.BurstFireEnabled then
-						local StartTime = os.clock()
-						repeat
-							self.Thread:Wait()
-							if not self.CommonVariables.ActuallyEquipped then
-								break
-							end
-						until (os.clock() - StartTime) >= self.CurrentModule.BurstRate
-					end
-					if self.CurrentModule.BatteryEnabled then
-						if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
-							break
-						end
-					else
-						if self.CurrentVariables.Mag <= 0 then
-							break
-						end
-					end
-				end
-				self:setUpFiringAnimation()
-				self.Thread:Wait(self.CurrentModule.FireRate)
-				if
-					self.CurrentModule.BatteryEnabled and self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat
-					or self.CurrentVariables.Mag <= 0
-				then
-					if
-						self.CommonVariables.CurrentRate >= self.CurrentModule.MaximumRate
-						and self.CurrentModule.SmokeTrailEnabled
-					then
-						self.Thread:Spawn(function()
-							self.SmokeTrail:StopEmission()
-							self.SmokeTrail:EmitSmokeTrail(
-								self.HandleToFire["SmokeTrail" .. self.CurrentFireMode],
-								self.VMHandleToFire["SmokeTrail" .. self.CurrentFireMode],
-								self.CurrentModule.MaximumTime
-							)
-						end)
-					end
-				end
-				if self.CurrentModule.ShotgunPump then
-					if self.CommonVariables.ActuallyEquipped then
-						if self.CurrentShotgunPumpinAnim then
-							self.CurrentShotgunPumpinAnim:Play(nil, nil, self.CurrentShotgunPumpinAnimationSpeed)
-						end
-						if self.HandleToFire[self.CurrentFireMode]:FindFirstChild("PumpSound") then
-							self.HandleToFire[self.CurrentFireMode].PumpSound:Play()
-						end
-						self.Thread:Spawn(function()
-							local StartTime = os.clock()
-							repeat
-								self.Thread:Wait()
-								if not self.CommonVariables.ActuallyEquipped then
-									break
-								end
-							until (os.clock() - StartTime) >= self.CurrentModule.BulletShellDelay
-							if self.CommonVariables.ActuallyEquipped then
-								self:EjectShell(
-									((self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1)
-										and self.HandleToFire
-								)
-							end
-						end)
-					end
-					self.HandleToFire = (self.HandleToFire == self.Handle and self.CurrentModule.DualFireEnabled)
-							and self.Handle2
-						or self.Handle
-
-					if self.CurrentModule.AimAnimationsEnabled then
-						self.CurrentAimFireAnim = (
-							self.CurrentAimFireAnim == self.CurrentAnimTable.AimFireAnim
-							and self.CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and self.CurrentAnimTable.AimSecondaryFireAnim
-							or self.CurrentAnimTable.AimFireAnim
-						self.CurrentAimFireAnimationSpeed = (
-							self.CurrentAimFireAnimationSpeed == self.CurrentModule.AimFireAnimationSpeed
-							and self.CurrentModule.SecondaryFireAnimationEnabled
-						)
-								and self.CurrentModule.AimSecondaryFireAnimationSpeed
-							or self.CurrentModule.AimFireAnimationSpeed
-					end
-
-					self.CurrentFireAnim = (
-						self.CurrentFireAnim == self.CurrentAnimTable.FireAnim
-						and self.CurrentModule.SecondaryFireAnimationEnabled
-					)
-							and self.CurrentAnimTable.SecondaryFireAnim
-						or self.CurrentAnimTable.FireAnim
-					self.CurrentFireAnimationSpeed = (
-						self.CurrentFireAnimationSpeed == self.CurrentModule.FireAnimationSpeed
-						and self.CurrentModule.SecondaryFireAnimationEnabled
-					)
-							and self.CurrentModule.SecondaryFireAnimationSpeed
-						or self.CurrentModule.FireAnimationSpeed
-
-					self.CurrentShotgunPumpinAnim = (
-						self.CurrentShotgunPumpinAnim == self.CurrentAnimTable.ShotgunPumpinAnim
-						and self.CurrentModule.SecondaryShotgunPump
-					)
-							and self.CurrentAnimTable.SecondaryShotgunPumpinAnim
-						or self.CurrentAnimTable.ShotgunPumpinAnim
-					self.CurrentShotgunPumpinAnimationSpeed = (
-						self.CurrentShotgunPumpinAnimationSpeed == self.CurrentModule.ShotgunPumpinAnimationSpeed
-						and self.CurrentModule.SecondaryShotgunPump
-					)
-							and self.CurrentModule.SecondaryShotgunPumpinAnimationSpeed
-						or self.CurrentModule.ShotgunPumpinAnimationSpeed
-
-					self.Thread:Wait(self.CurrentModule.ShotgunPumpinSpeed)
-				end
-				self.CommonVariables.Enabled = true
-				if self.CommonVariables.ActuallyEquipped then
-					if self.CurrentModule.BatteryEnabled then
-						if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
-							self:Overheat()
-						end
-					else
-						if self.Module.AutoReload then
-							if self.CurrentVariables.Mag <= 0 then
-								self:Reload()
-							end
-						end
-					end
-				end
+		if self.CurrentModule.MinigunEnabled then
+			if self.CurrentAnimTable.MinigunRevUpAnim and not self.CurrentAnimTable.MinigunRevUpAnim.IsPlaying then
+				self.CurrentAnimTable.MinigunRevUpAnim:Play(nil, nil, self.CurrentModule.MinigunRevUpAnimationSpeed)
 			end
+
+			if
+				self.CommonVariables.ActuallyEquipped
+				and self.HandleToFire[self.CurrentFireMode]:FindFirstChild("WindUp")
+			then
+				self.HandleToFire[self.CurrentFireMode].WindUp:Play()
+			end
+			self.Thread:Wait(self.CurrentModule.DelayBeforeFiring)
 		end
-	else
-		self.CommonVariables.Down = true
-		local IsChargedShot = false
-		if self:gunCanFire() then
-			self.CommonVariables.CanBeCooledDown = false
-			self.CommonVariables.Enabled = false
-			if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
-				self.CurrentAnimTable.InspectAnim:Stop()
-			end
-
-			if self.CurrentModule.ChargedShotEnabled then
-				if
-					self.CommonVariables.ActuallyEquipped
-					and self.HandleToFire[self.CurrentFireMode]:FindFirstChild("ChargeSound")
-				then
-					self.HandleToFire[self.CurrentFireMode].ChargeSound:Play()
+		while self.CommonVariables.Down and self:gunDoneCharging() do
+			for _ = 1, ((self.CurrentModule.SelectiveFireEnabled and (self.CurrentVariables.FireModes[self.CurrentVariables.FireMode] ~= true and self.CurrentVariables.FireModes[self.CurrentVariables.FireMode] or 1)) or (self.CurrentModule.BurstFireEnabled and self.CurrentModule.BulletPerBurst) or 1) do
+				local CLDirections = {}
+				local SVDirections = {}
+				local success = self:shotShellEjectSpawnLoop()
+				if not success then
+					break
 				end
-				self.Thread:Wait(self.CurrentModule.ChargingTime)
-				IsChargedShot = true
-			end
-			if self.CurrentModule.MinigunEnabled then
-				if self.CurrentAnimTable.MinigunRevUpAnim and not self.CurrentAnimTable.MinigunRevUpAnim.IsPlaying then
-					self.CurrentAnimTable.MinigunRevUpAnim:Play(nil, nil, self.CurrentModule.MinigunRevUpAnimationSpeed)
-				end
+				self.CommonVariables.CurrentRate = self.CommonVariables.CurrentRate
+					+ self.CurrentModule.SmokeTrailRateIncrement
+				for ii = 1, (self.CurrentModule.ShotgunEnabled and self.CurrentModule.BulletPerShot or 1) do
+					local Position = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
+					local Spread = 0 -- Spread removed
+					local cframe = CFrame.new(
+						self.VMHandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
+						Position
+					)
+					local svCframe = CFrame.new(
+						self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
+						Position
+					)
 
-				if
-					self.CommonVariables.ActuallyEquipped
-					and self.HandleToFire[self.CurrentFireMode]:FindFirstChild("WindUp")
-				then
-					self.HandleToFire[self.CurrentFireMode].WindUp:Play()
-				end
-				self.Thread:Wait(self.CurrentModule.DelayBeforeFiring)
-			end
-			while (self.CommonVariables.Down or IsChargedShot) and self:gunDoneCharging() do
-				IsChargedShot = false
-				for _ = 1, ((self.CurrentModule.SelectiveFireEnabled and (self.CurrentVariables.FireModes[self.CurrentVariables.FireMode] ~= true and self.CurrentVariables.FireModes[self.CurrentVariables.FireMode] or 1)) or (self.CurrentModule.BurstFireEnabled and self.CurrentModule.BulletPerBurst) or 1) do
-					local CLDirections = {}
-					local SVDirections = {}
-					local success = self:shotShellEjectSpawnLoop()
-					if not success then
-						break
-					end
-					self.CommonVariables.CurrentRate = self.CommonVariables.CurrentRate
-						+ self.CurrentModule.SmokeTrailRateIncrement
-					for ii = 1, (self.CurrentModule.ShotgunEnabled and self.CurrentModule.BulletPerShot or 1) do
-						local Position = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
-						local Spread = 0 -- Spread removed
-						local cframe = CFrame.new(
-							self.VMHandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-							Position
-						)
-						local svCframe = CFrame.new(
-							self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
-							Position
-						)
-
-						if self.CurrentModule.ShotgunPattern and self.CurrentModule.SpreadPattern then
-							local X, Y =
-								self.CurrentModule.SpreadPattern[ii][1], self.CurrentModule.SpreadPattern[ii][2]
-							local SpreadPattern = CFrame.Angles(math.rad(Spread * Y / 50), math.rad(Spread * X / 50), 0)
-							cframe = cframe * SpreadPattern
-							svCframe = svCframe * SpreadPattern
-						else
-							local SpreadNormal = CFrame.Angles(
-								math.rad(math.random(-Spread, Spread) / 50),
-								math.rad(math.random(-Spread, Spread) / 50),
-								0
-							)
-							cframe = cframe * SpreadNormal
-							svCframe = svCframe * SpreadNormal
-						end
-
-						local ClDirection = cframe.LookVector
-						local SvDirection = svCframe.LookVector
-						table.insert(CLDirections, ClDirection)
-						table.insert(SVDirections, SvDirection)
-					end
-					if self.CurrentModule.SelfKnockback then
-						local KnockbackPosition = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
-						self:SelfKnockback(KnockbackPosition, self.Torso.Position)
-					end
-					self:Fire(self.HandleToFire, self.VMHandleToFire, CLDirections, SVDirections)
-					if self.CurrentModule.BatteryEnabled then
-						self.CurrentVariables.ShotsForDepletion = self.CurrentVariables.ShotsForDepletion + 1
-						if self.CurrentVariables.ShotsForDepletion >= self.CurrentModule.ShotsForDepletion then
-							self.CurrentVariables.ShotsForDepletion = 0
-							self.CurrentVariables.Ammo = self.CurrentVariables.Ammo
-								- Random.new()
-									:NextInteger(self.CurrentModule.MinDepletion, self.CurrentModule.MaxDepletion)
-						end
-						self.CurrentVariables.Heat = self.CurrentVariables.Heat
-							+ Random.new()
-								:NextInteger(self.CurrentModule.HeatPerFireMin, self.CurrentModule.HeatPerFireMax)
+					if self.CurrentModule.ShotgunPattern and self.CurrentModule.SpreadPattern then
+						local X, Y = self.CurrentModule.SpreadPattern[ii][1], self.CurrentModule.SpreadPattern[ii][2]
+						local SpreadPattern = CFrame.Angles(math.rad(Spread * Y / 50), math.rad(Spread * X / 50), 0)
+						cframe = cframe * SpreadPattern
+						svCframe = svCframe * SpreadPattern
 					else
-						self.CurrentVariables.Mag = self.CurrentVariables.Mag - 1
+						local SpreadNormal = CFrame.Angles(
+							math.rad(math.random(-Spread, Spread) / 50),
+							math.rad(math.random(-Spread, Spread) / 50),
+							0
+						)
+						cframe = cframe * SpreadNormal
+						svCframe = svCframe * SpreadNormal
 					end
-					self:updateServerChangeMagAndAmmo()
-					self:gunCoolDown()
-					self:UpdateGUI()
-					if self.CurrentModule.BurstFireEnabled and not self.CurrentModule.SelectiveFireEnabled then
-						local StartTime = os.clock()
-						repeat
-							self.Thread:Wait()
-							if not self.CommonVariables.ActuallyEquipped then
-								break
-							end
-						until (os.clock() - StartTime) >= self.CurrentModule.BurstRate
+
+					local ClDirection = cframe.LookVector
+					local SvDirection = svCframe.LookVector
+					table.insert(CLDirections, ClDirection)
+					table.insert(SVDirections, SvDirection)
+				end
+				if self.CurrentModule.SelfKnockback then
+					local KnockbackPosition = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
+					self:SelfKnockback(KnockbackPosition, self.Torso.Position)
+				end
+				self:Fire(self.HandleToFire, self.VMHandleToFire, CLDirections, SVDirections)
+				if self.CurrentModule.BatteryEnabled then
+					self.CurrentVariables.ShotsForDepletion = self.CurrentVariables.ShotsForDepletion + 1
+					if self.CurrentVariables.ShotsForDepletion >= self.CurrentModule.ShotsForDepletion then
+						self.CurrentVariables.ShotsForDepletion = 0
+						self.CurrentVariables.Ammo = self.CurrentVariables.Ammo
+							- Random.new():NextInteger(self.CurrentModule.MinDepletion, self.CurrentModule.MaxDepletion)
 					end
-					if self.CurrentModule.SelectiveFireEnabled then
-						local StartTime = os.clock()
-						repeat
-							self.Thread:Wait()
-							if not self.CommonVariables.ActuallyEquipped then
-								break
-							end
-						until (os.clock() - StartTime)
-							>= self.CurrentModule.BurstRates[self.CurrentVariables.FireMode]
-					end
-					if self.CurrentModule.BatteryEnabled then
-						if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
+					self.CurrentVariables.Heat = self.CurrentVariables.Heat
+						+ Random.new():NextInteger(self.CurrentModule.HeatPerFireMin, self.CurrentModule.HeatPerFireMax)
+				else
+					self.CurrentVariables.Mag = self.CurrentVariables.Mag - 1
+				end
+				self:updateServerChangeMagAndAmmo()
+				self:gunCoolDown()
+				self:UpdateGUI()
+				if self.CurrentModule.BurstFireEnabled and not self.CurrentModule.SelectiveFireEnabled then
+					local StartTime = os.clock()
+					repeat
+						self.Thread:Wait()
+						if not self.CommonVariables.ActuallyEquipped then
 							break
 						end
-					else
-						if self.CurrentVariables.Mag <= 0 then
-							break
-						end
-					end
-				end
-				self:setUpFiringAnimation()
-				self.Thread:Wait(
-					self.CurrentModule.SelectiveFireEnabled
-							and self.CurrentModule.FireRates[self.CurrentVariables.FireMode]
-						or self.CurrentModule.FireRate
-				)
-				if
-					self.CurrentModule.BatteryEnabled and self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat
-					or self.CurrentVariables.Mag <= 0
-				then
-					if
-						self.CommonVariables.CurrentRate >= self.CurrentModule.MaximumRate
-						and self.CurrentModule.SmokeTrailEnabled
-					then
-						self.Thread:Spawn(function()
-							self.SmokeTrail:StopEmission()
-							self.SmokeTrail:EmitSmokeTrail(
-								self.HandleToFire["SmokeTrail" .. self.CurrentFireMode],
-								self.VMHandleToFire["SmokeTrail" .. self.CurrentFireMode],
-								self.CurrentModule.MaximumTime
-							)
-						end)
-					end
+					until (os.clock() - StartTime) >= self.CurrentModule.BurstRate
 				end
 				if self.CurrentModule.SelectiveFireEnabled then
-					if self.CurrentVariables.FireModes[self.CurrentVariables.FireMode] ~= true then
-						break
-					end
-				else
-					if not self.CurrentModule.Auto then
-						break
-					end
-				end
-			end
-			if self.CurrentModule.MinigunEnabled then
-				if
-					self.CommonVariables.ActuallyEquipped
-					and self.CurrentAnimTable.MinigunRevDownAnim
-					and not self.CurrentAnimTable.MinigunRevDownAnim.IsPlaying
-				then
-					self.CurrentAnimTable.MinigunRevDownAnim:Play(
-						nil,
-						nil,
-						self.CurrentModule.MinigunRevDownAnimationSpeed
-					)
-				end
-				if self.CurrentAnimTable.MinigunRevUpAnim and self.CurrentAnimTable.MinigunRevUpAnim.IsPlaying then
-					self.CurrentAnimTable.MinigunRevUpAnim:Stop()
-				end
-
-				if
-					self.CommonVariables.ActuallyEquipped
-					and self.HandleToFire[self.CurrentFireMode]:FindFirstChild("WindDown")
-				then
-					self.HandleToFire[self.CurrentFireMode].WindDown:Play()
-				end
-				self.Thread:Wait(self.CurrentModule.DelayAfterFiring)
-			end
-			if self.CurrentModule.ShotgunPump then
-				if self.CommonVariables.ActuallyEquipped then
-					if self.CurrentShotgunPumpinAnim then
-						self.CurrentShotgunPumpinAnim:Play(nil, nil, self.CurrentShotgunPumpinAnimationSpeed)
-					end
-					if self.HandleToFire[self.CurrentFireMode]:FindFirstChild("PumpSound") then
-						self.HandleToFire[self.CurrentFireMode].PumpSound:Play()
-					end
-					self.Thread:Spawn(function()
-						local StartTime = os.clock()
-						repeat
-							self.Thread:Wait()
-							if not self.CommonVariables.ActuallyEquipped then
-								break
-							end
-						until (os.clock() - StartTime) >= self.CurrentModule.BulletShellDelay
-						if self.CommonVariables.ActuallyEquipped then
-							self:EjectShell(
-								((self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1)
-										and self.VMHandleToFire
-									or self.HandleToFire
-							)
+					local StartTime = os.clock()
+					repeat
+						self.Thread:Wait()
+						if not self.CommonVariables.ActuallyEquipped then
+							break
 						end
-					end)
+					until (os.clock() - StartTime)
+						>= self.CurrentModule.BurstRates[self.CurrentVariables.FireMode]
 				end
-				self.HandleToFire = (self.HandleToFire == self.Handle and self.CurrentModule.DualFireEnabled)
-						and self.Handle2
-					or self.Handle
-
-				if self.CurrentModule.AimAnimationsEnabled then
-					self.CurrentAimFireAnim = (
-						self.CurrentAimFireAnim == self.CurrentAnimTable.AimFireAnim
-						and self.CurrentModule.SecondaryFireAnimationEnabled
-					)
-							and self.CurrentAnimTable.AimSecondaryFireAnim
-						or self.CurrentAnimTable.AimFireAnim
-					self.CurrentAimFireAnimationSpeed = (
-						self.CurrentAimFireAnimationSpeed == self.CurrentModule.AimFireAnimationSpeed
-						and self.CurrentModule.SecondaryFireAnimationEnabled
-					)
-							and self.CurrentModule.AimSecondaryFireAnimationSpeed
-						or self.CurrentModule.AimFireAnimationSpeed
-				end
-
-				self.CurrentFireAnim = (
-					self.CurrentFireAnim == self.CurrentAnimTable.FireAnim
-					and self.CurrentModule.SecondaryFireAnimationEnabled
-				)
-						and self.CurrentAnimTable.SecondaryFireAnim
-					or self.CurrentAnimTable.FireAnim
-				self.CurrentFireAnimationSpeed = (
-					self.CurrentFireAnimationSpeed == self.CurrentModule.FireAnimationSpeed
-					and self.CurrentModule.SecondaryFireAnimationEnabled
-				)
-						and self.CurrentModule.SecondaryFireAnimationSpeed
-					or self.CurrentModule.FireAnimationSpeed
-
-				self.CurrentShotgunPumpinAnim = (
-					self.CurrentShotgunPumpinAnim == self.CurrentAnimTable.ShotgunPumpinAnim
-					and self.CurrentModule.SecondaryShotgunPump
-				)
-						and self.CurrentAnimTable.SecondaryShotgunPumpinAnim
-					or self.CurrentAnimTable.ShotgunPumpinAnim
-				self.CurrentShotgunPumpinAnimationSpeed = (
-					self.CurrentShotgunPumpinAnimationSpeed == self.CurrentModule.ShotgunPumpinAnimationSpeed
-					and self.CurrentModule.SecondaryShotgunPump
-				)
-						and self.CurrentModule.SecondaryShotgunPumpinAnimationSpeed
-					or self.CurrentModule.ShotgunPumpinAnimationSpeed
-
-				self.Thread:Wait(self.CurrentModule.ShotgunPumpinSpeed)
-			end
-			self.CommonVariables.Enabled = true
-			if self.CurrentVariables.Mag <= 0 then
-				self.CurrentFireAnim:Stop()
-				self.Empty:Play()
-			end
-			if self.CommonVariables.ActuallyEquipped then
 				if self.CurrentModule.BatteryEnabled then
 					if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
-						self:Overheat()
+						break
 					end
 				else
-					if self.Module.AutoReload then
-						if self.CurrentVariables.Mag <= 0 then
-							self:Reload()
+					if self.CurrentVariables.Mag <= 0 then
+						break
+					end
+				end
+			end
+			self:setUpFiringAnimation()
+			self.Thread:Wait(
+				self.CurrentModule.SelectiveFireEnabled and self.CurrentModule.FireRates[self.CurrentVariables.FireMode]
+					or self.CurrentModule.FireRate
+			)
+			if
+				self.CurrentModule.BatteryEnabled and self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat
+				or self.CurrentVariables.Mag <= 0
+			then
+				if
+					self.CommonVariables.CurrentRate >= self.CurrentModule.MaximumRate
+					and self.CurrentModule.SmokeTrailEnabled
+				then
+					self.Thread:Spawn(function()
+						self.SmokeTrail:StopEmission()
+						self.SmokeTrail:EmitSmokeTrail(
+							self.HandleToFire["SmokeTrail" .. self.CurrentFireMode],
+							self.VMHandleToFire["SmokeTrail" .. self.CurrentFireMode],
+							self.CurrentModule.MaximumTime
+						)
+					end)
+				end
+			end
+			if self.CurrentModule.SelectiveFireEnabled then
+				if self.CurrentVariables.FireModes[self.CurrentVariables.FireMode] ~= true then
+					break
+				end
+			else
+				if not self.CurrentModule.Auto then
+					break
+				end
+			end
+		end
+		if self.CurrentModule.MinigunEnabled then
+			if
+				self.CommonVariables.ActuallyEquipped
+				and self.CurrentAnimTable.MinigunRevDownAnim
+				and not self.CurrentAnimTable.MinigunRevDownAnim.IsPlaying
+			then
+				self.CurrentAnimTable.MinigunRevDownAnim:Play(nil, nil, self.CurrentModule.MinigunRevDownAnimationSpeed)
+			end
+			if self.CurrentAnimTable.MinigunRevUpAnim and self.CurrentAnimTable.MinigunRevUpAnim.IsPlaying then
+				self.CurrentAnimTable.MinigunRevUpAnim:Stop()
+			end
+
+			if
+				self.CommonVariables.ActuallyEquipped
+				and self.HandleToFire[self.CurrentFireMode]:FindFirstChild("WindDown")
+			then
+				self.HandleToFire[self.CurrentFireMode].WindDown:Play()
+			end
+			self.Thread:Wait(self.CurrentModule.DelayAfterFiring)
+		end
+		if self.CurrentModule.ShotgunPump then
+			if self.CommonVariables.ActuallyEquipped then
+				if self.CurrentShotgunPumpinAnim then
+					self.CurrentShotgunPumpinAnim:Play(nil, nil, self.CurrentShotgunPumpinAnimationSpeed)
+				end
+				if self.HandleToFire[self.CurrentFireMode]:FindFirstChild("PumpSound") then
+					self.HandleToFire[self.CurrentFireMode].PumpSound:Play()
+				end
+				self.Thread:Spawn(function()
+					local StartTime = os.clock()
+					repeat
+						self.Thread:Wait()
+						if not self.CommonVariables.ActuallyEquipped then
+							break
 						end
+					until (os.clock() - StartTime) >= self.CurrentModule.BulletShellDelay
+					if self.CommonVariables.ActuallyEquipped then
+						self:EjectShell(
+							((self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1)
+									and self.VMHandleToFire
+								or self.HandleToFire
+						)
+					end
+				end)
+			end
+			self.HandleToFire = (self.HandleToFire == self.Handle and self.CurrentModule.DualFireEnabled)
+					and self.Handle2
+				or self.Handle
+
+			if self.CurrentModule.AimAnimationsEnabled then
+				self.CurrentAimFireAnim = (
+					self.CurrentAimFireAnim == self.CurrentAnimTable.AimFireAnim
+					and self.CurrentModule.SecondaryFireAnimationEnabled
+				)
+						and self.CurrentAnimTable.AimSecondaryFireAnim
+					or self.CurrentAnimTable.AimFireAnim
+				self.CurrentAimFireAnimationSpeed = (
+					self.CurrentAimFireAnimationSpeed == self.CurrentModule.AimFireAnimationSpeed
+					and self.CurrentModule.SecondaryFireAnimationEnabled
+				)
+						and self.CurrentModule.AimSecondaryFireAnimationSpeed
+					or self.CurrentModule.AimFireAnimationSpeed
+			end
+
+			self.CurrentFireAnim = (
+				self.CurrentFireAnim == self.CurrentAnimTable.FireAnim
+				and self.CurrentModule.SecondaryFireAnimationEnabled
+			)
+					and self.CurrentAnimTable.SecondaryFireAnim
+				or self.CurrentAnimTable.FireAnim
+			self.CurrentFireAnimationSpeed = (
+				self.CurrentFireAnimationSpeed == self.CurrentModule.FireAnimationSpeed
+				and self.CurrentModule.SecondaryFireAnimationEnabled
+			)
+					and self.CurrentModule.SecondaryFireAnimationSpeed
+				or self.CurrentModule.FireAnimationSpeed
+
+			self.CurrentShotgunPumpinAnim = (
+				self.CurrentShotgunPumpinAnim == self.CurrentAnimTable.ShotgunPumpinAnim
+				and self.CurrentModule.SecondaryShotgunPump
+			)
+					and self.CurrentAnimTable.SecondaryShotgunPumpinAnim
+				or self.CurrentAnimTable.ShotgunPumpinAnim
+			self.CurrentShotgunPumpinAnimationSpeed = (
+				self.CurrentShotgunPumpinAnimationSpeed == self.CurrentModule.ShotgunPumpinAnimationSpeed
+				and self.CurrentModule.SecondaryShotgunPump
+			)
+					and self.CurrentModule.SecondaryShotgunPumpinAnimationSpeed
+				or self.CurrentModule.ShotgunPumpinAnimationSpeed
+
+			self.Thread:Wait(self.CurrentModule.ShotgunPumpinSpeed)
+		end
+		self.CommonVariables.Enabled = true
+		if self.CurrentVariables.Mag <= 0 then
+			self.CurrentFireAnim:Stop()
+			self.Empty:Play()
+		end
+		if self.CommonVariables.ActuallyEquipped then
+			if self.CurrentModule.BatteryEnabled then
+				if self.CurrentVariables.Heat >= self.CurrentModule.MaxHeat then
+					self:Overheat()
+				end
+			else
+				if self.Module.AutoReload then
+					if self.CurrentVariables.Mag <= 0 then
+						self:Reload()
 					end
 				end
 			end
@@ -2566,10 +1897,8 @@ end
 
 function ClientGun:OnStoppingFiring()
 	self.CommonVariables.Down = false
-	if self.CurrentModule.ChargedShotAdvanceEnabled or self.CurrentModule.HoldAndReleaseEnabled then
-		self.CommonVariables.Charging = false
-	end
-	if self.CurrentModule.HoldAndReleaseEnabled and not self.CommonVariables.Charged then
+
+	if self.CurrentModule.HoldAndReleaseEnabled then
 		self.CommonVariables.Enabled = true
 	end
 	if self.CommonVariables.CurrentRate >= self.CurrentModule.MaximumRate and self.CurrentModule.SmokeTrailEnabled then
@@ -2587,7 +1916,6 @@ end
 function ClientGun:OnEquip()
 	self.GunGUI = self.Hud:Clone()
 	self.GunGUI.Parent = self.PlayerGui
-
 	if UserInputService.TouchEnabled then
 		local MobileButtons = self.GunGUI:WaitForChild("MobileButtons")
 		MobileButtons.Visible = true
@@ -2690,6 +2018,7 @@ function ClientGun:OnEquip()
 		if self.CurrentModule.BatteryEnabled then
 			self:RenderCooldown(dt)
 		end
+		self:MoveBeamEnd()
 	end)
 
 	if self.CurrentAnimTable.EquippedAnim then
@@ -2724,6 +2053,22 @@ function ClientGun:OnEquip()
 	--// connections
 end
 
+function ClientGun:MoveBeamEnd()
+	if not (self.BeamOrigin and self.BeamEnd) then
+		return
+	end
+	local origin = self.BeamOrigin.WorldPosition
+	local direction = self.BeamOrigin.WorldCFrame.LookVector * 300
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.IgnoreWater = true
+	local result = Workspace:Raycast(origin, direction, raycastParams)
+	local endPos = result and result.Position or (origin + direction)
+
+	self.BeamEnd.WorldPosition = endPos
+end
+
 function ClientGun:OnUnequipped()
 	self.Thread:Spawn(function()
 		if self.GunGUI then
@@ -2731,12 +2076,7 @@ function ClientGun:OnUnequipped()
 			self.GunGUI = nil
 
 			self.Empty:Stop()
-			if self.CurrentModule.ChargedShotAdvanceEnabled then
-				self.CommonVariables.Charging = false
-			end
-			if self.CurrentModule.HoldAndReleaseEnabled then
-				self.CommonVariables.Charged = false
-			end
+
 			self.CommonVariables.Equipped = false
 			self.CommonVariables.ActuallyEquipped = false
 

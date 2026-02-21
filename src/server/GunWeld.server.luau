@@ -65,7 +65,7 @@ end)
 SetUpTable = {}
 
 local function setup(child)
-	if not child:FindFirstChild("Setting") or not child:FindFirstChild("ChangeMagAndAmmo") then
+	if not child:isA("Tool") then
 		return
 	end
 	-- if SetUpTable[child] == nil then
