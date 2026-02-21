@@ -1,9 +1,9 @@
---!strict
-local ClientGunHandler = {}
---TODO load every var on equip
-local ClientGun = {}
+local MeleeClientHandler = {}
 
-ClientGun.__index = ClientGun
+local MeleeClient = {}
+--TODO load every var on equip
+
+MeleeClient.__index = MeleeClient
 
 --// Services
 local HttpService = game:GetService("HttpService")
@@ -15,8 +15,8 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
-function ClientGunHandler.new(tool: Tool)
-	local self = setmetatable({}, ClientGun)
+function MeleeClientHandler.new(tool: Tool)
+	local self = setmetatable({}, MeleeClient)
 	--// References
 	local Miscs = ReplicatedStorage:WaitForChild("Miscs")
 	local Modules = ReplicatedStorage:WaitForChild("Modules")
@@ -70,7 +70,10 @@ function ClientGunHandler.new(tool: Tool)
 		or GunVisualEffects[self.Tool.Name]
 
 	--Viewmodel
+	self.FakeCamera = nil
 	self.VMHandleToFire = self.Tool:FindFirstChild("Handle")
+	self.CFAngles = nil
+
 	self.VMKeyframes = {}
 	self.VMKeyframeConnections = {}
 	--
@@ -99,6 +102,8 @@ function ClientGunHandler.new(tool: Tool)
 		Down = false,
 		HoldDown = false,
 		Reloading = false,
+		AimDown = false,
+		Scoping = false,
 		Inspecting = false,
 		Charging = false,
 		Charged = false,
@@ -116,7 +121,7 @@ function ClientGunHandler.new(tool: Tool)
 	end)
 end
 
-function ClientGun:ToolParentChange()
+function MeleeClient:ToolParentChange()
 	if
 		not self.Tool:IsDescendantOf(game)
 		or self.Tool:IsDescendantOf(Workspace) and (not self.Tool:FindFirstAncestorOfClass("Model") or not Players:GetPlayerFromCharacter(
@@ -128,7 +133,7 @@ function ClientGun:ToolParentChange()
 	end
 end
 
-function ClientGun:OnChangeMagAndAmmoEvent(Values)
+function MeleeClient:OnChangeMagAndAmmoEvent(Values)
 	for _, v in ipairs(Values) do
 		self.Variables[v.Id].Mag = v.Mag
 		self.Variables[v.Id].Ammo = v.Ammo
@@ -137,18 +142,45 @@ function ClientGun:OnChangeMagAndAmmoEvent(Values)
 	self:UpdateGUI()
 end
 
-function ClientGun:InputEnded(Input, GameProcessed)
+function MeleeClient:InputEnded(Input, GameProcessed)
 	if GameProcessed then
 		return
 	end
 	if not UserInputService.TouchEnabled then
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.KeyCode == self.Module.Controller.Fire then
 			self:OnStoppingFiring()
+		elseif Input.UserInputType == Enum.UserInputType.MouseButton2 then
+			if self.CommonVariables.AimDown then
+				TweenService:Create(
+					self.Camera,
+					TweenInfo.new(
+						self.CurrentModule.TweenLengthNAD,
+						self.CurrentModule.EasingStyleNAD,
+						self.CurrentModule.EasingDirectionNAD
+					),
+					{ FieldOfView = 70 }
+				):Play()
+				if
+					self.CurrentModule.AimAnimationsEnabled
+					and self.CurrentAnimTable.AimIdleAnim
+					and self.CurrentAnimTable.AimIdleAnim.IsPlaying
+				then
+					self.CurrentAnimTable.AimIdleAnim:Stop()
+					if self.CurrentAnimTable.IdleAnim then
+						self.CurrentAnimTable.IdleAnim:Play(nil, nil, self.CurrentModule.IdleAnimationSpeed)
+					end
+				end
+
+				self.CommonVariables.Scoping = false
+				self.Player.CameraMode = Enum.CameraMode.Classic
+				UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+				self.CommonVariables.AimDown = false
+			end
 		end
 	end
 end
 
-function ClientGun:InputBegin(Input, GameProcessed)
+function MeleeClient:InputBegin(Input, GameProcessed)
 	if GameProcessed then
 		return
 	end
@@ -163,13 +195,119 @@ function ClientGun:InputBegin(Input, GameProcessed)
 			self:OnInspecting()
 		elseif Input.KeyCode == self.Module.Keyboard.Switch or Input.KeyCode == self.Module.Controller.Switch then
 			self:OnSwitching()
+		elseif Input.KeyCode == self.Module.Keyboard.ToogleAim or Input.KeyCode == self.Module.Controller.ToogleAim then
+			self:OnTooglingAiming()
+		elseif Input.KeyCode == self.Module.Keyboard.Melee or Input.KeyCode == self.Module.Controller.Melee then
+			self:OnMeleeAttacking()
 		elseif Input.KeyCode == self.Module.Keyboard.AltFire or Input.KeyCode == self.Module.Controller.AltFire then
 			self:OnAlting()
+		elseif Input.UserInputType == Enum.UserInputType.MouseButton2 then
+			if
+				not self.CommonVariables.Reloading
+				and not self.CommonVariables.Overheated
+				and not self.CommonVariables.HoldDown
+				and not self.CommonVariables.Alting
+				and not self.CommonVariables.AimDown
+				and self.CommonVariables.ActuallyEquipped
+				and self.CurrentModule.IronsightEnabled
+				and (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1
+			then
+				if not self.CurrentModule.KeepAimingOnReloading then
+					if self.CommonVariables.Reloading or self.CommonVariables.Overheated then
+						return
+					end
+				end
+				TweenService:Create(
+					self.Camera,
+					TweenInfo.new(
+						self.CurrentModule.TweenLength,
+						self.CurrentModule.EasingStyle,
+						self.CurrentModule.EasingDirection
+					),
+					{ FieldOfView = self.CurrentModule.FieldOfViewIS }
+				):Play()
+				if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
+					self.CurrentAnimTable.InspectAnim:Stop()
+				end
+				if
+					self.CurrentModule.AimAnimationsEnabled
+					and self.CurrentAnimTable.IdleAnim
+					and self.CurrentAnimTable.IdleAnim.IsPlaying
+				then
+					self.CurrentAnimTable.IdleAnim:Stop()
+					if self.CurrentAnimTable.AimIdleAnim then
+						self.CurrentAnimTable.AimIdleAnim:Play(nil, nil, self.CurrentModule.AimIdleAnimationSpeed)
+					end
+				end
+
+				self.Player.CameraMode = Enum.CameraMode.LockFirstPerson
+				UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+					* self.CurrentModule.MouseSensitiveIS
+				self.CommonVariables.AimDown = true
+			elseif
+				not self.CommonVariables.Reloading
+				and not self.CommonVariables.Overheated
+				and not self.CommonVariables.HoldDown
+				and not self.CommonVariables.Alting
+				and not self.CommonVariables.AimDown
+				and self.CommonVariables.ActuallyEquipped
+				and self.CurrentModule.SniperEnabled
+				and (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1
+			then
+				if not self.CurrentModule.KeepAimingOnReloading then
+					if self.CommonVariables.Reloading or self.CommonVariables.Overheated then
+						return
+					end
+				end
+				TweenService:Create(
+					self.Camera,
+					TweenInfo.new(
+						self.CurrentModule.TweenLength,
+						self.CurrentModule.EasingStyle,
+						self.CurrentModule.EasingDirection
+					),
+					{ FieldOfView = self.CurrentModule.FieldOfViewS }
+				):Play()
+				if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
+					self.CurrentAnimTable.InspectAnim:Stop()
+				end
+				if
+					self.CurrentModule.AimAnimationsEnabled
+					and self.CurrentAnimTable.IdleAnim
+					and self.CurrentAnimTable.IdleAnim.IsPlaying
+				then
+					self.CurrentAnimTable.IdleAnim:Stop()
+					if self.CurrentAnimTable.AimIdleAnim then
+						self.CurrentAnimTable.AimIdleAnim:Play(nil, nil, self.CurrentModule.AimIdleAnimationSpeed)
+					end
+				end
+
+				self.CommonVariables.AimDown = true
+				local StartTime = os.clock()
+				repeat
+					self.Thread:Wait()
+					if not (self.CommonVariables.ActuallyEquipped or self.CommonVariables.AimDown) then
+						break
+					end
+				until (os.clock() - StartTime) >= self.CurrentModule.ScopeDelay
+				if self.CommonVariables.ActuallyEquipped and self.CommonVariables.AimDown then
+					local ZoomSound = self.GunGUI.Scope.ZoomSound:Clone()
+					ZoomSound.Parent = self.PlayerGui
+					ZoomSound:Play()
+					ZoomSound.Ended:Connect(function()
+						ZoomSound:Destroy()
+					end)
+					self.Player.CameraMode = Enum.CameraMode.LockFirstPerson
+					UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+						* self.CurrentModule.MouseSensitiveS
+					self.CommonVariables.Scoping = true
+				end
+			end
 		end
 	end
 end
 
-function ClientGun:LoadAnims()
+function MeleeClient:LoadAnims()
 	for i, v in ipairs(self.Setting:GetChildren()) do
 		table.insert(self.SettingModules, require(v))
 		local Folder = self.ValueFolder:FindFirstChild(tostring(i)) :: Folder
@@ -331,6 +469,10 @@ function ClientGun:LoadAnims()
 			AnimTable.OverheatAnim = v.ThirdPerson:WaitForChild("OverheatAnim")
 			AnimTable.OverheatAnim = self.Humanoid:LoadAnimation(AnimTable.OverheatAnim)
 		end
+		if self.SettingModules[i].MeleeAttackEnabled and self.SettingModules[i].MeleeAttackAnimationID ~= nil then
+			AnimTable.MeleeAttackAnim = v.ThirdPerson:WaitForChild("MeleeAttackAnim")
+			AnimTable.MeleeAttackAnim = self.Humanoid:LoadAnimation(AnimTable.MeleeAttackAnim)
+		end
 		if self.Module.AltFire and self.SettingModules[i].AltAnimationID ~= nil then
 			AnimTable.AltAnim = v.ThirdPerson:WaitForChild("AltAnim")
 			AnimTable.AltAnim = self.Humanoid:LoadAnimation(AnimTable.AltAnim)
@@ -349,7 +491,7 @@ function ClientGun:LoadAnims()
 	self.CurrentShotgunPumpinAnimationSpeed = self.CurrentModule.ShotgunPumpinSpeed
 end
 
-function ClientGun:SetCrosshairColor(color)
+function MeleeClient:SetCrosshairColor(color)
 	if self.GunGUI and self.GunGUI:FindFirstChild("Crosshair") then
 		local CrossFrame = self.GunGUI.Crosshair:FindFirstChild("Main")
 		if CrossFrame then
@@ -361,7 +503,7 @@ function ClientGun:SetCrosshairColor(color)
 	end
 end
 
-function ClientGun:IsAimingAtPlayer()
+function MeleeClient:IsAimingAtPlayer()
 	if not self.GunGUI or not self.GunGUI:FindFirstChild("Crosshair") then
 		return false
 	end
@@ -389,7 +531,7 @@ function ClientGun:IsAimingAtPlayer()
 	return false
 end
 
-function ClientGun:PlayDeadBodyHitEffect()
+function MeleeClient:PlayDeadBodyHitEffect()
 	if not self.GunGUI then
 		return
 	end
@@ -431,7 +573,7 @@ function ClientGun:PlayDeadBodyHitEffect()
 	end
 end
 
-function ClientGun:CheckAndFlingDeadBody(fireDirection)
+function MeleeClient:CheckAndFlingDeadBody(fireDirection)
 	-- Check cooldown first to prevent spam
 	local currentTime = tick()
 	if currentTime - self.LastFlingTime < self.FLING_COOLDOWN then
@@ -489,7 +631,7 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	end
 end
 
-function ClientGun:AddressTableValue(v1, v2)
+function MeleeClient:AddressTableValue(v1, v2)
 	if v1 ~= nil and self.CurrentModule.ChargedShotAdvanceEnabled then
 		return (
 			(self.CurrentVariables.ChargeLevel == 1 and v1.Level1)
@@ -502,7 +644,7 @@ function ClientGun:AddressTableValue(v1, v2)
 	end
 end
 
-function ClientGun:PopulateHumanoids(mdl)
+function MeleeClient:PopulateHumanoids(mdl)
 	if mdl.ClassName == "Humanoid" then
 		if self.DamageModule.CanDamage(mdl.Parent, self.Character, self.CurrentModule.FriendlyFire) then
 			table.insert(self.Humanoids, mdl)
@@ -513,7 +655,7 @@ function ClientGun:PopulateHumanoids(mdl)
 	end
 end
 
-function ClientGun:CastRay(StartPos, Direction, Length)
+function MeleeClient:CastRay(StartPos, Direction, Length)
 	local Hit, EndPos = Workspace:FindPartOnRayWithIgnoreList(
 		Ray.new(StartPos, Direction * Length),
 		{ self.Camera, self.Tool, self.Character }
@@ -536,13 +678,13 @@ function ClientGun:CastRay(StartPos, Direction, Length)
 	return EndPos
 end
 
-function ClientGun:Get3DPosition(CurrentPosOnScreen)
+function MeleeClient:Get3DPosition(CurrentPosOnScreen)
 	local InputRay = self.Camera:ScreenPointToRay(CurrentPosOnScreen.X, CurrentPosOnScreen.Y)
 	local EndPos = InputRay.Origin + InputRay.Direction
 	return self:CastRay(self.Camera.CFrame.p, (EndPos - self.Camera.CFrame.p).Unit, 5000)
 end
 
-function ClientGun:WorldToScreen(Viewpoint)
+function MeleeClient:WorldToScreen(Viewpoint)
 	local ToObjectSpace = self.Camera.CFrame:pointToObjectSpace(Viewpoint)
 	local FieldOfView = math.tan(math.rad(self.Camera.FieldOfView) / 2)
 	return Vector2.new(
@@ -556,7 +698,7 @@ function ClientGun:WorldToScreen(Viewpoint)
 	)
 end
 
-function ClientGun:FindNearestEntity()
+function MeleeClient:FindNearestEntity()
 	self.Humanoids = {}
 	self:PopulateHumanoids(Workspace)
 	local MinOffset = nil
@@ -584,7 +726,7 @@ function ClientGun:FindNearestEntity()
 	return TargetModel, TargetHumanoid, TargetTorso
 end
 
-function ClientGun:UpdateGUI()
+function MeleeClient:UpdateGUI()
 	self.GunGUI.Frame.Mag.Fill:TweenSize(
 		UDim2.fromScale(self.CurrentVariables.Mag / self.CurrentModule.AmmoPerMag, 1),
 		Enum.EasingDirection.Out,
@@ -654,6 +796,7 @@ function ClientGun:UpdateGUI()
 	local InspectButton = self.GunGUI.MobileButtons.InspectButton
 	local ReloadButton = self.GunGUI.MobileButtons.ReloadButton
 	local SwitchButton = self.GunGUI.MobileButtons.SwitchButton
+	local MeleeButton = self.GunGUI.MobileButtons.MeleeButton
 	local AltButton = self.GunGUI.MobileButtons.AltButton
 
 	AimButton.Visible = self.CurrentModule.SniperEnabled or self.CurrentModule.IronsightEnabled
@@ -661,20 +804,97 @@ function ClientGun:UpdateGUI()
 	InspectButton.Visible = self.CurrentModule.InspectAnimationEnabled
 	SwitchButton.Visible = self.CurrentModule.SelectiveFireEnabled
 	ReloadButton.Visible = not self.CurrentModule.BatteryEnabled
+	MeleeButton.Visible = self.CurrentModule.MeleeAttackEnabled
 	AltButton.Visible = self.Module.AltFire
 end
 
-function ClientGun:RenderMouse()
-	self.GunGUI.Crosshair.Main.Visible = false
+function MeleeClient:RenderScope()
+	self.Knockback.t = self.Knockback.t:Lerp(Vector3.new(), 0.2)
+end
+
+function MeleeClient:RenderMouse()
+	local Delta = UserInputService:GetMouseDelta() / self.CurrentModule.ScopeSensitive
+	local Offset = self.GunGUI.Scope.AbsoluteSize.X * 0.5
+
+	if self.CommonVariables.Scoping and UserInputService.MouseEnabled and UserInputService.KeyboardEnabled then --For pc version
+		self.GunGUI.Scope.Position =
+			UDim2.fromOffset(self.Scope.p.X + (self.Knockback.p.Y * 1000), self.Scope.p.Y + (self.Knockback.p.X * 200))
+		self.Scope.t = Vector3.new(self.Mouse.X - Offset - Delta.X, self.Mouse.Y - Offset - Delta.Y, 0)
+	elseif
+		self.CommonVariables.Scoping
+		and UserInputService.TouchEnabled
+		and not UserInputService.MouseEnabled
+		and not UserInputService.KeyboardEnabled
+	then --For mobile version, but in first-person view
+		self.GunGUI.Scope.Position =
+			UDim2.fromOffset(self.Scope.p.X + (self.Knockback.p.Y * 1000), self.Scope.p.Y + (self.Knockback.p.X * 200))
+		self.Scope.t = Vector3.new(
+			self.GunGUI.Crosshair.AbsolutePosition.X - Offset - Delta.X,
+			self.GunGUI.Crosshair.AbsolutePosition.Y - Offset - Delta.Y,
+			0
+		)
+	end
+
+	self.GunGUI.Scope.Visible = self.CommonVariables.Scoping
+	if not self.CommonVariables.Scoping then
+		self.GunGUI.Crosshair.Main.Visible = true
+		self.Scope.t = Vector3.new(600, 200, 0)
+	else
+		self.GunGUI.Crosshair.Main.Visible = false
+	end
 
 	if UserInputService.MouseEnabled and UserInputService.KeyboardEnabled then --For pc version
-		self.GunGUI.Crosshair.Position = UDim2.fromOffset(self.Mouse.X, self.Mouse.Y)
+		if self.FakeCamera then
+			self.CFAngles = CFrame.fromEulerAnglesXYZ(self.FakeCamera.Transform:ToEulerAnglesXYZ()) or CFrame.new()
+			if (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1 then
+				if self.CFAngles then
+					local v = self:WorldToScreen(
+						(self.Camera.CFrame * self.CFAngles:Inverse() * CFrame.new(0, 0, -4)).Position
+					)
+					local v2 = self.Camera.ViewportSize / 2
+					self.GunGUI.Crosshair.Position = (v - v2).Magnitude > 0.08 and UDim2.fromOffset(v.X, v.Y)
+						or UDim2.fromOffset(v2.X, v2.Y)
+				else
+					self.GunGUI.Crosshair.Position = UDim2.fromOffset(self.Mouse.X, self.Mouse.Y)
+				end
+			else
+				self.GunGUI.Crosshair.Position = UDim2.fromOffset(self.Mouse.X, self.Mouse.Y)
+			end
+		else
+			self.GunGUI.Crosshair.Position = UDim2.fromOffset(self.Mouse.X, self.Mouse.Y)
+		end
 	elseif
 		UserInputService.TouchEnabled
 		and not UserInputService.MouseEnabled
 		and not UserInputService.KeyboardEnabled
+		and (self.Character.Head.Position - self.Camera.CoordinateFrame.p).Magnitude > 2
 	then --For mobile version, but in third-person view
 		self.GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
+	elseif
+		UserInputService.TouchEnabled
+		and not UserInputService.MouseEnabled
+		and not UserInputService.KeyboardEnabled
+		and (self.Character.Head.Position - self.Camera.CoordinateFrame.p).Magnitude <= 2
+	then --For mobile version, but in first-person view
+		if self.FakeCamera then
+			self.CFAngles = CFrame.fromEulerAnglesXYZ(self.FakeCamera.Transform:ToEulerAnglesXYZ()) or CFrame.new()
+			if (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1 then
+				if self.CFAngles then
+					local v = self:WorldToScreen(
+						(self.Camera.CFrame * self.CFAngles:Inverse() * CFrame.new(0, 0, -4)).Position
+					)
+					local v2 = self.Camera.ViewportSize / 2
+					self.GunGUI.Crosshair.Position = (v - v2).Magnitude > 0.08 and UDim2.fromOffset(v.X, v.Y)
+						or UDim2.fromOffset(v2.X, v2.Y)
+				else
+					self.GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
+				end
+			else
+				self.GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
+			end
+		else
+			self.GunGUI.Crosshair.Position = UDim2.fromScale(0.5, 0.2)
+		end
 	end
 
 	if
@@ -702,12 +922,12 @@ function ClientGun:RenderMouse()
 	end
 end
 
-function ClientGun:RenderCam()
+function MeleeClient:RenderCam()
 	self.Camera.CoordinateFrame = self.Camera.CoordinateFrame
 		* CFrame.Angles(self.CameraSpring.p.X, self.CameraSpring.p.Y, self.CameraSpring.p.Z)
 end
 
-function ClientGun:RenderRate(dt)
+function MeleeClient:RenderRate(dt)
 	self.CommonVariables.ElapsedTime = self.CommonVariables.ElapsedTime + dt
 	if self.CommonVariables.ElapsedTime >= 1 then
 		self.CommonVariables.ElapsedTime = 0
@@ -716,7 +936,7 @@ function ClientGun:RenderRate(dt)
 	end
 end
 
-function ClientGun:RenderMotion()
+function MeleeClient:RenderMotion()
 	if self.Beam and self.Attach0 and self.Attach1 then
 		local Position = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
 		local cframe =
@@ -744,7 +964,7 @@ function ClientGun:RenderMotion()
 	end
 end
 
-function ClientGun:RenderCooldown(dt)
+function MeleeClient:RenderCooldown(dt)
 	self.CurrentVariables.ElapsedCooldownTime = self.CurrentVariables.ElapsedCooldownTime + dt
 	if self.CurrentVariables.ElapsedCooldownTime >= self.CurrentModule.CooldownTime then
 		self.CurrentVariables.ElapsedCooldownTime = 0
@@ -765,7 +985,7 @@ function ClientGun:RenderCooldown(dt)
 	end
 end
 
-function ClientGun:CancelCrosshairTweens()
+function MeleeClient:CancelCrosshairTweens()
 	for _, tween in pairs(self.ActiveCrosshairTweens) do
 		if tween then
 			tween:Cancel()
@@ -774,7 +994,7 @@ function ClientGun:CancelCrosshairTweens()
 	self.ActiveCrosshairTweens = {}
 end
 
-function ClientGun:PlayCrosshairHitAnimation(IsHeadshot)
+function MeleeClient:PlayCrosshairHitAnimation(IsHeadshot)
 	if not self.GunGUI or not self.GunGUI:FindFirstChild("Crosshair") then
 		return
 	end
@@ -903,7 +1123,7 @@ function ClientGun:PlayCrosshairHitAnimation(IsHeadshot)
 	end
 end
 
-function ClientGun:MarkHit(ClientModule, IsHeadshot)
+function MeleeClient:MarkHit(ClientModule, IsHeadshot)
 	if ClientModule.HitmarkerEnabled then
 		if IsHeadshot then
 			self.GunGUI.Crosshair.Hitmarker.ImageColor3 = ClientModule.HitmarkerColorHS
@@ -956,11 +1176,11 @@ function ClientGun:MarkHit(ClientModule, IsHeadshot)
 	--end)
 end
 
-function ClientGun:EjectShell(ShootingHandle)
+function MeleeClient:EjectShell(ShootingHandle)
 	ShootingHandle = self.VMHandleToFire
 	if self.CurrentModule.BulletShellEnabled then
 		if self.CurrentModule.BulletShellParticles then
-			function ClientGun:Spawner()
+			function MeleeClient:Spawner()
 				for i, v in pairs(self.VisualEffects.ShellEjectEffect:GetChildren()) do
 					if v.ClassName == "ParticleEmitter" then
 						local Count = 1
@@ -1004,10 +1224,10 @@ function ClientGun:EjectShell(ShootingHandle)
 	end
 end
 
-function ClientGun:RecoilCamera()
+function MeleeClient:RecoilCamera()
 	if self.CurrentModule.CameraRecoilingEnabled then
 		local Recoil = self:AddressTableValue(self.CurrentModule.ChargeAlterTable.Recoil, self.CurrentModule.Recoil)
-		local CurrentRecoil = Recoil
+		local CurrentRecoil = Recoil * (self.CommonVariables.AimDown and 1 - self.CurrentModule.RecoilRedution or 1)
 		local RecoilX = math.rad(
 			CurrentRecoil
 				* self.Math.Randomize2(
@@ -1045,7 +1265,7 @@ function ClientGun:RecoilCamera()
 	end
 end
 
-function ClientGun:SelfKnockback(p1, p2)
+function MeleeClient:SelfKnockback(p1, p2)
 	local SelfKnockbackPower = self:AddressTableValue(
 		self.CurrentModule.ChargeAlterTable.SelfKnockbackPower,
 		self.CurrentModule.SelfKnockbackPower
@@ -1072,10 +1292,15 @@ function ClientGun:SelfKnockback(p1, p2)
 	self.Torso.Velocity = self.Torso.Velocity + Vector3.new(0, VelocityMod.Y * 2, 0) * -Power
 	Debris:AddItem(TorsoFly, 0.25)
 end
-
-function ClientGun:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, FireServerDirections)
-	if self.CurrentFireAnim then
-		self.CurrentFireAnim:Play(nil, nil, self.CurrentFireAnimationSpeed)
+function MeleeClient:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, FireServerDirections)
+	if self.CurrentModule.AimAnimationsEnabled and self.CommonVariables.AimDown == true then
+		if self.CurrentAimFireAnim then
+			self.CurrentAimFireAnim:Play(nil, nil, self.CurrentAimFireAnimationSpeed)
+		end
+	else
+		if self.CurrentFireAnim then
+			self.CurrentFireAnim:Play(nil, nil, self.CurrentFireAnimationSpeed)
+		end
 	end
 
 	if self.CurrentAnimTable.MinigunRevUpAnim and self.CurrentAnimTable.MinigunRevUpAnim.IsPlaying then
@@ -1214,7 +1439,7 @@ function ClientGun:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, 
 	end)
 end
 
-function ClientGun:Overheat()
+function MeleeClient:Overheat()
 	if
 		self.CommonVariables.ActuallyEquipped
 		and self.CommonVariables.Enabled
@@ -1225,6 +1450,35 @@ function ClientGun:Overheat()
 		self.CommonVariables.Overheated = true
 		if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
 			self.CurrentAnimTable.InspectAnim:Stop()
+		end
+
+		if self.CommonVariables.AimDown then
+			TweenService:Create(
+				self.Camera,
+				TweenInfo.new(
+					self.CurrentModule.TweenLengthNAD,
+					self.CurrentModule.EasingStyleNAD,
+					self.CurrentModule.EasingDirectionNAD
+				),
+				{ FieldOfView = 70 }
+			):Play()
+			--SetCrossScale(1)
+			if
+				self.CurrentModule.AimAnimationsEnabled
+				and self.CurrentAnimTable.AimIdleAnim
+				and self.CurrentAnimTable.AimIdleAnim.IsPlaying
+			then
+				self.CurrentAnimTable.AimIdleAnim:Stop()
+
+				if self.CurrentAnimTable.IdleAnim then
+					self.CurrentAnimTable.IdleAnim:Play(nil, nil, self.CurrentModule.IdleAnimationSpeed)
+				end
+			end
+
+			self.CommonVariables.Scoping = false
+			self.Player.CameraMode = Enum.CameraMode.Classic
+			UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+			self.CommonVariables.AimDown = false
 		end
 		self:UpdateGUI()
 		if self.CommonVariables.ActuallyEquipped then
@@ -1249,7 +1503,7 @@ function ClientGun:Overheat()
 	end
 end
 
-function ClientGun:updateServerChangeMagAndAmmo()
+function MeleeClient:updateServerChangeMagAndAmmo()
 	self.ChangeMagAndAmmo:FireServer(
 		self.CurrentFireMode,
 		self.CurrentVariables.Mag,
@@ -1258,7 +1512,7 @@ function ClientGun:updateServerChangeMagAndAmmo()
 	)
 end
 
-function ClientGun:Reload()
+function MeleeClient:Reload()
 	if
 		self.CommonVariables.ActuallyEquipped
 		and self.CommonVariables.Enabled
@@ -1273,6 +1527,35 @@ function ClientGun:Reload()
 		end
 		if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
 			self.CurrentAnimTable.InspectAnim:Stop()
+		end
+
+		if not self.CurrentModule.KeepAimingOnReloading then
+			if self.CommonVariables.AimDown then
+				TweenService:Create(
+					self.Camera,
+					TweenInfo.new(
+						self.CurrentModule.TweenLengthNAD,
+						self.CurrentModule.EasingStyleNAD,
+						self.CurrentModule.EasingDirectionNAD
+					),
+					{ FieldOfView = 70 }
+				):Play()
+				if
+					self.CurrentModule.AimAnimationsEnabled
+					and self.CurrentAnimTable.AimIdleAnim
+					and self.CurrentAnimTable.AimIdleAnim.IsPlaying
+				then
+					self.CurrentAnimTable.AimIdleAnim:Stop()
+					if self.CurrentAnimTable.IdleAnim then
+						self.CurrentAnimTable.IdleAnim:Play(nil, nil, self.CurrentModule.IdleAnimationSpeed)
+					end
+				end
+
+				self.CommonVariables.Scoping = false
+				self.Player.CameraMode = Enum.CameraMode.Classic
+				UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+				self.CommonVariables.AimDown = false
+			end
 		end
 		self:UpdateGUI()
 		if self.CurrentModule.ShotgunReload then
@@ -1411,7 +1694,139 @@ function ClientGun:Reload()
 	end
 end
 
-function ClientGun:OnHoldingDown()
+function MeleeClient:OnTooglingAiming()
+	if
+		not self.CommonVariables.Reloading
+		and not self.CommonVariables.Overheated
+		and not self.CommonVariables.HoldDown
+		and not self.CommonVariables.Alting
+		and not self.CommonVariables.AimDown
+		and self.CommonVariables.ActuallyEquipped
+		and self.CurrentModule.IronsightEnabled
+		and (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1
+	then
+		if not self.CurrentModule.KeepAimingOnReloading then
+			if self.CommonVariables.Reloading or self.CommonVariables.Overheated then
+				return
+			end
+		end
+		TweenService:Create(
+			self.Camera,
+			TweenInfo.new(
+				self.CurrentModule.TweenLength,
+				self.CurrentModule.EasingStyle,
+				self.CurrentModule.EasingDirection
+			),
+			{ FieldOfView = self.CurrentModule.FieldOfViewIS }
+		):Play()
+		--SetCrossScale(self.CurrentModule.CrossScaleIS)
+		if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
+			self.CurrentAnimTable.InspectAnim:Stop()
+		end
+
+		if
+			self.CurrentModule.AimAnimationsEnabled
+			and self.CurrentAnimTable.IdleAnim
+			and self.CurrentAnimTable.IdleAnim.IsPlaying
+		then
+			self.CurrentAnimTable.IdleAnim:Stop()
+			if self.CurrentAnimTable.AimIdleAnim then
+				self.CurrentAnimTable.AimIdleAnim:Play(nil, nil, self.CurrentModule.AimIdleAnimationSpeed)
+			end
+		end
+
+		self.Player.CameraMode = Enum.CameraMode.LockFirstPerson
+		UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+			* self.CurrentModule.MouseSensitiveIS
+		self.CommonVariables.AimDown = true
+	elseif
+		not self.CommonVariables.Reloading
+		and not self.CommonVariables.Overheated
+		and not self.CommonVariables.HoldDown
+		and not self.CommonVariables.Alting
+		and self.CommonVariables.AimDown
+		and self.CommonVariables.ActuallyEquipped
+		and self.CurrentModule.SniperEnabled
+		and (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1
+	then
+		if not self.CurrentModule.KeepAimingOnReloading then
+			if self.CommonVariables.Reloading or self.CommonVariables.Overheated then
+				return
+			end
+		end
+		TweenService:Create(
+			self.Camera,
+			TweenInfo.new(
+				self.CurrentModule.TweenLength,
+				self.CurrentModule.EasingStyle,
+				self.CurrentModule.EasingDirection
+			),
+			{ FieldOfView = self.CurrentModule.FieldOfViewS }
+		):Play()
+		if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
+			self.CurrentAnimTable.InspectAnim:Stop()
+		end
+
+		if
+			self.CurrentModule.AimAnimationsEnabled
+			and self.CurrentAnimTable.IdleAnim
+			and self.CurrentAnimTable.IdleAnim.IsPlaying
+		then
+			self.CurrentAnimTable.IdleAnim:Stop()
+			if self.CurrentAnimTable.AimIdleAnim then
+				self.CurrentAnimTable.AimIdleAnim:Play(nil, nil, self.CurrentModule.AimIdleAnimationSpeed)
+			end
+		end
+
+		self.CommonVariables.AimDown = true
+		local StartTime = os.clock()
+		repeat
+			self.Thread:Wait()
+			if not (self.CommonVariables.ActuallyEquipped or self.CommonVariables.AimDown) then
+				break
+			end
+		until (os.clock() - StartTime) >= self.CurrentModule.ScopeDelay
+		if self.CommonVariables.ActuallyEquipped and self.CommonVariables.AimDown then
+			local ZoomSound = self.GunGUI.Scope.ZoomSound:Clone()
+			ZoomSound.Parent = self.PlayerGui
+			ZoomSound:Play()
+			ZoomSound.Ended:Connect(function()
+				ZoomSound:Destroy()
+			end)
+			self.Player.CameraMode = Enum.CameraMode.LockFirstPerson
+			UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+				* self.CurrentModule.MouseSensitiveS
+			self.CommonVariables.Scoping = true
+		end
+	else
+		TweenService:Create(
+			self.Camera,
+			TweenInfo.new(
+				self.CurrentModule.TweenLengthNAD,
+				self.CurrentModule.EasingStyleNAD,
+				self.CurrentModule.EasingDirectionNAD
+			),
+			{ FieldOfView = 70 }
+		):Play()
+		if
+			self.CurrentModule.AimAnimationsEnabled
+			and self.CurrentAnimTable.AimIdleAnim
+			and self.CurrentAnimTable.AimIdleAnim.IsPlaying
+		then
+			self.CurrentAnimTable.AimIdleAnim:Stop()
+			if self.CurrentAnimTable.IdleAnim then
+				self.CurrentAnimTable.IdleAnim:Play(nil, nil, self.CurrentModule.IdleAnimationSpeed)
+			end
+		end
+
+		self.CommonVariables.Scoping = false
+		self.Player.CameraMode = Enum.CameraMode.Classic
+		UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+		self.CommonVariables.AimDown = false
+	end
+end
+
+function MeleeClient:OnHoldingDown()
 	if self.CurrentModule.HoldDownEnabled then
 		if
 			not self.CommonVariables.Reloading
@@ -1431,6 +1846,24 @@ function ClientGun:OnHoldingDown()
 				if self.CurrentAnimTable.HoldDownAnim then
 					self.CurrentAnimTable.HoldDownAnim:Play(nil, nil, self.CurrentModule.HoldDownAnimationSpeed)
 				end
+
+				if self.CommonVariables.AimDown then
+					TweenService:Create(
+						self.Camera,
+						TweenInfo.new(
+							self.CurrentModule.TweenLengthNAD,
+							self.CurrentModule.EasingStyleNAD,
+							self.CurrentModule.EasingDirectionNAD
+						),
+						{ FieldOfView = 70 }
+					):Play()
+					--SetCrossScale(1)
+
+					self.CommonVariables.Scoping = false
+					self.Player.CameraMode = Enum.CameraMode.Classic
+					UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+					self.CommonVariables.AimDown = false
+				end
 			else
 				self.CommonVariables.HoldDown = false
 				if self.CurrentAnimTable.IdleAnim then
@@ -1445,12 +1878,13 @@ function ClientGun:OnHoldingDown()
 	end
 end
 
-function ClientGun:OnInspecting()
+function MeleeClient:OnInspecting()
 	if
 		not self.CommonVariables.Reloading
 		and not self.CommonVariables.Overheated
 		and self.CommonVariables.ActuallyEquipped
 		and self.CommonVariables.Enabled
+		and not self.CommonVariables.AimDown
 		and not self.CommonVariables.Inspecting
 		and not self.CommonVariables.Switching
 		and not self.CommonVariables.Alting
@@ -1469,6 +1903,7 @@ function ClientGun:OnInspecting()
 				or self.CommonVariables.Reloading
 				or self.CommonVariables.Overheated
 				or not self.CommonVariables.Enabled
+				or self.CommonVariables.AimDown
 				or self.CommonVariables.Switching
 			then
 				break
@@ -1479,7 +1914,7 @@ function ClientGun:OnInspecting()
 	end
 end
 
-function ClientGun:OnSwitching()
+function MeleeClient:OnSwitching()
 	if
 		not self.CommonVariables.Reloading
 		and not self.CommonVariables.Overheated
@@ -1523,7 +1958,7 @@ function ClientGun:OnSwitching()
 	end
 end
 
-function ClientGun:OnAlting()
+function MeleeClient:OnAlting()
 	if self.Module.AltFire and #self.Setting:GetChildren() > 1 then
 		if
 			not self.CommonVariables.Reloading
@@ -1539,6 +1974,33 @@ function ClientGun:OnAlting()
 				self.CurrentAnimTable.InspectAnim:Stop()
 			end
 
+			if self.CommonVariables.AimDown then
+				TweenService:Create(
+					self.Camera,
+					TweenInfo.new(
+						self.CurrentModule.TweenLengthNAD,
+						self.CurrentModule.EasingStyleNAD,
+						self.CurrentModule.EasingDirectionNAD
+					),
+					{ FieldOfView = 70 }
+				):Play()
+				--SetCrossScale(1)
+				if
+					self.CurrentModule.AimAnimationsEnabled
+					and self.CurrentAnimTable.AimIdleAnim
+					and self.CurrentAnimTable.AimIdleAnim.IsPlaying
+				then
+					self.CurrentAnimTable.AimIdleAnim:Stop()
+					if self.CurrentAnimTable.IdleAnim then
+						self.CurrentAnimTable.IdleAnim:Play(nil, nil, self.CurrentModule.IdleAnimationSpeed)
+					end
+				end
+
+				self.CommonVariables.Scoping = false
+				self.Player.CameraMode = Enum.CameraMode.Classic
+				UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+				self.CommonVariables.AimDown = false
+			end
 			if self.CurrentAnimTable.AltAnim then
 				self.CurrentAnimTable.AltAnim:Play(nil, nil, self.CurrentModule.SwitchAnimationSpeed)
 			end
@@ -1649,16 +2111,21 @@ function ClientGun:OnAlting()
 		end
 	end
 end
-
-function ClientGun:chargeEffect()
+function MeleeClient:chargeEffect()
 	self.CommonVariables.CanBeCooledDown = false
 	self.CommonVariables.Enabled = false
 	if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
 		self.CurrentAnimTable.InspectAnim:Stop()
 	end
 
-	if self.CurrentAnimTable.ChargingAnim and not self.CurrentAnimTable.ChargingAnim.IsPlaying then
-		self.CurrentAnimTable.ChargingAnim:Play(nil, nil, self.CurrentModule.ChargingAnimationSpeed)
+	if self.CurrentModule.AimAnimationsEnabled and self.CommonVariables.AimDown then
+		if self.CurrentAnimTable.AimChargingAnim and not self.CurrentAnimTable.AimChargingAnim.IsPlaying then
+			self.CurrentAnimTable.AimChargingAnim:Play(nil, nil, self.CurrentModule.AimChargingAnimationSpeed)
+		end
+	else
+		if self.CurrentAnimTable.ChargingAnim and not self.CurrentAnimTable.ChargingAnim.IsPlaying then
+			self.CurrentAnimTable.ChargingAnim:Play(nil, nil, self.CurrentModule.ChargingAnimationSpeed)
+		end
 	end
 	local ChargingSound = self.HandleToFire[self.CurrentFireMode]:FindFirstChild("ChargingSound")
 	local StartTime = os.clock()
@@ -1729,7 +2196,7 @@ function ClientGun:chargeEffect()
 	end
 end
 
-function ClientGun:shotShellEjectSpawnLoop(): boolean
+function MeleeClient:shotShellEjectSpawnLoop(): boolean
 	if not self.CommonVariables.ActuallyEquipped then
 		return false
 	end
@@ -1752,7 +2219,7 @@ function ClientGun:shotShellEjectSpawnLoop(): boolean
 	return true
 end
 
-function ClientGun:gunCoolDown()
+function MeleeClient:gunCoolDown()
 	self.Thread:Spawn(function()
 		self.CurrentVariables.ShotID = self.CurrentVariables.ShotID + 1
 		local LastShotID = self.CurrentVariables.ShotID
@@ -1774,7 +2241,7 @@ function ClientGun:gunCoolDown()
 	end)
 end
 
-function ClientGun:setUpFiringAnimation()
+function MeleeClient:setUpFiringAnimation()
 	if not self.CurrentModule.ShotgunPump then
 		self.HandleToFire = (self.HandleToFire == self.Handle and self.CurrentModule.DualFireEnabled) and self.Handle2
 			or self.Handle
@@ -1809,7 +2276,7 @@ function ClientGun:setUpFiringAnimation()
 	end
 end
 
-function ClientGun:gunDoneCharging()
+function MeleeClient:gunDoneCharging()
 	return self.CommonVariables.ActuallyEquipped
 		and not self.CommonVariables.Enabled
 		and not self.CommonVariables.Charging
@@ -1823,7 +2290,7 @@ function ClientGun:gunDoneCharging()
 		and self.Humanoid.Health > 0
 end
 
-function ClientGun:gunCanFire()
+function MeleeClient:gunCanFire()
 	return self.CommonVariables.ActuallyEquipped
 		and self.CommonVariables.Enabled
 		and not self.CommonVariables.Reloading
@@ -1836,7 +2303,7 @@ function ClientGun:gunCanFire()
 		and self.Humanoid.Health > 0
 end
 
-function ClientGun:OnFiring()
+function MeleeClient:OnFiring()
 	-- this is for charging up your gun
 	if self.CurrentModule.ChargedShotAdvanceEnabled and not self.CurrentModule.SelectiveFireEnabled then
 		self.CommonVariables.Charging = true
@@ -2564,7 +3031,7 @@ function ClientGun:OnFiring()
 	end
 end
 
-function ClientGun:OnStoppingFiring()
+function MeleeClient:OnStoppingFiring()
 	self.CommonVariables.Down = false
 	if self.CurrentModule.ChargedShotAdvanceEnabled or self.CurrentModule.HoldAndReleaseEnabled then
 		self.CommonVariables.Charging = false
@@ -2584,7 +3051,117 @@ function ClientGun:OnStoppingFiring()
 	end
 end
 
-function ClientGun:OnEquip()
+function MeleeClient:OnMeleeSequenceTriggered(ShootingHandle)
+	local Direction = ((ShootingHandle["MeleeHitPoint" .. self.CurrentFireMode].WorldCFrame * CFrame.new(
+		0,
+		0,
+		-self.CurrentModule.MeleeAttackRange
+	)).p - ShootingHandle["MeleeHitPoint" .. self.CurrentFireMode].WorldPosition).Unit
+	local MeleeRay = Ray.new(
+		ShootingHandle["MeleeHitPoint" .. self.CurrentFireMode].WorldPosition,
+		Direction * self.CurrentModule.MeleeAttackRange
+	)
+	local Hit, Pos, Norm, Material = Workspace:FindPartOnRayWithIgnoreList(MeleeRay, { self.Camera, self.Tool.Parent })
+	if Hit then
+		if Hit.Name == "_glass" then
+			self.ShatterGlass:FireServer(Hit, Pos, Direction)
+		else
+			local Target = Hit:FindFirstAncestorOfClass("Model")
+			local TargetHumanoid = Target and Target:FindFirstChildOfClass("Humanoid")
+			local TargetTorso = Target and (Target:FindFirstChild("HumanoidRootPart") or Target:FindFirstChild("Head"))
+			local VisualEffects2 = self.VisualEffects
+			if self.VisualEffects:FindFirstChild(self.CurrentModule.ModuleName) then
+				VisualEffects2 = self.VisualEffects[self.CurrentModule]
+			end
+			if TargetHumanoid and TargetHumanoid.Health > 0 and TargetTorso then
+				self.ProjectileHandler:VisualizeHitEffect(
+					"Blood",
+					Hit,
+					Pos,
+					Norm,
+					Material,
+					self.CurrentModule,
+					{ BloodEffectFolder = VisualEffects2.MeleeBloodEffect },
+					true
+				)
+				if TargetHumanoid.Health > 0 then
+					self.Thread:Spawn(function()
+						self.InflictTarget:InvokeServer(
+							"GunMelee",
+							self.Tool,
+							self.CurrentModule,
+							TargetHumanoid,
+							TargetTorso,
+							Hit
+						)
+					end)
+					self:MarkHit(self.CurrentModule, Hit.Name == "Head" and self.CurrentModule.MeleeHeadshotEnabled)
+				end
+			else
+				self.ProjectileHandler:VisualizeHitEffect(
+					"Normal",
+					Hit,
+					Pos,
+					Norm,
+					Material,
+					self.CurrentModule,
+					{ HitEffectFolder = VisualEffects2.MeleeHitEffect },
+					true
+				)
+			end
+		end
+	end
+end
+
+function MeleeClient:OnMeleeAttacking()
+	if self.CurrentModule.MeleeAttackEnabled then
+		if self.CurrentAnimTable.MeleeAttackAnim and self.CurrentAnimTable.MeleeAttackAnim.Length > 0 then
+			local Connection
+			if
+				self.CommonVariables.ActuallyEquipped
+				and self.CommonVariables.Enabled
+				and not self.CommonVariables.Overheated
+				and not self.CommonVariables.Switching
+				and not self.CommonVariables.Alting
+				and not self.CommonVariables.AimDown
+				and self.Humanoid.Health > 0
+			then
+				self.CommonVariables.Enabled = false
+				if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
+					self.CurrentAnimTable.InspectAnim:Stop()
+				end
+				self.CurrentAnimTable.MeleeAttackAnim:Play(nil, nil, self.CurrentModule.MeleeAttackAnimationSpeed)
+				if
+					self.CommonVariables.ActuallyEquipped
+					and self.HandleToFire[self.CurrentFireMode]:FindFirstChild("MeleeSwingSound")
+				then
+					self.HandleToFire[self.CurrentFireMode].MeleeSwingSound:Play()
+				end
+				Connection = self.CurrentAnimTable.MeleeAttackAnim
+					:GetMarkerReachedSignal("MeleeDamageSequence")
+					:Connect(function()
+						if (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude > 1 then
+							self:OnMeleeSequenceTriggered(self.Handle)
+						end
+						if Connection then
+							Connection:Disconnect()
+							Connection = nil
+						end
+					end)
+
+				if (self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1 then
+					self.CurrentVMAnimTable.VMMeleeAttackAnim.Stopped:Wait()
+				else
+					self.CurrentAnimTable.MeleeAttackAnim.Stopped:Wait()
+				end
+				self.CurrentAnimTable.MeleeAttackAnim.Stopped:Wait()
+				self.CommonVariables.Enabled = true
+			end
+		end
+	end
+end
+
+function MeleeClient:OnEquip()
 	self.GunGUI = self.Hud:Clone()
 	self.GunGUI.Parent = self.PlayerGui
 
@@ -2592,6 +3169,9 @@ function ClientGun:OnEquip()
 		local MobileButtons = self.GunGUI:WaitForChild("MobileButtons")
 		MobileButtons.Visible = true
 
+		self.connections[#self.connections + 1] = MobileButtons.AimButton.MouseButton1Click:Connect(function()
+			self:OnTooglingAiming()
+		end)
 		self.connections[#self.connections + 1] = MobileButtons.HoldDownButton.MouseButton1Click:Connect(function()
 			self:OnHoldingDown()
 		end)
@@ -2609,6 +3189,9 @@ function ClientGun:OnEquip()
 		end)
 		self.connections[#self.connections + 1] = MobileButtons.FireButton.MouseButton1Up:Connect(function()
 			self:OnStoppingFiring()
+		end)
+		self.connections[#self.connections + 1] = MobileButtons.MeleeButton.MouseButton1Click:Connect(function()
+			self:OnMeleeAttacking()
 		end)
 		self.connections[#self.connections + 1] = MobileButtons.AltButton.MouseButton1Click:Connect(function()
 			self:OnAlting()
@@ -2678,6 +3261,7 @@ function ClientGun:OnEquip()
 	RunService:BindToRenderStep(self.BindToStepName, Enum.RenderPriority.Camera.Value, function(dt)
 		--Update crosshair and scope
 		self:RenderMouse()
+		self:RenderScope() -- TODO LOOK in to Removing
 		--Update camera
 		self:RenderCam()
 		--Update rate
@@ -2724,7 +3308,7 @@ function ClientGun:OnEquip()
 	--// connections
 end
 
-function ClientGun:OnUnequipped()
+function MeleeClient:OnUnequipped()
 	self.Thread:Spawn(function()
 		if self.GunGUI then
 			self.GunGUI:Destroy()
@@ -2791,8 +3375,29 @@ function ClientGun:OnUnequipped()
 					end
 				end
 			end
+			if self.CommonVariables.AimDown then
+				TweenService:Create(
+					self.Camera,
+					TweenInfo.new(
+						self.CurrentModule.TweenLengthNAD,
+						self.CurrentModule.EasingStyleNAD,
+						self.CurrentModule.EasingDirectionNAD
+					),
+					{ FieldOfView = 70 }
+				):Play()
+
+				self.CommonVariables.Scoping = false
+				self.Player.CameraMode = Enum.CameraMode.Classic
+				UserInputService.MouseDeltaSensitivity = self.CommonVariables.InitialSensitivity
+				self.CommonVariables.AimDown = false
+			end
+
+			self.FakeCamera = nil
 		end
 	end)
 end
 
-return ClientGunHandler
+
+
+
+return MeleeClientHandler
