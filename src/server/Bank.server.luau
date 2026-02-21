@@ -12,8 +12,6 @@ local goldFolder = game.Workspace.BankHeist:WaitForChild("GoldFolder")
 local replicatedGold = ReplicatedStorage:WaitForChild("AllGold")
 
 local function onGoldCollected(promptObject, player)
-	print("ProximityPrompt triggered by", player)
-
 	if not player:FindFirstChild("canrob") or not player.canrob.Value then return end
 
 	local character = player.Character

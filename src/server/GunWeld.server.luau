@@ -61,3 +61,30 @@ Players.PlayerAdded:Connect(function(player)
 		end)
 	end)
 end)
+
+SetUpTable = {}
+
+local function setup(child)
+	if not child:FindFirstChild("Setting") or not child:FindFirstChild("ChangeMagAndAmmo") then
+		return
+	end
+	-- if SetUpTable[child] == nil then
+	-- 	SetUpTable[child] = {}
+	-- end
+	if SetUpTable[child] ~= true then
+		SetUpTable[child] = true
+		createGrips(child)
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(character)
+		local backpack = Players:GetPlayerFromCharacter(character).Backpack
+		for _, child in backpack:GetChildren() do
+			setup(child)
+		end
+		backpack.ChildAdded:Connect(function(child)
+			setup(child)
+		end)
+	end)
+end)

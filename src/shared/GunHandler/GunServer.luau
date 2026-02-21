@@ -215,7 +215,7 @@ function GunHanlderServer.new(Tool)
 		end
 	end)
 
-	Tool.Equipped:Connect(function()
+	local function OnEquip()
 		local Character = Tool.Parent
 		local LeftArm = Character:FindFirstChild("Left Arm") or Character:FindFirstChild("LeftHand")
 		local RightArm = Character:FindFirstChild("Right Arm") or Character:FindFirstChild("RightHand")
@@ -239,7 +239,8 @@ function GunHanlderServer.new(Tool)
 				end
 			end
 		end
-	end)
+	end
+	Tool.Equipped:Connect(OnEquip)
 
 	Tool.Unequipped:Connect(function()
 		if Module.CustomGripEnabled and not Tool.RequiresHandle then
