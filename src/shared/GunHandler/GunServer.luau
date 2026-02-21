@@ -321,7 +321,7 @@ function GunHanlderServer.new(Tool)
 	local FLING_FORCE = 150
 	local FLING_UPWARD = 50
 
-	FlingDeadBody.OnServerEvent:Connect(function(player, hitPart, direction)
+	FlingDeadBody.OnServerEvent:Connect(function(_, hitPart, direction)
 		if not hitPart or not hitPart:IsA("BasePart") or not direction or typeof(direction) ~= "Vector3" then
 			return
 		end

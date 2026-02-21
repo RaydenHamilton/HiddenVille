@@ -1,7 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local setupClient = ReplicatedStorage.SetupGun
-local gunServer = require(ReplicatedStorage.Shared.GunHandler.GunServer)
+local gunHandler = ReplicatedStorage.Shared.GunHandler
+local gunServer = require(gunHandler.GunServer)
+local gunWeld = require(gunHandler.GunWeld)
 
 SetUpTable = {}
 
@@ -13,9 +15,14 @@ local function setup(child, character)
 	-- if SetUpTable[child] == nil then
 	-- 	SetUpTable[child] = {}
 	-- end
-	if SetUpTable[child] ~= true then
-		SetUpTable[child] = true
+	if SetUpTable[child] == nil then
+		SetUpTable[child] = {}
 		gunServer.new(child)
+		gunWeld.new(child)
+	end
+	-- when gun setup still
+	if SetUpTable[child][player] ~= true then
+		SetUpTable[child][player] = true
 		setupClient:FireClient(player, child)
 	end
 end

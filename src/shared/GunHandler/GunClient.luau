@@ -352,6 +352,56 @@ function ClientGun:SetCrosshairColor(color)
 	end
 end
 
+function ClientGun:getMuzzleOrigin()
+	local char = self.Player.Character
+	if not char then
+		return nil
+	end
+
+	if self.Tool and self.Tool:IsA("Tool") then
+		local handle = self.Tool:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
+			local att = handle:FindFirstChild("Muzzle") or handle:FindFirstChild("Barrel")
+			if att and att:IsA("Attachment") then
+				return att.WorldPosition
+			end
+			return handle.Position
+		end
+	end
+
+	local head = char:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		return head.Position
+	end
+
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	return (hrp and hrp.Position) or nil
+end
+
+function ClientGun:IsAimingAtPlayerFromGunToMouse()
+	if not self.GunGUI or not self.GunGUI:FindFirstChild("Crosshair") then
+		return false
+	end
+	local crosshairPos = self.GunGUI.Crosshair.AbsolutePosition
+	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), InputRay.Direction * 1000, raycastParams)
+	if raycastResult and raycastResult.Instance then
+		local hitPart = raycastResult.Instance
+		local model = hitPart:FindFirstAncestorOfClass("Model")
+		if model then
+			local humanoid = model:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.Health > 0 then
+				if self.DamageModule.CanDamage(model, self.Character, self.CurrentModule.FriendlyFire) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
 function ClientGun:IsAimingAtPlayer()
 	if not self.GunGUI or not self.GunGUI:FindFirstChild("Crosshair") then
 		return false
@@ -1062,7 +1112,7 @@ function ClientGun:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, 
 			Origin = ShootingHandle:FindFirstChild("GunMuzzlePoint" .. self.CurrentFireMode),
 		}, true)
 	end
-	if self:IsAimingAtPlayer() then
+	if self:IsAimingAtPlayerFromGunToMouse() then
 		self:MarkHit(self.CurrentModule, false)
 	end
 	self.ProjectileHandler:SimulateProjectile(
@@ -1216,11 +1266,6 @@ function ClientGun:Reload()
 							self.CurrentVariables.Mag = self.CurrentVariables.Mag + 1
 							self.CurrentVariables.Ammo = self.CurrentVariables.Ammo - 1
 							self:updateServerChangeMagAndAmmo()
-							-- if self.Module.MagCartridge and not self.CurrentModule.BatteryEnabled then
-							-- 	for i = 1, self.CurrentVariables.Mag do
-							-- 		self.GunGUI.MagCartridge[i].Visible = true
-							-- 	end
-							-- end
 							self:UpdateGUI()
 						end
 					end

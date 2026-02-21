@@ -1,8 +1,6 @@
-local Players = game:GetService("Players")
-
+local gunWeld = {}
 local ToolWelds = {}
-
-local function createGrips(Tool)
+function gunWeld.new(Tool)
 	if Tool:isA("Tool") then
 		local WeldName = "RightMotor6DGrip"
 
@@ -49,42 +47,5 @@ local function createGrips(Tool)
 		Tool.Unequipped:Connect(Tool_Unequip)
 	end
 end
-local createdGrips = {}
 
-Players.PlayerAdded:Connect(function(player)
-	player.CharacterAdded:Connect(function(character)
-		player = Players:GetPlayerFromCharacter(character)
-		local backpack = player:WaitForChild("Backpack")
-		backpack.ChildAdded:Connect(function(tool)
-			createdGrips[tool] = true
-			createGrips(tool)
-		end)
-	end)
-end)
-
-SetUpTable = {}
-
-local function setup(child)
-	if not child:isA("Tool") then
-		return
-	end
-	-- if SetUpTable[child] == nil then
-	-- 	SetUpTable[child] = {}
-	-- end
-	if SetUpTable[child] ~= true then
-		SetUpTable[child] = true
-		createGrips(child)
-	end
-end
-
-Players.PlayerAdded:Connect(function(player)
-	player.CharacterAdded:Connect(function(character)
-		local backpack = Players:GetPlayerFromCharacter(character).Backpack
-		for _, child in backpack:GetChildren() do
-			setup(child)
-		end
-		backpack.ChildAdded:Connect(function(child)
-			setup(child)
-		end)
-	end)
-end)
+return gunWeld
