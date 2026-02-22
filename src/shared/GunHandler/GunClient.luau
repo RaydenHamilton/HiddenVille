@@ -20,7 +20,6 @@ function ClientGunHandler.new(tool: Tool)
 	--// References
 	local Miscs = ReplicatedStorage:WaitForChild("Miscs")
 	local Modules = ReplicatedStorage:WaitForChild("Modules")
-	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 	local GunVisualEffects = Miscs.GunVisualEffects
 
@@ -57,14 +56,10 @@ function ClientGunHandler.new(tool: Tool)
 	self.GunGUI = nil
 	self.Empty = self.Humanoid:LoadAnimation(self.Tool:FindFirstChild("Empty"))
 	self.Handle = self.Tool:WaitForChild(self.Module.PrimaryHandle)
-	self.BeamEnd = self.Tool:FindFirstChild("End", true) :: Attachment?
-	self.BeamOrigin = self.Tool:FindFirstChild("Origin", true) :: Attachment?
 	--// connections
 	self.MarkerEvent = self.Tool:WaitForChild("MarkerEvent")
 	self.ChangeMagAndAmmo = self.Tool:WaitForChild("ChangeMagAndAmmo")
 	self.FlingDeadBody = self.Tool:WaitForChild("FlingDeadBody")
-	self.InflictTarget = Remotes.InflictTarget
-	self.ShatterGlass = Remotes.ShatterGlass
 
 	--// Assets
 	self.BindToStepName = "UpdateGun_" .. HttpService:GenerateGUID()
@@ -382,12 +377,17 @@ function ClientGun:IsAimingAtPlayerFromGunToMouse()
 	if not self.GunGUI or not self.GunGUI:FindFirstChild("Crosshair") then
 		return false
 	end
-	local crosshairPos = self.GunGUI.Crosshair.AbsolutePosition
-	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
+	local success, result = self:IsAimingAtPlayer()
+	if not success then
+		return false
+	end
+	local muzzlePosition = self:getMuzzleOrigin()
+	local targetPosition = result.Position
+	local Direction = (targetPosition - muzzlePosition).Unit
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), InputRay.Direction * 1000, raycastParams)
+	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), Direction * 1000, raycastParams)
 	if raycastResult and raycastResult.Instance then
 		local hitPart = raycastResult.Instance
 		local model = hitPart:FindFirstAncestorOfClass("Model")
@@ -422,7 +422,7 @@ function ClientGun:IsAimingAtPlayer()
 			if humanoid and humanoid.Health > 0 then
 				-- Make sure it's a damageable target
 				if self.DamageModule.CanDamage(model, self.Character, self.CurrentModule.FriendlyFire) then
-					return true
+					return true, raycastResult
 				end
 			end
 		end
@@ -952,7 +952,7 @@ function ClientGun:MarkHit(ClientModule, IsHeadshot)
 	end
 
 	-- Play cool crosshair hit animation
-	self:PlayCrosshairHitAnimation(IsHeadshot)
+	-- self:PlayCrosshairHitAnimation(IsHeadshot)
 
 	-- Set crosshair to red temporarily when hitting someone
 	self:SetCrosshairColor(self.CrossHairColors.Hit)
@@ -2063,7 +2063,6 @@ function ClientGun:OnEquip()
 		if self.CurrentModule.BatteryEnabled then
 			self:RenderCooldown(dt)
 		end
-		self:MoveBeamEnd()
 	end)
 
 	if self.CurrentAnimTable.EquippedAnim then
@@ -2096,22 +2095,6 @@ function ClientGun:OnEquip()
 	end
 
 	--// connections
-end
-
-function ClientGun:MoveBeamEnd()
-	if not (self.BeamOrigin and self.BeamEnd) then
-		return
-	end
-	local origin = self.BeamOrigin.WorldPosition
-	local direction = self.BeamOrigin.WorldCFrame.LookVector * 300
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
-	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	raycastParams.IgnoreWater = true
-	local result = Workspace:Raycast(origin, direction, raycastParams)
-	local endPos = result and result.Position or (origin + direction)
-
-	self.BeamEnd.WorldPosition = endPos
 end
 
 function ClientGun:OnUnequipped()

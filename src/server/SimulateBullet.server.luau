@@ -190,12 +190,8 @@ local function SecureSettings(Player, Tool, Module)
 	end
 end
 
-local function AddressTableValue(enabled, level, v1, v2)
-	if v1 ~= nil and enabled then
-		return ((level == 1 and v1.Level1) or (level == 2 and v1.Level2) or (level == 3 and v1.Level3) or v2)
-	else
-		return v2
-	end
+local function AddressTableValue(v2)
+	return v2
 end
 
 local function CalculateDamage(Damage, TravelDistance, ZeroDamageDistance, FullDamageDistance)
@@ -258,7 +254,7 @@ VisualizeBullet.OnServerEvent:Connect(
 	end
 )
 
-ShatterGlass.OnServerEvent:Connect(function(Player, Hit, Pos, Dir)
+ShatterGlass.OnServerEvent:Connect(function(_, Hit)
 	if Hit then
 		if Hit.Name == "_glass" then
 			local ogtran = Hit.Transparency
@@ -281,7 +277,7 @@ ShatterGlass.OnServerEvent:Connect(function(Player, Hit, Pos, Dir)
 					Hit.CanQuery = false
 					Hit.Transparency = 1
 
-					wait(RegenTime)
+					task.wait(RegenTime)
 					if Hit.Parent:FindFirstChild("_repair") then
 						Hit.Parent:FindFirstChild("_repair").ClickDetector.Enabled = false
 						Hit.Parent:FindFirstChild("_repair").CanCollide = false
@@ -357,96 +353,21 @@ end)
 local function InflictGun(Player, Tool, ClientModule, TargetHumanoid, TargetTorso, Hit, Misc, HitDist)
 	SecureSettings(Player, Tool, ClientModule)
 	local ModifiedSetting = {
-		ExplosiveEnabled = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.ExplosiveEnabled,
-			ClientModule.ExplosiveEnabled
-		),
-		ExplosionRadius = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.ExplosionRadius,
-			ClientModule.ExplosionRadius
-		),
-		SelfDamage = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.SelfDamage,
-			ClientModule.SelfDamage
-		),
-		SelfDamageRedution = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.SelfDamageRedution,
-			ClientModule.SelfDamageRedution
-		),
-		ReduceSelfDamageOnAirOnly = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.ReduceSelfDamageOnAirOnly,
-			ClientModule.ReduceSelfDamageOnAirOnly
-		),
-		BaseDamage = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.BaseDamage,
-			ClientModule.BaseDamage
-		),
-		HeadshotDamageMultiplier = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.HeadshotDamageMultiplier,
-			ClientModule.HeadshotDamageMultiplier
-		),
-		ZeroDamageDistance = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.ZeroDamageDistance,
-			ClientModule.ZeroDamageDistance
-		),
-		FullDamageDistance = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.FullDamageDistance,
-			ClientModule.FullDamageDistance
-		),
-		CriticalBaseChance = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.CriticalBaseChance,
-			ClientModule.CriticalBaseChance
-		),
-		CriticalDamageMultiplier = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.CriticalDamageMultiplier,
-			ClientModule.CriticalDamageMultiplier
-		),
-		Knockback = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.Knockback,
-			ClientModule.Knockback
-		),
-		Lifesteal = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.Lifesteal,
-			ClientModule.Lifesteal
-		),
-		DebuffName = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.DebuffName,
-			ClientModule.DebuffName
-		),
-		DebuffChance = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Misc.ChargeLevel,
-			ClientModule.ChargeAlterTable.DebuffChance,
-			ClientModule.DebuffChance
-		),
+		ExplosiveEnabled = AddressTableValue(ClientModule.ExplosiveEnabled),
+		ExplosionRadius = AddressTableValue(ClientModule.ExplosionRadius),
+		SelfDamage = AddressTableValue(ClientModule.SelfDamage),
+		SelfDamageRedution = AddressTableValue(ClientModule.SelfDamageRedution),
+		ReduceSelfDamageOnAirOnly = AddressTableValue(ClientModule.ReduceSelfDamageOnAirOnly),
+		BaseDamage = AddressTableValue(ClientModule.BaseDamage),
+		HeadshotDamageMultiplier = AddressTableValue(ClientModule.HeadshotDamageMultiplier),
+		ZeroDamageDistance = AddressTableValue(ClientModule.ZeroDamageDistance),
+		FullDamageDistance = AddressTableValue(ClientModule.FullDamageDistance),
+		CriticalBaseChance = AddressTableValue(ClientModule.CriticalBaseChance),
+		CriticalDamageMultiplier = AddressTableValue(ClientModule.CriticalDamageMultiplier),
+		Knockback = AddressTableValue(ClientModule.Knockback),
+		Lifesteal = AddressTableValue(ClientModule.Lifesteal),
+		DebuffName = AddressTableValue(ClientModule.DebuffName),
+		DebuffChance = AddressTableValue(ClientModule.DebuffChance),
 	}
 	local Character = Player.Character
 	local Humanoid = Character:FindFirstChildOfClass("Humanoid")

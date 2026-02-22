@@ -4,8 +4,8 @@ local setupClient = ReplicatedStorage.SetupGun
 local gunHandler = ReplicatedStorage.Shared.GunHandler
 local gunServer = require(gunHandler.GunServer)
 local gunWeld = require(gunHandler.GunWeld)
-
-SetUpTable = {}
+local gunLaser = require(gunHandler.GunLaser)
+local SetUpTable = {}
 
 local function setup(child, character)
 	if not child:FindFirstChild("Setting") or not child:FindFirstChild("ChangeMagAndAmmo") then
@@ -19,6 +19,7 @@ local function setup(child, character)
 		SetUpTable[child] = {}
 		gunServer.new(child)
 		gunWeld.new(child)
+		gunLaser.new(child)
 	end
 	-- when gun setup still
 	if SetUpTable[child][player] ~= true then
