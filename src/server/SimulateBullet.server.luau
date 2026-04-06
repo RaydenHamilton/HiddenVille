@@ -13,7 +13,6 @@ local DamageModule = require(Modules.DamageModule)
 local PlayAudio = Remotes.PlayAudio
 local VisualizeHitEffect = Remotes.VisualizeHitEffect
 local VisualizeBullet = Remotes.VisualizeBullet
-local VisualizeGore = Remotes.VisualizeGore
 local ShatterGlass = Remotes.ShatterGlass
 local InflictTarget = Remotes.InflictTarget
 local RegenTime = 180
@@ -580,34 +579,6 @@ local function InflictGun(Player, Tool, ClientModule, TargetHumanoid, TargetTors
 							Debuff.Parent = TargetHumanoid.Parent
 							Debuff.Disabled = false
 						end
-					end
-				end
-			end
-			if TargetHumanoid.Health - TrueDamage <= 0 and not TargetHumanoid.Parent:FindFirstChild("gibbed") then
-				if Hit then
-					if
-						Hit.Name == "Head"
-						or Hit.Name == "Torso"
-						or Hit.Name == "Left Arm"
-						or Hit.Name == "Right Arm"
-						or Hit.Name == "Right Leg"
-						or Hit.Name == "Left Leg"
-						or Hit.Name == "UpperTorso"
-						or Hit.Name == "LowerTorso"
-						or Hit.Name == "LeftUpperArm"
-						or Hit.Name == "LeftLowerArm"
-						or Hit.Name == "LeftHand"
-						or Hit.Name == "RightUpperArm"
-						or Hit.Name == "RightLowerArm"
-						or Hit.Name == "RightHand"
-						or Hit.Name == "RightUpperLeg"
-						or Hit.Name == "RightLowerLeg"
-						or Hit.Name == "RightFoot"
-						or Hit.Name == "LeftUpperLeg"
-						or Hit.Name == "LeftLowerLeg"
-						or Hit.Name == "LeftFoot"
-					then
-						VisualizeGore:FireAllClients(Hit, TargetHumanoid.Parent, ClientModule, Misc.GoreEffect)
 					end
 				end
 			end

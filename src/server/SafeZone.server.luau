@@ -5,7 +5,7 @@ for _, Safezone in ipairs(Workspace.Safezones:GetChildren()) do
 	local TeleportPart = Safezone:WaitForChild("TP")
 
 	local offset = 5
-	local NotificationEvent = ReplicatedStorage:FindFirstChild("NotificationEvent")
+	local NotificationEvent = ReplicatedStorage.Remotes:FindFirstChild("NotificationEvent")
 
 	local function IsInSafezone(character)
 		if not character or not character.PrimaryPart then

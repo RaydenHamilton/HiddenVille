@@ -1,8 +1,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local moneyTransferEvent = ReplicatedStorage:WaitForChild("SendMoneyEvent")
-local uiEvent = ReplicatedStorage:WaitForChild("MoneyTransferUI")
+local moneyTransferEvent = ReplicatedStorage.Remotes:WaitForChild("SendMoneyEvent")
+local uiEvent = ReplicatedStorage.Remotes:WaitForChild("MoneyTransferUI")
 
 local cooldownTime = 10
 local cooldowns = {}

@@ -185,7 +185,7 @@ local function onTriggered(trigger, plr)
 	end
 
 	if states.inUse and states.inUse ~= plr.Name then
-		ReplicatedStorage.NotificationEvent:FireClient(plr, "This pot is not useable.")
+		ReplicatedStorage.Remotes.NotificationEvent:FireClient(plr, "This pot is not useable.")
 		return
 	end
 
@@ -195,7 +195,7 @@ local function onTriggered(trigger, plr)
 	local hasPowder = (char and char:FindFirstChild("Powder")) or (backpack and backpack:FindFirstChild("Powder"))
 
 	if not hasStick or not hasPowder then
-		ReplicatedStorage.NotificationEvent:FireClient(plr, "You do not have the required ingredients.")
+		ReplicatedStorage.Remotes.NotificationEvent:FireClient(plr, "You do not have the required ingredients.")
 		return
 	end
 
@@ -238,7 +238,7 @@ local function onTriggered(trigger, plr)
 			end)
 		end
 	else
-		ReplicatedStorage.NotificationEvent:FireClient(plr, "This pot is not useable.")
+		ReplicatedStorage.Remotes.NotificationEvent:FireClient(plr, "This pot is not useable.")
 	end
 end
 

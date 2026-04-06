@@ -8,7 +8,7 @@ for _, Folder in Workspace.TurfSystem:getChildren() do
 	local TweenService = game:GetService("TweenService")
 	local RunService = game:GetService("RunService")
 
-	local NotificationEvent = ReplicatedStorage:WaitForChild("NotificationEvent")
+	local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
 
 	local Main = Folder
 	local ProximityPromptIn = Main:FindFirstChild("Inside", true).ProximityPrompt

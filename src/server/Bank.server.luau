@@ -12,13 +12,19 @@ local goldFolder = game.Workspace.BankHeist:WaitForChild("GoldFolder")
 local replicatedGold = ReplicatedStorage:WaitForChild("AllGold")
 
 local function onGoldCollected(promptObject, player)
-	if not player:FindFirstChild("canrob") or not player.canrob.Value then return end
+	if not player:FindFirstChild("canrob") or not player.canrob.Value then
+		return
+	end
 
 	local character = player.Character
-	if not character then return end
+	if not character then
+		return
+	end
 
 	local duffel = character:FindFirstChild("DuffelBag")
-	if not duffel then return end
+	if not duffel then
+		return
+	end
 
 	local maxCapacity = duffel:FindFirstChild("gamepass") and duffel.gamepass.Value and 10 or 5
 	local currentGold = duffel:FindFirstChild("goldvalue")
@@ -68,12 +74,13 @@ local function resetGold()
 end
 
 pp.Triggered:Connect(function(plr)
-
 	-- ❌ REMOVED MASK REQUIREMENT
 	-- No more balaclava check
 
 	local c4 = plr.Backpack:FindFirstChild("C4") or plr.Character:FindFirstChild("C4")
-	if not c4 then return end
+	if not c4 then
+		return
+	end
 
 	pp.Enabled = false
 	c4:Destroy()
@@ -92,16 +99,19 @@ pp.Triggered:Connect(function(plr)
 	partC4.Transparency = 1
 	mainDoor.Parent = game.ReplicatedStorage
 
-	ReplicatedStorage.NotificationEvent:FireAllClients("The bank has been robbed.")
+	ReplicatedStorage.Remotes.NotificationEvent:FireAllClients("The bank has been robbed.")
 
 	for _, player in ipairs(game.Players:GetPlayers()) do
-		if player == plr then continue end
+		if player == plr then
+			continue
+		end
 
 		local canrob = player:FindFirstChild("canrob")
 		local playerGui = player:FindFirstChild("PlayerGui")
 		if canrob and playerGui then
 			canrob.Value = true
-			local bankAlarm = playerGui:FindFirstChild("MainScreen") and playerGui.MainScreen:FindFirstChild("BankAlarm")
+			local bankAlarm = playerGui:FindFirstChild("MainScreen")
+				and playerGui.MainScreen:FindFirstChild("BankAlarm")
 			if bankAlarm then
 				bankAlarm:Play()
 			end
@@ -126,7 +136,7 @@ pp.Triggered:Connect(function(plr)
 		end
 	end
 
-	ReplicatedStorage.NotificationEvent:FireAllClients("The bank has been reset.")
+	ReplicatedStorage.Remotes.NotificationEvent:FireAllClients("The bank has been reset.")
 end)
 
 resetGold()

@@ -10,7 +10,7 @@ for _, Model in Workspace.CarRobberySystem:GetChildren() do
 	local proximity2 = pad.Prox2
 	local Elbow = proximity.Elbow
 	local GrabCash = proximity2.GrabCash
-	local CashPocket = proximity2.CashPocket
+	local CashPocket = proximity2.GrabCash
 	local GlassBreak = pad.GlassBreak
 	local CarAlarm = pad.CarAlarm
 

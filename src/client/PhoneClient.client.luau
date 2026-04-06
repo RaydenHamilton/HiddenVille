@@ -44,4 +44,3 @@ end
 
 updateText()
 moneyValue:GetPropertyChangedSignal("Value"):Connect(updateText)
-

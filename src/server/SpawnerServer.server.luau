@@ -2,10 +2,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 
-local SpawnToolEvent = ReplicatedStorage:WaitForChild("SpawnTool")
-local UpdateSpawns = ReplicatedStorage:WaitForChild("UpdateSpawns")
-local SendSpawners = ReplicatedStorage:WaitForChild("SendSpawners")
-local RequestSpawners = ReplicatedStorage:WaitForChild("RequestSpawners")
+local SpawnToolEvent = ReplicatedStorage.Remotes:WaitForChild("SpawnTool")
+local UpdateSpawns = ReplicatedStorage.Remotes:WaitForChild("UpdateSpawns")
+local SendSpawners = ReplicatedStorage.Remotes:WaitForChild("SendSpawners")
+local RequestSpawners = ReplicatedStorage.Remotes:WaitForChild("RequestSpawners")
 
 local MAX_SPAWNS = 5
 local REGEN_TIME = 1500

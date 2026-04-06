@@ -12,8 +12,8 @@ local PlaceBoxPrompt = Main:FindFirstChild("PlaceBox").ProximityPrompt
 local Box = ServerStorage:WaitForChild("Tools").Box
 local BoxAnimation = ReplicatedStorage:FindFirstChild("BoxAnimation")
 
-local ToggleBackpackUI = ReplicatedStorage:WaitForChild("ToggleBackpackUI")
-local NotificationEvent = ReplicatedStorage:FindFirstChild("NotificationEvent")
+local ToggleBackpackUI = ReplicatedStorage.Remotes:WaitForChild("ToggleBackpackUI")
+local NotificationEvent = ReplicatedStorage.Remotes:FindFirstChild("NotificationEvent")
 
 local ProximityDistance = 150
 local GamepassID = 1331110346

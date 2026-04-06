@@ -5,7 +5,7 @@ for _, model in Workspace["Group Reward Circles"]:GetChildren() do
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 	-- notification system event
-	local NotificationEvent = ReplicatedStorage:WaitForChild("NotificationEvent")
+	local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
 
 	model.Part.ProximityPrompt.Triggered:Connect(function(Player)
 		if

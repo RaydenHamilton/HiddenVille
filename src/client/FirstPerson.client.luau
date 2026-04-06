@@ -1,19 +1,21 @@
+--TODO make cusome first person script
+
 local Players = game:GetService("Players")
+local ProcessInstancePhysicsService = game:GetService("ProcessInstancePhysicsService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 -- Tuned so camera sits just in front of eyes
+local character = player.Character or player.CharacterAdded:Wait()
 
-local function IsFirstPerson(bool)
-	local char = player.Character
-	local head = char and char:FindFirstChild("Head")
-	if not head then
-		return false
-	end
-	return (camera.CFrame.Position - head.Position).Magnitude < (bool and 0.9 or 5)
-end
+-- local id = character:WaitForChild("Head").MeshId
+local headClone = ReplicatedStorage:WaitForChild("Miscs").GibsR15.rig.Head:Clone()
+headClone.CanCollide = false
+headClone.CanQuery = false
+
 local function SetCharacterVisible(char, visible)
 	for _, obj in ipairs(char:GetDescendants()) do
 		if obj:IsA("BasePart") then
@@ -25,11 +27,7 @@ end
 local function HideHeadAndFace(char, hide)
 	for _, obj in ipairs(char:GetDescendants()) do
 		if obj:IsA("BasePart") then
-			if
-				obj.Parent:IsA("Accessory") or obj.Name == "Head"
-				-- or obj.Name == "UpperTorso"
-				-- or obj.Name == "LowerTorso"
-			then
+			if obj.Parent:IsA("Accessory") or obj.Name == "Head" then
 				obj.LocalTransparencyModifier = hide and 1 or 0
 			end
 		end
@@ -46,7 +44,20 @@ local function SetCameraOffset()
 	humanoid.CameraOffset = objectSpace.Position + Vector3.new(0, 0, -0.5)
 end
 
-RunService:BindToRenderStep("OffsetCameraToHead", Enum.RenderPriority.Camera.Value - 1, SetCameraOffset)
+local function moveHeadBehindCamera(bool)
+	if bool then
+		if headClone.Parent ~= Workspace then
+			headClone.Parent = Workspace
+			RunService:BindToRenderStep("OffsetCameraToHead", Enum.RenderPriority.Camera.Value - 1, SetCameraOffset)
+		end
+		headClone.CFrame = CFrame.new(camera.CFrame.X, character.Head.CFrame.Y + 0.05, camera.CFrame.Z)
+	else
+		if headClone.Parent == Workspace then
+			headClone.Parent = ReplicatedStorage
+			RunService:UnbindFromRenderStep("OffsetCameraToHead")
+		end
+	end
+end
 
 RunService.RenderStepped:Connect(function()
 	local char = player.Character
@@ -54,11 +65,12 @@ RunService.RenderStepped:Connect(function()
 	if not humanoid then
 		return
 	end
-
-	if IsFirstPerson(true) then
+	if character.Head.LocalTransparencyModifier > 0.85 then
 		SetCharacterVisible(char, true)
 		HideHeadAndFace(char, true)
-	elseif not IsFirstPerson(false) then
-		HideHeadAndFace(char, false)
+		moveHeadBehindCamera(true)
+	else
+		humanoid.CameraOffset = Vector3.zero
+		moveHeadBehindCamera(false)
 	end
 end)

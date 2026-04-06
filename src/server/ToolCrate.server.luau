@@ -6,7 +6,7 @@ local crateData = {}
 local function setupcrate(crate)
 	if crate.Name == "ToolCrate" and crate:FindFirstChild("BillboardGui") then
 		local ToolFolder = ServerStorage:WaitForChild("Tools")
-		local NotificationEvent = ReplicatedStorage:WaitForChild("NotificationEvent")
+		local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
 
 		local Main = crate
 		local ProximityPrompt = crate:FindFirstChild("Handler", true)
@@ -139,24 +139,10 @@ local function setupcrate(crate)
 		end)
 	end
 end
-for _, crate in Workspace.TurfSystem["551 - Warehouse"]:GetChildren() do
-	setupcrate(crate)
-end
-for _, crate in Workspace.TurfSystem["ENVY - Warehouse"]:GetChildren() do
-	setupcrate(crate)
-end
+
 for _, crate in Workspace.TurfSystem["FFE - Warehouse"]:GetChildren() do
 	setupcrate(crate)
 end
 for _, crate in Workspace.TurfSystem["FFMC - Custom Mansion"]:GetChildren() do
-	setupcrate(crate)
-end
-for _, crate in Workspace.TurfSystem["FFS - Ware House"]:GetChildren() do
-	setupcrate(crate)
-end
-for _, crate in Workspace.TurfSystem["MURDALAND - Ware House"]:GetChildren() do
-	setupcrate(crate)
-end
-for _, crate in Workspace.TurfSystem["TB - Warehouse"]:GetChildren() do
 	setupcrate(crate)
 end
