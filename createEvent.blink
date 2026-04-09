@@ -1,0 +1,17 @@
+-- these can be ignored if you are using the studio plugin
+option ClientOutput = "Events/client.luau"
+option ServerOutput = "Events/server.luau"
+ 
+event SendHeadAndBodyMovementToServer {
+    from: Client,
+    type: Reliable,
+    call: SingleSync,
+    data: (CFrame,CFrame,CFrame,CFrame)
+}
+
+event SendHeadAndBodyMovementToClients {
+    from: Server,
+    type: Reliable,
+    call: ManySync,
+    data: (string, CFrame,CFrame,CFrame,CFrame)
+}

@@ -1,9 +1,12 @@
 local runService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local Player = Players.LocalPlayer
 local Camera = workspace:WaitForChild("Camera")
 local Character = Player.Character or Player.CharacterAdded:Wait()
 
+local ClientEvents = require(ReplicatedStorage.BlinkEvents.client)
 --// Here are the settings :3
 local updateRate = 1 / 5 --// How many times per second the server will update, if you want 60, do 1/60
 local accumulated = 0
@@ -38,6 +41,9 @@ local NeckOrgnC0 = Neck.C0
 local WaistOrgnC0 = Waist.C0
 local LeftShoulerOrgnC0 = LeftShoulder.C0
 local RightShoulerOrgnC0 = RightShoulder.C0
+
+local ToolAddEvent: RBXScriptConnection
+local ToolRemovedEvent: RBXScriptConnection
 
 local Diff
 
@@ -98,9 +104,6 @@ runService.RenderStepped:Connect(function(deltaTime)
 	end
 end)
 
-local ToolAddEvent: RBXScriptConnection
-local ToolRemovedEvent: RBXScriptConnection
-
 local function CharacterHasTool()
 	if Character:FindFirstChildOfClass("Tool") then
 		return true
@@ -109,13 +112,36 @@ local function CharacterHasTool()
 end
 
 local function NewCharacter(character)
+	Camera = Workspace:WaitForChild("Camera")
+
 	Character = character
+
+	Torso = Character:WaitForChild("UpperTorso")
+	Head = Character:WaitForChild("Head")
+
+	LeftArm = Character:WaitForChild("LeftUpperArm")
+	RightArm = Character:WaitForChild("RightUpperArm")
+
+	Neck = Head:WaitForChild("Neck")
+	Waist = Torso:WaitForChild("Waist")
+	LeftShoulder = LeftArm:WaitForChild("LeftShoulder")
+	RightShoulder = RightArm:WaitForChild("RightShoulder")
+
+	NeckOrgnC0 = Neck.C0
+	WaistOrgnC0 = Waist.C0
+	LeftShoulerOrgnC0 = LeftShoulder.C0
+	RightShoulerOrgnC0 = RightShoulder.C0
+
 	if ToolAddEvent then
 		ToolAddEvent:Disconnect()
+		ToolAddEvent = nil
 	end
+
 	if ToolRemovedEvent then
 		ToolRemovedEvent:Disconnect()
+		ToolRemovedEvent = nil
 	end
+
 	ToolAddEvent = character.ChildAdded:Connect(function()
 		if CharacterHasTool() then
 			ArmVerFactor = HeadVertFactor
@@ -127,8 +153,33 @@ local function NewCharacter(character)
 			ArmVerFactor = 0
 		end
 	end)
+
+	ClientEvents.SendHeadAndBodyMovementToServer.Fire(Neck.C0, Waist.C0, LeftShoulder.C0, RightShoulder.C0)
 end
 
 NewCharacter(Character)
 
 Player.CharacterAdded:Connect(NewCharacter)
+
+ClientEvents.SendHeadAndBodyMovementToClients.On(function(playerName, neckC0, waistC0, leftShoulderC0, rightShoulderC0)
+	local player = Players[playerName]
+
+	local otherCharacter = player.Character
+
+	local otherTorso = otherCharacter:WaitForChild("UpperTorso")
+
+	local otherHead = otherCharacter:WaitForChild("Head")
+
+	local otherLeftArm = otherCharacter:WaitForChild("LeftUpperArm")
+	local otherRightArm = otherCharacter:WaitForChild("RightUpperArm")
+
+	local otherNeck = otherHead:WaitForChild("Neck")
+	local otherWaist = otherTorso:WaitForChild("Waist")
+	local otherLeftShoulder = otherLeftArm:WaitForChild("LeftShoulder")
+	local otherRightShoulder = otherRightArm:WaitForChild("RightShoulder")
+
+	otherNeck.C0 = neckC0
+	otherWaist.C0 = waistC0
+	otherLeftShoulder.C0 = leftShoulderC0
+	otherRightShoulder.C0 = rightShoulderC0
+end)
