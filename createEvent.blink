@@ -15,3 +15,10 @@ event SendHeadAndBodyMovementToClients {
     call: ManySync,
     data: (string, CFrame,CFrame,CFrame,CFrame)
 }
+
+event MoveSafeItem {
+    from: Client,
+    type: Reliable,
+    call: SingleSync,
+    data: (string ,string)
+}

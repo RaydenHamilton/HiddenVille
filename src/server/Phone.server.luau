@@ -8,7 +8,7 @@ local cooldownTime = 10
 local cooldowns = {}
 
 moneyTransferEvent.OnServerEvent:Connect(function(sender, recipientInput, amount, reason)
-	if not amount or amount <= 0 then
+	if not amount or amount <= 0 or amount == "nan" then
 		return
 	end
 

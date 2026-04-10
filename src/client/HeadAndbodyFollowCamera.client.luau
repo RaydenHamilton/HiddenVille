@@ -8,7 +8,7 @@ local Character = Player.Character or Player.CharacterAdded:Wait()
 
 local ClientEvents = require(ReplicatedStorage.BlinkEvents.client)
 --// Here are the settings :3
-local updateRate = 1 / 5 --// How many times per second the server will update, if you want 60, do 1/60
+local updateRate = 1 / 60 --// How many times per second the server will update, if you want 60, do 1/60
 local accumulated = 0
 
 local HeadHorFactor = 1.5
@@ -20,7 +20,7 @@ local TorsoVertFactor = 0.7
 local ArmHorFactor = 0
 local ArmVerFactor = 0
 
-local UpdateSpeed = 0.25
+local UpdateSpeed = 0.18
 --// Settings end
 
 local Ang = CFrame.Angles
@@ -56,7 +56,7 @@ function getMath()
 	end
 end
 
-function updateChar()
+function updateChar(deltaTime)
 	local HeadPosition = Head.CFrame.Position
 	local TorsoPosition = Torso.CFrame.Position
 	local LeftArmPosition = LeftArm.CFrame.Position
@@ -73,15 +73,16 @@ function updateChar()
 			),
 		UpdateSpeed / 2
 	)
-	Waist.C0 = Waist.C0:lerp(
-		WaistOrgnC0
-			* Ang(
-				(aSin(Diff) * (TorsoVertFactor / 2)),
-				-(((TorsoPosition - Camera.CFrame.Position).Unit):Cross(TorsoLookVector)).Y * (TorsoHorFactor / 2),
-				0
-			),
-		UpdateSpeed / 2
-	)
+	-- Waist.C0 = Waist.C0:lerp(
+	-- 	WaistOrgnC0
+	-- 		* Ang(
+	-- 			(aSin(Diff) * (TorsoVertFactor / 2)),
+	-- 			-(((TorsoPosition - Camera.CFrame.Position).Unit):Cross(TorsoLookVector)).Y * (TorsoHorFactor / 2),
+	-- 			0
+	-- 		),
+	-- 	UpdateSpeed / 2
+	-- )
+
 	LeftShoulder.C0 = LeftShoulder.C0:lerp(LeftShoulerOrgnC0 * Ang(
 		(aSin(Diff) * (ArmVerFactor / 2)), --+ math.rad(10),
 		-(((LeftArmPosition - Camera.CFrame.Position).Unit):Cross(TorsoLookVector)).Y * (ArmHorFactor / 2),
@@ -92,15 +93,30 @@ function updateChar()
 		-(((RightArmPosition - Camera.CFrame.Position).Unit):Cross(TorsoLookVector)).Y * (ArmHorFactor / 2),
 		0
 	), UpdateSpeed / 2)
+
+	local target = WaistOrgnC0
+		* Ang(
+			(aSin(Diff) * (TorsoVertFactor / 2)),
+			-(((TorsoPosition - Camera.CFrame.Position).Unit):Cross(TorsoLookVector)).Y * (TorsoHorFactor / 2),
+			0
+		)
+
+	local relative = Waist.C0:ToObjectSpace(target)
+	local axis, angle = relative:ToAxisAngle()
+
+	local maxStep = UpdateSpeed * deltaTime * 15
+	angle = math.clamp(angle, -maxStep, maxStep)
+
+	Waist.C0 = Waist.C0 * CFrame.fromAxisAngle(axis, angle)
 end
 
 runService.RenderStepped:Connect(function(deltaTime)
 	accumulated += deltaTime
-	updateChar() --// Update the character for the client, this line can be removed or kept, up to you
+	updateChar(deltaTime) --// Update the character for the client, this line can be removed or kept, up to you
 
 	if accumulated >= updateRate then --// If how much time between frames and last update if greater than or equal to our goal
 		accumulated = 0
-		-- giveServerJointData:FireServer(Neck.C0, Waist.C0, LeftShoulder.C0, RightArm.C0) --// Update the character for other players (server)
+		ClientEvents.SendHeadAndBodyMovementToServer.Fire(Neck.C0, Waist.C0, LeftShoulder.C0, RightShoulder.C0)
 	end
 end)
 
@@ -153,8 +169,6 @@ local function NewCharacter(character)
 			ArmVerFactor = 0
 		end
 	end)
-
-	ClientEvents.SendHeadAndBodyMovementToServer.Fire(Neck.C0, Waist.C0, LeftShoulder.C0, RightShoulder.C0)
 end
 
 NewCharacter(Character)
