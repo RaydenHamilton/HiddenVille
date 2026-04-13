@@ -1,6 +1,6 @@
 local Workspace = game:GetService("Workspace")
-for _, Folder in Workspace.TurfSystem:getChildren() do
-	if not Folder:IsA("Folder") then
+for _, Main in Workspace.TurfSystem:getChildren() do
+	if not Main:IsA("Folder") then
 		continue
 	end
 	local Debris = game:GetService("Debris")
@@ -10,7 +10,6 @@ for _, Folder in Workspace.TurfSystem:getChildren() do
 
 	local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
 
-	local Main = Folder
 	local ProximityPromptIn = Main:FindFirstChild("Inside", true).ProximityPrompt
 	local SoundIn = ProximityPromptIn:FindFirstChild("Sound")
 	local TeleportOut = Main:FindFirstChild("Outside")
@@ -298,7 +297,16 @@ for _, Folder in Workspace.TurfSystem:getChildren() do
 		end
 
 		if not GroupID or not GroupID.Value then
-			NotificationEvent:FireClient(player, TurfName .. ": GroupID missing.")
+			playFadeOut(player, function()
+				safeTeleportOut(player, character, TeleportIn.CFrame)
+
+				if SoundOut then
+					local soundClone = SoundOut:Clone()
+					soundClone.Parent = player:FindFirstChildOfClass("PlayerGui") or player
+					soundClone:Play()
+					Debris:AddItem(soundClone, math.max(2, soundClone.TimeLength))
+				end
+			end)
 			return
 		end
 

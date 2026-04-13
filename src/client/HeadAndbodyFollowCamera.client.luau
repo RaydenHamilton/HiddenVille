@@ -8,7 +8,7 @@ local Character = Player.Character or Player.CharacterAdded:Wait()
 
 local ClientEvents = require(ReplicatedStorage.BlinkEvents.client)
 --// Here are the settings :3
-local updateRate = 1 / 60 --// How many times per second the server will update, if you want 60, do 1/60
+local updateRate = 1 / 10 --// How many times per second the server will update, if you want 60, do 1/60
 local accumulated = 0
 
 local HeadHorFactor = 1.5
@@ -176,24 +176,43 @@ NewCharacter(Character)
 Player.CharacterAdded:Connect(NewCharacter)
 
 ClientEvents.SendHeadAndBodyMovementToClients.On(function(playerName, neckC0, waistC0, leftShoulderC0, rightShoulderC0)
-	local player = Players[playerName]
+	local player = Players:FindFirstChild(playerName)
+	if not player or not player.Character then
+		return
+	end
 
-	local otherCharacter = player.Character
+	local character = player.Character
 
-	local otherTorso = otherCharacter:WaitForChild("UpperTorso")
+	local torso = character:WaitForChild("UpperTorso")
+	local head = character:WaitForChild("Head")
+	local leftArm = character:WaitForChild("LeftUpperArm")
+	local rightArm = character:WaitForChild("RightUpperArm")
 
-	local otherHead = otherCharacter:WaitForChild("Head")
+	local neck = head:WaitForChild("Neck")
+	local waist = torso:WaitForChild("Waist")
+	local leftShoulder = leftArm:WaitForChild("LeftShoulder")
+	local rightShoulder = rightArm:WaitForChild("RightShoulder")
 
-	local otherLeftArm = otherCharacter:WaitForChild("LeftUpperArm")
-	local otherRightArm = otherCharacter:WaitForChild("RightUpperArm")
+	local steps = 6
 
-	local otherNeck = otherHead:WaitForChild("Neck")
-	local otherWaist = otherTorso:WaitForChild("Waist")
-	local otherLeftShoulder = otherLeftArm:WaitForChild("LeftShoulder")
-	local otherRightShoulder = otherRightArm:WaitForChild("RightShoulder")
+	-- get relative difference (target relative to current)
+	local neckDelta = neck.C0:ToObjectSpace(neckC0)
+	local waistDelta = waist.C0:ToObjectSpace(waistC0)
+	local leftDelta = leftShoulder.C0:ToObjectSpace(leftShoulderC0)
+	local rightDelta = rightShoulder.C0:ToObjectSpace(rightShoulderC0)
 
-	otherNeck.C0 = neckC0
-	otherWaist.C0 = waistC0
-	otherLeftShoulder.C0 = leftShoulderC0
-	otherRightShoulder.C0 = rightShoulderC0
+	-- divide movement into 6 equal parts
+	local neckStep = neckDelta ^ (1 / steps)
+	local waistStep = waistDelta ^ (1 / steps)
+	local leftStep = leftDelta ^ (1 / steps)
+	local rightStep = rightDelta ^ (1 / steps)
+
+	for i = 1, steps do
+		neck.C0 = neck.C0 * neckStep
+		waist.C0 = waist.C0 * waistStep
+		leftShoulder.C0 = leftShoulder.C0 * leftStep
+		rightShoulder.C0 = rightShoulder.C0 * rightStep
+
+		runService.RenderStepped:Wait()
+	end
 end)

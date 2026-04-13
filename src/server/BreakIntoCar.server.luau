@@ -3,14 +3,18 @@ local Workspace = game:GetService("Workspace")
 local MoneyTaken = {}
 
 for _, Model in Workspace.CarRobberySystem:GetChildren() do
+	if Model.Name ~= "Car" then
+		continue
+	end
+
 	local Car = Model.Fusion
 	local Glass = Model.Glass
 	local pad = Glass.InteractPat
 	local proximity = pad.Prox1
 	local proximity2 = pad.Prox2
-	local Elbow = proximity.Elbow
-	local GrabCash = proximity2.GrabCash
-	local CashPocket = proximity2.GrabCash
+	local Elbow = Workspace.CarRobberySystem.Animations.Elbow
+	local GrabCash = Workspace.CarRobberySystem.Animations.GrabCash
+	-- local CashPocket = Workspace.CarRobberySystem.Animations.GrabCash
 	local GlassBreak = pad.GlassBreak
 	local CarAlarm = pad.CarAlarm
 
@@ -59,10 +63,10 @@ for _, Model in Workspace.CarRobberySystem:GetChildren() do
 			CashGrab:Play(0.3)
 			proximity2.Enabled = false
 
-			CashPocket:Play()
+			-- CashPocket:Play()
 
 			CashGrab.Stopped:Wait()
-			CashPocket:Stop()
+			-- CashPocket:Stop()
 			CarAlarm:Stop()
 			humanoidRootPart.Anchored = false
 

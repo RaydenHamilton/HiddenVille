@@ -4,10 +4,5 @@ version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 
-[dependencies]
-Admin = "rasmusmerzin/admin@1.1.1"
-
 [server-dependencies]
-ProfileService = "firebird702/profileservice@1.1.0"
-
-[local-dependencies]
+Profilestore = "ddashdev/profilestore@1.0.4"

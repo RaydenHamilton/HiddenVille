@@ -65,12 +65,14 @@ RunService.RenderStepped:Connect(function()
 	if not humanoid then
 		return
 	end
-	if character.Head.LocalTransparencyModifier > 0.85 then
+	if character.Head.LocalTransparencyModifier > 0.5 then
 		SetCharacterVisible(char, true)
 		HideHeadAndFace(char, true)
 		moveHeadBehindCamera(true)
+		char.Head.Nametag.MaxDistance = 0
 	else
 		humanoid.CameraOffset = Vector3.zero
 		moveHeadBehindCamera(false)
+		char.Head.Nametag.MaxDistance = 10000
 	end
 end)

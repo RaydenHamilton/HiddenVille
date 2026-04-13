@@ -162,6 +162,7 @@ local Queue: any = {
 local SerdesEvent = "?"
 local SerdesThread: thread?
 Queue.Reliable[0] = table.create(256)
+Queue.Reliable[2] = table.create(256)
 function SerdesFunctions.ReadEVENT_SendHeadAndBodyMovementToServer(): (CFrame, CFrame, CFrame, CFrame)
 	-- Read BLOCK: 96 bytes
 	local BLOCK_START = Read(96)
@@ -242,6 +243,16 @@ function SerdesFunctions.WriteEVENT_SendHeadAndBodyMovementToClients(Value1: str
 	buffer.writef32(SendBuffer, BLOCK_START + 95, rZ)
 end
 
+function SerdesFunctions.ReadEVENT_MoveSafeItem(): (string, string)
+	-- Read BLOCK: 4 bytes
+	local BLOCK_START = Read(4)
+	local Length = buffer.readu16(RecieveBuffer, BLOCK_START + 0)
+	local Value1 = buffer.readstring(RecieveBuffer, Read(Length), Length)
+	Length = buffer.readu16(RecieveBuffer, BLOCK_START + 2)
+	local Value2 = buffer.readstring(RecieveBuffer, Read(Length), Length)
+	return Value1, Value2
+end
+
 if not RunService:IsRunning() then
 	local NOOP = function() end
 	local Returns = table.freeze({
@@ -253,6 +264,9 @@ if not RunService:IsRunning() then
 		FireAll = NOOP,
 		FireList = NOOP,
 		FireExcept = NOOP
+	},
+	MoveSafeItem = {
+		On = NOOP
 	},
 	})
 	return Returns :: BLINK_EVENTS_SYMBOL
@@ -326,6 +340,17 @@ Reliable.OnServerEvent:Connect(function(Player: Player, Buffer: buffer, Instance
 					warn("[Blink]: Event queue of \"SendHeadAndBodyMovementToServer\" exceeded 256, did you forget to implement a listener?")
 				end
 				table.insert(Queue.Reliable[0], {Player, Value1, Value2, Value3, Value4} :: {any})
+			end
+		elseif Index == 2 then
+			local Value1: string, Value2: string = SerdesFunctions.ReadEVENT_MoveSafeItem()
+			if Events.Reliable[2] ~= nil then
+				SerdesEvent = "MoveSafeItem"
+				Events.Reliable[2](Player, Value1, Value2)
+			else
+				if #Queue.Reliable[2] > 256 then
+					warn("[Blink]: Event queue of \"MoveSafeItem\" exceeded 256, did you forget to implement a listener?")
+				end
+				table.insert(Queue.Reliable[2], {Player, Value1, Value2} :: {any})
 			end
 		end
 	end
@@ -411,6 +436,20 @@ local Returns = table.freeze({
 				PlayersMap[Player] = Save()
 			end
 		end,
+	},
+	MoveSafeItem = {
+		On = function(Listener: (Player: Player, Value1: string, Value2: string) -> ()): () -> ()
+			Events.Reliable[2] = Listener
+			for Index, Arguments in Queue.Reliable[2] do
+				Listener(table.unpack(Arguments))
+			end
+			Queue.Reliable[2] = {}
+			return function (): ()
+				if Events.Reliable[2] == Listener then
+					Events.Reliable[2] = nil
+				end
+			end
+		end
 	},
 })
 type BLINK_EVENTS_SYMBOL = typeof(Returns)

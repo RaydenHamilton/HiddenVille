@@ -240,6 +240,20 @@ function SerdesFunctions.ReadEVENT_SendHeadAndBodyMovementToClients(): (string, 
 	return Value1, Value2, Value3, Value4, Value5
 end
 
+function SerdesFunctions.WriteEVENT_MoveSafeItem(Value1: string, Value2: string): ()
+	-- Allocate BLOCK: 5 bytes
+	local BLOCK_START = Allocate(5)
+	buffer.writeu8(SendBuffer, BLOCK_START + 0, 2)
+	local Length = #Value1
+	buffer.writeu16(SendBuffer, BLOCK_START + 1, Length)
+	Allocate(Length)
+	buffer.writestring(SendBuffer, SendOffset, Value1, Length)
+	local Length = #Value2
+	buffer.writeu16(SendBuffer, BLOCK_START + 3, Length)
+	Allocate(Length)
+	buffer.writestring(SendBuffer, SendOffset, Value2, Length)
+end
+
 if not RunService:IsRunning() then
 	local NOOP = function() end
 	local Returns = table.freeze({
@@ -248,6 +262,9 @@ if not RunService:IsRunning() then
 	},
 	SendHeadAndBodyMovementToClients = {
 		On = NOOP
+	},
+	MoveSafeItem = {
+		Fire = NOOP
 	},
 	})
 	return Returns :: BLINK_EVENTS_SYMBOL
@@ -347,6 +364,11 @@ local Returns = table.freeze({
 					table.remove(Events.Reliable[1], Index)
 				end
 			end
+		end
+	},
+	MoveSafeItem = {
+		Fire = function(Value1: string, Value2: string): ()
+			SerdesFunctions.WriteEVENT_MoveSafeItem(Value1, Value2)
 		end
 	},
 })

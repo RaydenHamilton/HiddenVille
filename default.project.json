@@ -7,7 +7,7 @@
         "$path": "src/shared"
       },
       "Packages": {
-        "$path": "Packages"
+        "$path": "ServerPackages"
       },
       "BlinkEvents": {
         "$path": "Events"
@@ -23,9 +23,6 @@
         "Client": {
           "$path": "src/client"
         }
-      },
-      "ServerPackages": {
-        "$path": "ServerPackages"
       }
     }
   }
