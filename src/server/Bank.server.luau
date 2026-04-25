@@ -42,19 +42,22 @@ local function onGoldCollected(promptObject, player)
 			duffel.Type.Value = "Bank"
 		end
 
-		local part = promptObject.Parent
-		local model = part and part.Parent
-		if model and model:IsA("Model") then
-			model:Destroy()
-		end
+		promptObject.parent.Transparency = 1
+		promptObject.Enabled = false
+
+		task.delay(ResetTime, function()
+			promptObject.parent.Transparency = 0
+			promptObject.Enabled = true
+		end)
 	end
 end
 
 local function connectGoldPrompts()
-	for _, gold in ipairs(goldFolder:GetDescendants()) do
-		if gold:IsA("ProximityPrompt") then
-			gold.Triggered:Connect(function(player)
-				onGoldCollected(gold, player)
+	for _, gold in ipairs(goldFolder:GetChildren()) do
+		local prompt = gold:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then
+			prompt.Triggered:Connect(function(player)
+				onGoldCollected(prompt, player)
 			end)
 		end
 	end

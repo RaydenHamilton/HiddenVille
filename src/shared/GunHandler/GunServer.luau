@@ -4,7 +4,6 @@ function GunHanlderServer.new(Tool)
 	local Workspace = game:GetService("Workspace")
 	local Debris = game:GetService("Debris")
 
-	local Tool = Tool
 	local Setting = Tool:WaitForChild("Setting")
 	local Handle = Tool:WaitForChild(require(Setting).PrimaryHandle)
 	local Handle2
@@ -270,47 +269,6 @@ function GunHanlderServer.new(Tool)
 				end
 			end
 		end
-	end)
-
-	Tool.Magdrop.OnServerEvent:Connect(function()
-		local mag = Tool:FindFirstChild("Magx")
-		if not mag then
-			return
-		end
-
-		local Clone = mag:Clone()
-		mag.Transparency = 1
-		Clone.Parent = Workspace
-		Clone.Transparency = 0
-		Clone.CFrame = mag.CFrame
-		Clone.CanCollide = true
-
-		local sound = Tool:FindFirstChild("Sound")
-		if sound then
-			local sClone = sound:Clone()
-			sClone.Parent = Clone
-			sClone:Play()
-		end
-
-		if Tool:FindFirstChild("Handle") and Tool.Handle:FindFirstChild("SmokeTrail1") then
-			Tool.Handle.SmokeTrail1.Enabled = true
-			task.delay(1.5, function()
-				if Tool and Tool:FindFirstChild("Handle") and Tool.Handle:FindFirstChild("SmokeTrail1") then
-					Tool.Handle.SmokeTrail1.Enabled = false
-				end
-				if mag then
-					mag.Transparency = 0
-				end
-			end)
-		else
-			task.delay(1.5, function()
-				if mag then
-					mag.Transparency = 0
-				end
-			end)
-		end
-
-		Debris:AddItem(Clone, 20)
 	end)
 
 	-- Dead body fling/push when shot

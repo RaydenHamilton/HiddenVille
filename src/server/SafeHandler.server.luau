@@ -10,13 +10,13 @@ server.MoveSafeItem.On(function(player, From, itemName)
 		local item = player.Backpack:FindFirstChild(itemName)
 		if item and item:IsA("Tool") then
 			item.Parent = player.Safe
-			PlayerDataServerService.get(player, "Safe")
+			-- PlayerDataServerService.get(player, "Safe")
 		end
 	elseif From == "Safe" then
 		local item = player.Safe:FindFirstChild(itemName)
 		if item and item:IsA("Tool") then
 			item.Parent = player.Backpack
-			PlayerDataServerService.get(player, "Safe")
+			-- PlayerDataServerService.get(player, "Safe")
 		end
 	end
 end)
@@ -28,4 +28,23 @@ Players.PlayerAdded:Connect(function(player)
 	SafeFolder.Parent = player
 
 	local safeData = PlayerDataServerService.get(player, "Safe")
+	if safeData then
+		for _, itemName in ipairs(safeData) do
+			local item = ServerStorage.AllTools:FindFirstChild(itemName)
+			if item and item:IsA("Tool") then
+				local clone = item:Clone()
+				clone.Parent = SafeFolder
+			end
+		end
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	local safeData = {}
+	for _, item in ipairs(player.Safe:GetChildren()) do
+		if item:IsA("Tool") then
+			table.insert(safeData, item.Name)
+		end
+	end
+	PlayerDataServerService.set(player, "Safe", safeData)
 end)

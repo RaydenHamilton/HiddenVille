@@ -59,6 +59,13 @@ local function moveHeadBehindCamera(bool)
 	end
 end
 
+function hideNameTag(char, hide)
+	if not (char:FindFirstChild("Head") and char.Head:FindFirstChild("Nametag")) then
+		return
+	end
+	char.Head.Nametag.MaxDistance = hide and 0 or 10000
+end
+
 RunService.RenderStepped:Connect(function()
 	local char = player.Character
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
@@ -69,10 +76,10 @@ RunService.RenderStepped:Connect(function()
 		SetCharacterVisible(char, true)
 		HideHeadAndFace(char, true)
 		moveHeadBehindCamera(true)
-		char.Head.Nametag.MaxDistance = 0
+		hideNameTag(char, true)
 	else
 		humanoid.CameraOffset = Vector3.zero
 		moveHeadBehindCamera(false)
-		char.Head.Nametag.MaxDistance = 10000
+		hideNameTag(char, false)
 	end
 end)

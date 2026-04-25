@@ -1201,9 +1201,6 @@ function ClientGun:Reload()
 	then
 		self.CommonVariables.Reloading = true
 
-		if self.CurrentModule.MagDrop == true then
-			self.Tool.Magdrop:FireServer()
-		end
 		if self.CurrentAnimTable.InspectAnim and self.CurrentAnimTable.InspectAnim.IsPlaying then
 			self.CurrentAnimTable.InspectAnim:Stop()
 		end

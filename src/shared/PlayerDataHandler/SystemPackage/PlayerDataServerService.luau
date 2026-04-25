@@ -30,6 +30,10 @@ function PlayerDataServer.set(player: Player, valueName: string, NewValue: {} | 
 end
 
 function PlayerDataServer.get(player: Player, valueName: string)
+	repeat
+		task.wait()
+	until Profiles[player] and Profiles[player]["Data"][valueName] ~= nil
+
 	if Profiles[player] then
 		return Profiles[player]["Data"][valueName]
 	end

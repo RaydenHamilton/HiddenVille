@@ -241,7 +241,7 @@ for _, garageDoor in Workspace.Map.Interactions:GetChildren() do
 			local closeNames = { "CloseButton", "X", "Close", "Exit" }
 			for _, name in ipairs(closeNames) do
 				local btn = newGarageUI:FindFirstChild(name, true)
-				if btn and btn:IsA("TextButton") or btn:IsA("ImageButton") then
+				if btn and (btn:IsA("TextButton") or btn:IsA("ImageButton")) then
 					btn.MouseButton1Click:Connect(closeGarage)
 				elseif btn and btn.MouseButton1Click then
 					btn.MouseButton1Click:Connect(closeGarage)

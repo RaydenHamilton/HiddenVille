@@ -7,14 +7,25 @@ local uiEvent = ReplicatedStorage.Remotes:WaitForChild("MoneyTransferUI")
 local cooldownTime = 10
 local cooldowns = {}
 
+local function isValidMoney(amount)
+	return typeof(amount) == "number"
+		and amount == amount -- not NaN
+		and amount > 0
+		and amount < 1e6 -- optional cap
+end
+
 moneyTransferEvent.OnServerEvent:Connect(function(sender, recipientInput, amount, reason)
-	if not amount or amount <= 0 or amount == "nan" then
+	if not amount or amount <= 0 then
 		return
 	end
 
 	local senderStats = sender:FindFirstChild("leaderstats")
 	local senderMoney = senderStats and senderStats:FindFirstChild("Money")
 	if not senderMoney or senderMoney.Value < amount then
+		return
+	end
+
+	if not isValidMoney(amount) then
 		return
 	end
 

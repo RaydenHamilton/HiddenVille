@@ -13,9 +13,9 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 	local ProximityPromptIn = Main:FindFirstChild("Inside", true).ProximityPrompt
 	local SoundIn = ProximityPromptIn:FindFirstChild("Sound")
 	local TeleportOut = Main:FindFirstChild("Outside")
-	local TurfName = Main:FindFirstChild("TurfName") and Main.TurfName.Value or "Turf"
+	local TurfName = Main:FindFirstChild("TurfName") and Main.TurfName.Value
 
-	ProximityPromptIn.ObjectText = TurfName .. " Turf"
+	ProximityPromptIn.ObjectText = TurfName
 
 	local function ensureFadeGuiIn(player)
 		local playerGui = player:FindFirstChildOfClass("PlayerGui") or player:FindFirstChild("PlayerGui")
@@ -165,7 +165,7 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 	local GroupID = Main:FindFirstChild("GroupID")
 	local RequiredRank = Main:FindFirstChild("RequiredRank")
 
-	ProximityPromptOut.ObjectText = TurfName .. " Turf"
+	ProximityPromptOut.ObjectText = TurfName
 
 	local function ensureFadeGuiOut(player)
 		local playerGui = player:FindFirstChildOfClass("PlayerGui") or player:FindFirstChild("PlayerGui")
@@ -297,6 +297,7 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 		end
 
 		if not GroupID or not GroupID.Value then
+			ProximityPromptOut.ObjectText = TurfName
 			playFadeOut(player, function()
 				safeTeleportOut(player, character, TeleportIn.CFrame)
 
