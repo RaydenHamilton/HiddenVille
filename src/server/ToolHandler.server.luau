@@ -5,12 +5,14 @@ local gunHandler = ReplicatedStorage.Shared.GunHandler
 local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
 local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
 local Food = require(ReplicatedStorage.Shared.Foods.Food)
+local MAndM = require(ReplicatedStorage.Shared.Foods.MAndM)
+local MeleeServer = require(ReplicatedStorage.Shared.Tools.MeleeServer)
 local gunServer = require(gunHandler.GunServer)
 local gunWeld = require(gunHandler.GunWeld)
 local gunLaser = require(gunHandler.GunLaser)
-
 local SetUpTable = {}
 
+MeleeServer.init()
 
 local function setup(child: Tool, character)
 	--[[ Start Setup ]]
@@ -38,6 +40,13 @@ local function setup(child: Tool, character)
 	-- bag
 	if hasTag("Bag") then
 		setupClient:FireClient(player, child, "Bag")
+	end
+
+	if hasTag("M&Ms") then
+		MAndM.Create(child)
+	end
+	if hasTag("M&Ms Box") then
+		MAndM.new(child)
 	end
 
 	-- Gun

@@ -385,7 +385,7 @@ function ClientGun:IsAimingAtPlayerFromGunToMouse()
 	local targetPosition = result.Position
 	local Direction = (targetPosition - muzzlePosition).Unit
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
+	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character, Workspace.CivCars }
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), Direction * 1000, raycastParams)
 	if raycastResult and raycastResult.Instance then
@@ -410,7 +410,7 @@ function ClientGun:IsAimingAtPlayer()
 	local crosshairPos = self.GunGUI.Crosshair.AbsolutePosition
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character, Workspace.CivCars }
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local raycastResult = Workspace:Raycast(InputRay.Origin, InputRay.Direction * 1000, raycastParams)
@@ -486,7 +486,7 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	local crosshairPos = self.GunGUI.Crosshair.AbsolutePosition
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character, Workspace.CivCars }
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local raycastResult = Workspace:Raycast(InputRay.Origin, InputRay.Direction * 1000, raycastParams)
@@ -543,7 +543,7 @@ end
 function ClientGun:CastRay(StartPos, Direction, Length)
 	local Hit, EndPos = Workspace:FindPartOnRayWithIgnoreList(
 		Ray.new(StartPos, Direction * Length),
-		{ self.Camera, self.Tool, self.Character }
+		{ self.Camera, self.Tool, self.Character, Workspace.CivCars }
 	)
 	if Hit then
 		local FirePointObject = self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode)
