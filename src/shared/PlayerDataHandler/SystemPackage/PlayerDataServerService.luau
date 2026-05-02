@@ -43,7 +43,6 @@ end
 function PlayerDataServer.add(player: Player, valueName: string, NewValue: number)
 	if Profiles[player] and typeof(Profiles[player]["Data"][valueName]) == "number" then
 		Profiles[player]["Data"][valueName] += NewValue
-		print(Profiles[player]["Data"][valueName])
 	else
 		warn(valueName .. " is not a number")
 	end
