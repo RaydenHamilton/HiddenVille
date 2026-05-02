@@ -3,11 +3,14 @@ local Players = game:GetService("Players")
 local setupClient = ReplicatedStorage:WaitForChild("Remotes").SetupGun
 local gunHandler = ReplicatedStorage.Shared.GunHandler
 local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
+local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
+local Food = require(ReplicatedStorage.Shared.Foods.Food)
 local gunServer = require(gunHandler.GunServer)
 local gunWeld = require(gunHandler.GunWeld)
 local gunLaser = require(gunHandler.GunLaser)
 
 local SetUpTable = {}
+
 
 local function setup(child: Tool, character)
 	--[[ Start Setup ]]
@@ -49,6 +52,16 @@ local function setup(child: Tool, character)
 	-- Vest
 	if hasTag("Vest") then
 		VestServer.new(child)
+	end
+
+	--drink
+	if hasTag("Drink") then
+		Drink.new(child)
+	end
+
+	-- food
+	if hasTag("Food") then
+		Food.new(child)
 	end
 end
 
