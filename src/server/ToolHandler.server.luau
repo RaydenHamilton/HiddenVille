@@ -6,6 +6,7 @@ local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
 local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
 local Food = require(ReplicatedStorage.Shared.Foods.Food)
 local MAndM = require(ReplicatedStorage.Shared.Foods.MAndM)
+local Fist = require(ReplicatedStorage.Shared.Tools.Fist)
 local MeleeServer = require(ReplicatedStorage.Shared.Tools.MeleeServer)
 local gunServer = require(gunHandler.GunServer)
 local gunWeld = require(gunHandler.GunWeld)
@@ -16,20 +17,11 @@ MeleeServer.init()
 
 local function setup(child: Tool, character)
 	--[[ Start Setup ]]
-	if SetUpTable[child] then
+	local player = Players:GetPlayerFromCharacter(character)
+
+	if SetUpTable[child] and SetUpTable[child][character] then
 		return
 	end
-
-	local player = Players:GetPlayerFromCharacter(character)
-	SetUpTable[child] = {}
-
-	if SetUpTable[child][player] ~= true then
-		SetUpTable[child][player] = true
-	end
-
-	child.Destroying:Connect(function(...)
-		table.remove(SetUpTable, table.find(SetUpTable, child))
-	end)
 
 	local function hasTag(tag)
 		return table.find(child:GetTags(), tag)
@@ -38,40 +30,60 @@ local function setup(child: Tool, character)
 	--[[ End Setup ]]
 
 	-- bag
+
+	if child:FindFirstChild("Setting") and child:FindFirstChild("ChangeMagAndAmmo") then
+		setupClient:FireClient(player, child, "Gun")
+	end
+
 	if hasTag("Bag") then
 		setupClient:FireClient(player, child, "Bag")
 	end
 
-	if hasTag("M&Ms") then
+	if not SetUpTable[child] and hasTag("M&Ms") then
 		MAndM.Create(child)
 	end
-	if hasTag("M&Ms Box") then
+
+	if not SetUpTable[child] and hasTag("M&Ms Box") then
 		MAndM.new(child)
 	end
 
 	-- Gun
-	if child:FindFirstChild("Setting") and child:FindFirstChild("ChangeMagAndAmmo") then
+	if not SetUpTable[child] and child:FindFirstChild("Setting") and child:FindFirstChild("ChangeMagAndAmmo") then
 		gunServer.new(child)
 		gunWeld.new(child)
 		gunLaser.new(child)
-
-		setupClient:FireClient(player, child, "Gun")
 	end
 
 	-- Vest
-	if hasTag("Vest") then
+	if not SetUpTable[child] and hasTag("Vest") then
 		VestServer.new(child)
 	end
 
-	--drink
-	if hasTag("Drink") then
+	-- drink
+	if not SetUpTable[child] and hasTag("Drink") then
 		Drink.new(child)
 	end
 
 	-- food
-	if hasTag("Food") then
+	if not SetUpTable[child] and hasTag("Food") then
 		Food.new(child)
 	end
+
+	-- fist
+	if not SetUpTable[child] and hasTag("Fist") then
+		Fist.new(child)
+	end
+
+	------------END---------------
+	SetUpTable[child] = {}
+
+	if SetUpTable[child][character] ~= true then
+		SetUpTable[child][character] = true
+	end
+
+	child.Destroying:Connect(function(...)
+		table.remove(SetUpTable, table.find(SetUpTable, child))
+	end)
 end
 
 Players.PlayerAdded:Connect(function(player)
