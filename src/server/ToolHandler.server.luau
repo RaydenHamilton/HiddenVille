@@ -16,6 +16,7 @@ local SetUpTable = {}
 MeleeServer.init()
 
 local function setup(child: Tool, character)
+	print("Setting up tool:", child.Name, "for character:", character.Name)
 	--[[ Start Setup ]]
 	local player = Players:GetPlayerFromCharacter(character)
 
@@ -72,6 +73,7 @@ local function setup(child: Tool, character)
 	-- fist
 	if not SetUpTable[child] and hasTag("Fist") then
 		Fist.new(child)
+		setupClient:FireClient(player, child, "Fist")
 	end
 
 	------------END---------------
@@ -89,11 +91,11 @@ end
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(character)
 		local backpack = Players:GetPlayerFromCharacter(character).Backpack
-		for _, child in backpack:GetChildren() do
-			setup(child, character)
-		end
 		backpack.ChildAdded:Connect(function(child)
 			setup(child, character)
 		end)
+		for _, child in backpack:GetChildren() do
+			setup(child, character)
+		end
 	end)
 end)
