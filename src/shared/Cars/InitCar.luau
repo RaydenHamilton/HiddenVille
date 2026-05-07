@@ -709,7 +709,7 @@ initCar.new = function(car: Model)
 	local removedTools = {}
 
 	for _, seat in ipairs(car.Body:GetChildren()) do
-		if (seat:IsA("VehicleSeat") or seat:IsA("Seat")) and seat.Name == "Seat" then
+		if seat:IsA("VehicleSeat") or seat:IsA("Seat") then
 			local SeatClone = module:FindFirstChild("Sit"):Clone()
 			SeatClone.Parent = seat
 
@@ -726,6 +726,7 @@ initCar.new = function(car: Model)
 				if not humanoid or humanoid.Sit or seat.Occupant then
 					return
 				end
+				character.HumanoidRootPart.CollisionGroup = "Car"
 
 				removedTools[player.UserId] = {}
 				for _, toolName in ipairs({ "Fist", "Admin Fist", "Boxing Gloves" }) do
@@ -747,11 +748,16 @@ initCar.new = function(car: Model)
 
 			seat:GetPropertyChangedSignal("Occupant"):Connect(function()
 				local occupant = seat.Occupant
+
 				if occupant == nil then
 					for _, player in ipairs(game.Players:GetPlayers()) do
 						local character = player.Character
 						if character and character:FindFirstChildWhichIsA("Humanoid") then
 							if removedTools[player.UserId] then
+								task.wait()
+								local root: Model = player.Character
+								root:PivotTo(seat.CFrame * CFrame.new(seat.Name == "BackL" and -5 or 5, 0, 0))
+								character.HumanoidRootPart.CollisionGroup = "Player"
 								for _, tool in ipairs(removedTools[player.UserId]) do
 									if tool then
 										tool.Parent = player.Backpack

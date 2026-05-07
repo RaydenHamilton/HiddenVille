@@ -6,6 +6,7 @@ local ClientGun = {}
 ClientGun.__index = ClientGun
 
 --// Services
+local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -385,7 +386,10 @@ function ClientGun:IsAimingAtPlayerFromGunToMouse()
 	local targetPosition = result.Position
 	local Direction = (targetPosition - muzzlePosition).Unit
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character, Workspace.CivCars }
+	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
+	for i, v in pairs(CollectionService:GetTagged("Glass")) do
+		table.insert(raycastParams.FilterDescendantsInstances, v)
+	end
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), Direction * 1000, raycastParams)
 	if raycastResult and raycastResult.Instance then
@@ -410,7 +414,11 @@ function ClientGun:IsAimingAtPlayer()
 	local crosshairPos = self.GunGUI.Crosshair.AbsolutePosition
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character, Workspace.CivCars }
+	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	for i, v in pairs(CollectionService:GetTagged("Glass")) do
+		table.insert(raycastParams.FilterDescendantsInstances, v)
+	end
+
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local raycastResult = Workspace:Raycast(InputRay.Origin, InputRay.Direction * 1000, raycastParams)
@@ -486,7 +494,11 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	local crosshairPos = self.GunGUI.Crosshair.AbsolutePosition
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character, Workspace.CivCars }
+	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	for i, v in pairs(CollectionService:GetTagged("Glass")) do
+		table.insert(raycastParams.FilterDescendantsInstances, v)
+	end
+
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local raycastResult = Workspace:Raycast(InputRay.Origin, InputRay.Direction * 1000, raycastParams)
@@ -541,10 +553,12 @@ function ClientGun:PopulateHumanoids(mdl)
 end
 
 function ClientGun:CastRay(StartPos, Direction, Length)
-	local Hit, EndPos = Workspace:FindPartOnRayWithIgnoreList(
-		Ray.new(StartPos, Direction * Length),
-		{ self.Camera, self.Tool, self.Character, Workspace.CivCars }
-	)
+	local ignore = { self.Camera, self.Tool, self.Character }
+	for i, v in pairs(CollectionService:GetTagged("Glass")) do
+		table.insert(ignore, v)
+	end
+
+	local Hit, EndPos = Workspace:FindPartOnRayWithIgnoreList(Ray.new(StartPos, Direction * Length), ignore)
 	if Hit then
 		local FirePointObject = self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode)
 		if FirePointObject ~= nil then
@@ -553,8 +567,8 @@ function ClientGun:CastRay(StartPos, Direction, Length)
 			local TipDir = TipCFrame.LookVector
 			local AmountToCheatBack = math.abs((self.HumanoidRootPart.Position - TipPos):Dot(TipDir)) + 1
 			local GunRay = Ray.new(TipPos - TipDir.Unit * AmountToCheatBack, TipDir.Unit * AmountToCheatBack)
-			local HitPart, HitPoint =
-				Workspace:FindPartOnRayWithIgnoreList(GunRay, { self.Camera, self.Tool, self.Character }, false, true)
+
+			local HitPart, HitPoint = Workspace:FindPartOnRayWithIgnoreList(GunRay, ignore, false, true)
 			if HitPart and math.abs((TipPos - HitPoint).Magnitude) > 0 then
 				return self:CastRay(EndPos + (Direction * 0.01), Direction, Length - (StartPos - EndPos).Magnitude)
 			end

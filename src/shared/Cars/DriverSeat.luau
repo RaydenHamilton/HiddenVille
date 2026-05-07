@@ -6,6 +6,7 @@ DriverSeat.new = function(carModel: Model)
 	local Car = DriveSeat.Parent
 	local Owner = Car:WaitForChild("Owner")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local CurrentOccupant
 
 	DrivePrompt.Triggered:Connect(function(Player)
 		local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -26,6 +27,15 @@ DriverSeat.new = function(carModel: Model)
 		if string.lower(Owner.Value) == string.lower(Player.Name) and not Humanoid.Sit then
 			DriveSeat:Sit(Humanoid)
 			DrivePrompt.Enabled = false
+			CurrentOccupant = Player
+		end
+	end)
+
+	DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+		if not DriveSeat.Occupant then
+			task.wait()
+			local root: Model = CurrentOccupant.Character
+			root:PivotTo(DriveSeat.CFrame * CFrame.new(-5, 0, 0))
 		end
 	end)
 

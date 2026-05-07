@@ -6,7 +6,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Miscs = ReplicatedStorage:WaitForChild("Miscs")
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-
+local CollectionService = game:GetService("CollectionService")
 --local GlassShattering = require(Modules.GlassShattering)
 local DamageModule = require(Modules.DamageModule)
 
@@ -805,6 +805,9 @@ InflictTarget.OnServerInvoke = function(Player, Type, ...)
 		params.FilterType = Enum.RaycastFilterType.Exclude
 
 		local ignore = { Player.Character, Tool }
+		for i, v in pairs(CollectionService:GetTagged("Glass")) do
+			table.insert(ignore, v)
+		end
 
 		for _, character in Workspace:GetChildren() do -- make only players by doing player.character
 			if character:FindFirstChild("Humanoid") then
