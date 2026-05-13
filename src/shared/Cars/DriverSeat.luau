@@ -1,3 +1,5 @@
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local DriverSeat = {}
 
 DriverSeat.new = function(carModel: Model)
@@ -28,14 +30,19 @@ DriverSeat.new = function(carModel: Model)
 			DriveSeat:Sit(Humanoid)
 			DrivePrompt.Enabled = false
 			CurrentOccupant = Player
+			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Car"
+			
+
 		end
 	end)
 
 	DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
 		if not DriveSeat.Occupant then
 			task.wait()
-			local root: Model = CurrentOccupant.Character
+
+			local root: Model = CurrentOccupant.Character or CurrentOccupant.CharacterAdded:Wait()
 			root:PivotTo(DriveSeat.CFrame * CFrame.new(-5, 0, 0))
+			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Player"
 		end
 	end)
 

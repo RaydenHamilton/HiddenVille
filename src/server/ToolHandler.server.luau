@@ -65,6 +65,10 @@ local function setup(child: Tool, character)
 		Drink.new(child)
 	end
 
+	if hasTag("Drink") or hasTag("Food") then
+		setupClient:FireClient(player, child, "UseClient")
+	end
+
 	-- food
 	if not SetUpTable[child] and hasTag("Food") then
 		Food.new(child)

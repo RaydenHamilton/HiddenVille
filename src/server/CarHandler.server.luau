@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local PhysicsService = game:GetService("PhysicsService")
+local CarGun = require(ReplicatedStorage.Shared.Cars.CarGun)
 local DriverSeat = require(ReplicatedStorage.Shared.Cars.DriverSeat)
 local HitSystem = require(ReplicatedStorage.Shared.Cars.HitSystem)
 local InitCar = require(ReplicatedStorage.Shared.Cars.InitCar)
@@ -25,8 +26,6 @@ Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
 		if obj:IsA("MeshPart") then
 			obj.CollisionGroup = "Car"
 			obj.CanCollide = true
-		elseif obj:IsA("BasePart") and obj.Parent == "Wheels" then
-			obj.CustomPhysicalProperties = PhysicalProperties.new(100, 2, 0) -- Density, Friction, Elasticity
 		end
 	end
 end)
@@ -36,3 +35,5 @@ Players.PlayerAdded:Connect(function(player: Player)
 		character:WaitForChild("HumanoidRootPart").CollisionGroup = "Player"
 	end)
 end)
+
+CarGun.init()

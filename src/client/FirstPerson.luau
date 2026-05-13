@@ -1,7 +1,6 @@
 --TODO make cusome first person script
 
 local Players = game:GetService("Players")
-local ProcessInstancePhysicsService = game:GetService("ProcessInstancePhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
