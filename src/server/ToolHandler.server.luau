@@ -57,6 +57,7 @@ local function setup(child: Tool, character)
 
 	-- Vest
 	if not SetUpTable[child] and hasTag("Vest") then
+		print("fire")
 		VestServer.new(child)
 	end
 

@@ -3,15 +3,19 @@ local Debris = game:GetService("Debris")
 local vestServer = {}
 
 function vestServer.new(tool)
+	print("inited")
 	tool.Equipped:Connect(function()
+		print("start")
 		local Player = tool.Parent
 		local Humanoid = Player:FindFirstChild("Humanoid")
 		if not Humanoid then
+			print("no humanoid")
 			return
 		end
 
 		for _, accessory in ipairs(Player:GetChildren()) do
 			if accessory:IsA("Accessory") and accessory.Name == "_Vest" then
+				print("alread")
 				return
 			end
 		end
@@ -22,6 +26,7 @@ function vestServer.new(tool)
 
 		local vest = game.ServerStorage:FindFirstChild("_Vest")
 		if vest then
+			
 			vest = vest:Clone()
 			vest.Parent = workspace
 			Humanoid:AddAccessory(vest)

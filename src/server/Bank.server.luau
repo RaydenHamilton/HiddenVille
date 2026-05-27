@@ -11,6 +11,8 @@ local c4Part = mainDoor:WaitForChild("placec4")
 local goldFolder = game.Workspace.BankHeist:WaitForChild("GoldFolder")
 local replicatedGold = ReplicatedStorage:WaitForChild("AllGold")
 
+local notification = ReplicatedStorage.Remotes.Notication
+
 local function onGoldCollected(promptObject, player)
 	if not player:FindFirstChild("canrob") or not player.canrob.Value then
 		return
@@ -89,6 +91,8 @@ pp.Triggered:Connect(function(plr)
 	c4:Destroy()
 	partC4.Transparency = 0
 
+	notification:FireAllClients("Warning", `Bank is being robbed by {plr.Name}!!!`)
+
 	c4Part.beep:Play()
 	task.wait(4)
 	c4Part.beep:Stop()
@@ -127,6 +131,8 @@ pp.Triggered:Connect(function(plr)
 	pp.Enabled = true
 
 	resetGold()
+
+	notification:FireAllClients("Success", `Bank has reset`)
 
 	local removePlayersZone = mainDoor.Parent:FindFirstChild("RemovePlayers")
 	if removePlayersZone then

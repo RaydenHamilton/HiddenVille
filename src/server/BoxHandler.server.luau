@@ -21,6 +21,8 @@ local GamepassID = 1331110346
 local PlayerConnections = {}
 local PlayerAnimations = {}
 
+local notification = ReplicatedStorage.Remotes.Notication
+
 local function Randomize(min, max)
 	return math.random(min, max)
 end
@@ -171,6 +173,7 @@ PlaceBoxPrompt.Triggered:Connect(function(player)
 	end
 
 	if leaderstats and leaderstats:FindFirstChild("Money") then
+		notification:FireClient(player, "Success", `You deliverd the box for {reward}$`)
 		leaderstats.Money.Value += reward
 	end
 

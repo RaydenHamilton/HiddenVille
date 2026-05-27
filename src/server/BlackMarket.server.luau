@@ -1,5 +1,7 @@
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
+local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GunFolder = ServerStorage:WaitForChild("Tools")
 local BlackMarket = Workspace:WaitForChild("BlackMarket")
@@ -15,11 +17,14 @@ Prompt.ActionText = "$" .. Price.Value
 
 local Tool = ServerStorage.Tools:FindFirstChild("DuffelBag")
 
+local notification = ReplicatedStorage.Remotes.Notication
+
 Prompt.Triggered:Connect(function(Player)
 	if Player.leaderstats.Money.Value >= Price.Value then
 		Player.leaderstats.Money.Value -= Price.Value
 
 		local DuffelBagClone = Tool:Clone()
+		notification:FireClient(Player, "Success", `You purchased {Tool.Name}`)
 
 		if game:GetService("MarketplaceService"):UserOwnsGamePassAsync(Player.UserId, 1030832854) then
 			DuffelBagClone.gamepass.Value = true
@@ -30,6 +35,8 @@ Prompt.Triggered:Connect(function(Player)
 			Vector3.new(DuffelBagClone.Orientation.x, DuffelBagClone.Orientation.y - 180, DuffelBagClone.Orientation.z)
 		DuffelBagClone.WeldConstraint.Part1 = Player.Character.UpperTorso
 		DuffelBagClone.Parent = Player.Character
+	else
+		notification:FireClient(Player, "Error", `You do not have enough money`)
 	end
 end)
 
@@ -50,6 +57,9 @@ gunPrompt.Triggered:Connect(function(Player)
 	if Player.leaderstats.Money.Value >= gunPrice.Value then
 		Player.leaderstats.Money.Value -= gunPrice.Value
 		GunToClone:Clone().Parent = Player.Backpack
+		notification:FireClient(Player, "Success", `You purchased {GunToClone.Name}`)
+	else
+		notification:FireClient(Player, "Error", `You do not have enough money`)
 	end
 end)
 
@@ -87,9 +97,12 @@ BlankPrompt.Triggered:Connect(function(Player)
 
 	if Money.Value >= Price.Value then
 		Money.Value -= Price.Value
-
 		local clone = BlankToClone:Clone()
+
+		notification:FireClient(Player, "Success", `You have Purchased {BlankToClone.Name}`)
 		clone.Parent = Player.Backpack
+	else
+		notification:FireClient(Player, "Error", `You do not have enough money`)
 	end
 end)
 
@@ -99,9 +112,6 @@ for _, part in pairs(Blank:GetDescendants()) do
 		part.CanTouch = false
 	end
 end
-
-local MarketplaceService = game:GetService("MarketplaceService")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local MoneyGamepassID = 1030750804
 
@@ -148,6 +158,7 @@ Workspace.Map:FindFirstChild("sellpart", true).ProximityPrompt.Triggered:Connect
 			)
 
 			plr:FindFirstChild("leaderstats").Money.Value = plr:FindFirstChild("leaderstats").Money.Value + totalValue
+			notification:FireClient(plr, `Success`, `You got {totalValue}$`)
 			plr:FindFirstChild("hiddenstats").XP.Value = plr:FindFirstChild("hiddenstats").XP.Value + 28700
 
 			plr.Character.DuffelBag:Destroy()

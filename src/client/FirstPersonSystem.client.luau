@@ -62,18 +62,21 @@ local function SetCameraOffset()
 	humanoid.CameraOffset = objectSpace.Position + Vector3.new(0, 0, -0.5)
 end
 
+local state
+
 RunService.RenderStepped:Connect(function()
 	local char = player.Character or player.CharacterAdded:Wait()
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 	if humanoid:GetState() == Enum.HumanoidStateType.Seated then
-		print("siiting")
 		return
 	end
 	if char:WaitForChild("Head").LocalTransparencyModifier > 0.4 then
 		SetCameraOffset()
 		EnterFirstPerson()
 		SetCharacterVisible(char, true)
-	else
+		state = "First"
+	elseif state ~= "Third" then
+		state = "Third"
 		ExitFirstPerson()
 	end
 end)

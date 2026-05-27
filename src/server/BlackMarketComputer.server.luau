@@ -1,4 +1,7 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+
+local notification = ReplicatedStorage.Remotes.Notication
 
 local function playAnimation(plr)
 	local character = plr.Character
@@ -29,11 +32,16 @@ pc.Triggered:Connect(function(player)
 			pc.Parent.Parent.Reader.Base.Neon.Color = Color3.new(0, 1, 0)
 			pc.Parent.Parent.red.ProximityPrompt.Enabled = true
 			player.Character:FindFirstChild(tools.Name):Destroy()
+
+			notification:FireClient(player, "Success", `PC ready for card swipe`)
 			pc.Parent.Purchased:Play()
 			task.wait(0.01)
 			pc.Enabled = false
+			return
 		end
 	end
+
+	notification:FireClient(player, "Error", `No Data`)
 end)
 
 local reader = Workspace.PunchmadeSystem.setup.red.ProximityPrompt
@@ -45,6 +53,7 @@ reader.Triggered:Connect(function(player)
 			reader.Parent.Parent.Reader.Base.Neon.Color = Color3.new(1, 0, 0)
 			reader.Parent.Parent.comp.ProximityPrompt.Enabled = true
 			player.Character:FindFirstChild(tools.Name).Name = "Blank (Active)"
+			notification:FireClient(player, "Success", "Blank card activated")
 			reader.Parent.Purchased:Play()
 			task.wait(0.01)
 			reader.Enabled = false
@@ -78,7 +87,6 @@ local function onPromptTriggered(player)
 		warn("Not enough money.")
 		return
 	end
-
 	local hasTool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
 
 	if hasTool then
@@ -91,6 +99,8 @@ local function onPromptTriggered(player)
 		if tool then
 			local clone = tool:Clone()
 			clone.Parent = player.Backpack
+
+			notification:FireClient(player, "Success", `Purchased {clone.Name}`)
 			money.Value -= cost
 
 			local purchasedSound = ProximityPrompt.Parent:FindFirstChild("Purchased")

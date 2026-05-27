@@ -11,7 +11,7 @@ local char = player.Character or player.CharacterAdded:Wait()
 local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 
 local DefaultFOV = 70
-local FirstPersonFOV = 85
+local FirstPersonFOV = 100
 
 local currentTween
 
@@ -67,7 +67,6 @@ function CarCamera.init()
 			SetCameraOffset(humanoid.SeatPart.Parent.Body.FRONT.CFrame)
 			state = humanoid:GetState()
 		elseif state ~= Enum.HumanoidStateType.Running then
-			-- ExitFirstPerson()
 			SetCameraOffset(char.Head.CFrame)
 			state = humanoid:GetState()
 		end

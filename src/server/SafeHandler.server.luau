@@ -30,7 +30,7 @@ Players.PlayerAdded:Connect(function(player)
 	local safeData = PlayerDataServerService.get(player, "Safe")
 	if safeData then
 		for _, itemName in ipairs(safeData) do
-			local item = ServerStorage.AllTools:FindFirstChild(itemName)
+			local item = ServerStorage["Safe Tools"]:FindFirstChild(itemName)
 			if item and item:IsA("Tool") then
 				local clone = item:Clone()
 				clone.Parent = SafeFolder

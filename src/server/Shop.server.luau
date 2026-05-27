@@ -1,5 +1,9 @@
 local Workspace = game:GetService("Workspace")
 local ServerStorage = game:GetService("ServerStorage")
+local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local notification = ReplicatedStorage.Remotes.Notication
 
 for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 	local Prompt = item:FindFirstChild("BuyGun", true)
@@ -65,6 +69,9 @@ for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 
 			local newGun = GunToClone:Clone()
 			newGun.Parent = Player.Backpack
+			notification:FireClient(Player, "Success", `You purchased {newGun.Name}`)
+		else
+			notification:FireClient(Player, "Error", `Not enough money`)
 		end
 
 		task.wait(0.5)
@@ -101,8 +108,6 @@ for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 end
 
 for _, item in Workspace.BuyableItems.GamePass:GetChildren() do
-	local MarketplaceService = game:GetService("MarketplaceService")
-
 	local Prompt = item:FindFirstChild("BuyGun", true)
 	local Gun = item
 	local Price = Gun:FindFirstChild("Price")
@@ -214,12 +219,16 @@ for _, item in Workspace.ChipsSystem:GetChildren() do
 					money.Value -= price
 					local giveObject = stick:Clone()
 					giveObject.Parent = player.Backpack
+
+					notification:FireClient(player, "Success", `You purchased {stick.Name}`)
 					stock -= 1
 					updateText()
 
 					if stock <= 0 then
 						startRestocking()
 					end
+				else
+					notification:FireClient(player, "Error", `Not enough money`)
 				end
 			end
 		end)

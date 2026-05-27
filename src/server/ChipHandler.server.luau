@@ -3,6 +3,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Workspace = game:GetService("Workspace")
 local Prompt = Workspace.NPCs.Vender.UpperTorso.Main.SellPrompt
 
+local notification = ReplicatedStorage.Remotes.Notication
 local gamepassID = 1331110346
 
 local function checkForChips(player)
@@ -158,6 +159,7 @@ local function cook(pot, plr)
 	if #AllowedChips > 0 then
 		local reward = AllowedChips[math.random(1, #AllowedChips)]:Clone()
 		reward.Parent = plr.Backpack
+		notification:FireClient(plr, "Success", `Your chips are ready!`)
 	else
 		warn("No valid Chips found in Tools folder.")
 	end

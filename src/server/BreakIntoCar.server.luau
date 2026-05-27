@@ -1,6 +1,8 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local MoneyTaken = {}
+local notification = ReplicatedStorage.Remotes.Notication
 
 for _, Model in Workspace.CarRobberySystem:GetChildren() do
 	if Model.Name ~= "Car" then
@@ -85,7 +87,9 @@ for _, Model in Workspace.CarRobberySystem:GetChildren() do
 			end
 
 			if leaderstats and leaderstats:FindFirstChild("Money") then
-				leaderstats.Money.Value = leaderstats.Money.Value + math.random(1000, 1850) * MoneyTaken[player.UserId]
+				local cash = math.random(1000, 1850) * MoneyTaken[player.UserId]
+				leaderstats.Money.Value = leaderstats.Money.Value + cash
+				notification:FireClient(player, "Success", `You Stole {cash}$`)
 			end
 
 			if hiddenstats and hiddenstats:FindFirstChild("XP") then

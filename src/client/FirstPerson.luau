@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local states = nil
 local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 -- Tuned so camera sits just in front of eyes
@@ -71,14 +72,16 @@ RunService.RenderStepped:Connect(function()
 	if not humanoid then
 		return
 	end
-	if character.Head.LocalTransparencyModifier > 0.5 then
+	if character.Head.LocalTransparencyModifier > 0.5 and states ~= "First Person" then
 		SetCharacterVisible(char, true)
 		HideHeadAndFace(char, true)
 		moveHeadBehindCamera(true)
 		hideNameTag(char, true)
-	else
+		states = "First Person"
+	elseif states ~= "Third Person" then
 		humanoid.CameraOffset = Vector3.zero
 		moveHeadBehindCamera(false)
 		hideNameTag(char, false)
+		states = "Third Person"
 	end
 end)
