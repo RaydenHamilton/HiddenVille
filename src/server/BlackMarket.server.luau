@@ -17,14 +17,19 @@ Prompt.ActionText = "$" .. Price.Value
 
 local Tool = ServerStorage.Tools:FindFirstChild("DuffelBag")
 
-local notification = ReplicatedStorage.Remotes.Notication
+local notification = ReplicatedStorage.Remotes.Notification
 
 Prompt.Triggered:Connect(function(Player)
+	if Player.Character:FindFirstChild(Tool.Name) then
+		notification:FireClient(Player, `You aleary have a duffle bag`, "Error")
+		return
+	end
 	if Player.leaderstats.Money.Value >= Price.Value then
 		Player.leaderstats.Money.Value -= Price.Value
 
+		Player:FindFirstChild("canrob").Value = true
 		local DuffelBagClone = Tool:Clone()
-		notification:FireClient(Player, "Success", `You purchased {Tool.Name}`)
+		notification:FireClient(Player, `You purchased {Tool.Name}`, "Success")
 
 		if game:GetService("MarketplaceService"):UserOwnsGamePassAsync(Player.UserId, 1030832854) then
 			DuffelBagClone.gamepass.Value = true
@@ -36,7 +41,7 @@ Prompt.Triggered:Connect(function(Player)
 		DuffelBagClone.WeldConstraint.Part1 = Player.Character.UpperTorso
 		DuffelBagClone.Parent = Player.Character
 	else
-		notification:FireClient(Player, "Error", `You do not have enough money`)
+		notification:FireClient(Player, `You do not have enough money`, "Error")
 	end
 end)
 
@@ -57,9 +62,9 @@ gunPrompt.Triggered:Connect(function(Player)
 	if Player.leaderstats.Money.Value >= gunPrice.Value then
 		Player.leaderstats.Money.Value -= gunPrice.Value
 		GunToClone:Clone().Parent = Player.Backpack
-		notification:FireClient(Player, "Success", `You purchased {GunToClone.Name}`)
+		notification:FireClient(Player, `You purchased {GunToClone.Name}`, "Success")
 	else
-		notification:FireClient(Player, "Error", `You do not have enough money`)
+		notification:FireClient(Player, `You do not have enough money`, "Error")
 	end
 end)
 
@@ -99,10 +104,10 @@ BlankPrompt.Triggered:Connect(function(Player)
 		Money.Value -= Price.Value
 		local clone = BlankToClone:Clone()
 
-		notification:FireClient(Player, "Success", `You have Purchased {BlankToClone.Name}`)
+		notification:FireClient(Player, `You have Purchased {BlankToClone.Name}`, "Success")
 		clone.Parent = Player.Backpack
 	else
-		notification:FireClient(Player, "Error", `You do not have enough money`)
+		notification:FireClient(Player, `You do not have enough money`, "Error")
 	end
 end)
 
@@ -158,7 +163,6 @@ Workspace.Map:FindFirstChild("sellpart", true).ProximityPrompt.Triggered:Connect
 			)
 
 			plr:FindFirstChild("leaderstats").Money.Value = plr:FindFirstChild("leaderstats").Money.Value + totalValue
-			notification:FireClient(plr, `Success`, `You got {totalValue}$`)
 			plr:FindFirstChild("hiddenstats").XP.Value = plr:FindFirstChild("hiddenstats").XP.Value + 28700
 
 			plr.Character.DuffelBag:Destroy()

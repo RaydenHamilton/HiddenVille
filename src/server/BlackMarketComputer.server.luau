@@ -1,7 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
-local notification = ReplicatedStorage.Remotes.Notication
+local notification = ReplicatedStorage.Remotes.Notification
 
 local function playAnimation(plr)
 	local character = plr.Character
@@ -33,7 +33,7 @@ pc.Triggered:Connect(function(player)
 			pc.Parent.Parent.red.ProximityPrompt.Enabled = true
 			player.Character:FindFirstChild(tools.Name):Destroy()
 
-			notification:FireClient(player, "Success", `PC ready for card swipe`)
+			notification:FireClient(player, `PC ready for card swipe`, "Success")
 			pc.Parent.Purchased:Play()
 			task.wait(0.01)
 			pc.Enabled = false
@@ -41,7 +41,7 @@ pc.Triggered:Connect(function(player)
 		end
 	end
 
-	notification:FireClient(player, "Error", `No Data`)
+	notification:FireClient(player, `No Data`, "Error")
 end)
 
 local reader = Workspace.PunchmadeSystem.setup.red.ProximityPrompt
@@ -53,7 +53,7 @@ reader.Triggered:Connect(function(player)
 			reader.Parent.Parent.Reader.Base.Neon.Color = Color3.new(1, 0, 0)
 			reader.Parent.Parent.comp.ProximityPrompt.Enabled = true
 			player.Character:FindFirstChild(tools.Name).Name = "Blank (Active)"
-			notification:FireClient(player, "Success", "Blank card activated")
+			notification:FireClient(player, "Blank card activated", "Success")
 			reader.Parent.Purchased:Play()
 			task.wait(0.01)
 			reader.Enabled = false
@@ -100,7 +100,7 @@ local function onPromptTriggered(player)
 			local clone = tool:Clone()
 			clone.Parent = player.Backpack
 
-			notification:FireClient(player, "Success", `Purchased {clone.Name}`)
+			notification:FireClient(player, `Purchased {clone.Name}`, "Success")
 			money.Value -= cost
 
 			local purchasedSound = ProximityPrompt.Parent:FindFirstChild("Purchased")

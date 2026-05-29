@@ -13,7 +13,7 @@ local Box = ServerStorage:WaitForChild("Tools").Box
 local BoxAnimation = ReplicatedStorage:FindFirstChild("BoxAnimation")
 
 local ToggleBackpackUI = ReplicatedStorage.Remotes:WaitForChild("ToggleBackpackUI")
-local NotificationEvent = ReplicatedStorage.Remotes:FindFirstChild("NotificationEvent")
+local notification = ReplicatedStorage.Remotes:FindFirstChild("Notification")
 
 local ProximityDistance = 150
 local GamepassID = 1331110346
@@ -21,7 +21,7 @@ local GamepassID = 1331110346
 local PlayerConnections = {}
 local PlayerAnimations = {}
 
-local notification = ReplicatedStorage.Remotes.Notication
+local notification = ReplicatedStorage.Remotes.Notification
 
 local function Randomize(min, max)
 	return math.random(min, max)
@@ -112,9 +112,7 @@ end
 
 GrabBoxPrompt.Triggered:Connect(function(player)
 	if player:FindFirstChild("CombatLogged") then
-		if NotificationEvent then
-			NotificationEvent:FireClient(player, "You cannot start the box job while in combat.")
-		end
+		notification:FireClient(player, "You cannot start the box job while in combat.", "Error")
 		return
 	end
 
@@ -173,7 +171,7 @@ PlaceBoxPrompt.Triggered:Connect(function(player)
 	end
 
 	if leaderstats and leaderstats:FindFirstChild("Money") then
-		notification:FireClient(player, "Success", `You deliverd the box for {reward}$`)
+		notification:FireClient(player, `You deliverd the box for {reward}$`, "Success")
 		leaderstats.Money.Value += reward
 	end
 

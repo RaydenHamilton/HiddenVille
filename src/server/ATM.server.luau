@@ -2,7 +2,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local gamePassId = 1331110346
-local notification = ReplicatedStorage.Remotes.Notication
+local notification = ReplicatedStorage.Remotes.Notification
 
 for _, ATM in ipairs(Workspace.ATM:GetChildren()) do
 	local prox = ATM:FindFirstChild("ProximityPrompt", true)
@@ -26,7 +26,7 @@ for _, ATM in ipairs(Workspace.ATM:GetChildren()) do
 				local money = stats and stats:FindFirstChild("Money")
 				local xp = hidden and hidden:FindFirstChild("XP")
 				if money then
-					notification:FireClient(player, "Success", `You claimed {amount}$`)
+					notification:FireClient(player, `You claimed {amount}$`, "Success")
 					money.Value += amount
 				else
 					warn("Player's leaderstats or 'Money' stat not found.")
@@ -53,9 +53,8 @@ for _, ATM in ipairs(Workspace.ATM:GetChildren()) do
 				uiFrame.Screen.Transparency = 0
 				prox.MaxActivationDistance = 10
 			else
-				notification:FireClient(player,"Error",`No active card`)
+				notification:FireClient(player, `No active card`, "Error")
 			end
-
 		end
 	end)
 	prox.Triggered:Connect(function(plr)

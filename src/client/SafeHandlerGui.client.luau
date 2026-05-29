@@ -6,7 +6,7 @@ local SafeWhiteBlackList = require(ReplicatedStorage.Shared.Settings.SafeBlackLi
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local safeGui = playerGui:WaitForChild("Safe")
+local safeGui = playerGui:WaitForChild("Safe") :: ScreenGui
 local backpackFrame = safeGui.Frame.BackpackSF
 local safeFrame = safeGui.Frame.SafeSF
 local template = safeGui.Frame.PlaceHolderButton
@@ -34,8 +34,8 @@ safeGui.Frame.CloseButton.Activated:Connect(function()
 	end
 end)
 
-safeGui.Changed:Connect(function(theChange)
-	if safeGui.enabled == false or theChange ~= "Enabled" then
+safeGui.Changed:Connect(function()
+	if safeGui.enabled == false then
 		return
 	end
 
@@ -92,4 +92,3 @@ for _, door in pairs(Workspace.OwnedDoors:GetChildren()) do
 		end
 	end)
 end
-

@@ -1,11 +1,13 @@
 local Workspace = game:GetService("Workspace")
+
+local lastTouched = {}
+
 for _, Safezone in ipairs(Workspace.Safezones:GetChildren()) do
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Players = game:GetService("Players")
 	local TeleportPart = Safezone:WaitForChild("TP")
 
-	local offset = 5
-	local NotificationEvent = ReplicatedStorage.Remotes:FindFirstChild("NotificationEvent")
+	local notification = ReplicatedStorage.Remotes:FindFirstChild("Notification")
 
 	local function IsInSafezone(character)
 		if not character or not character.PrimaryPart then
@@ -29,8 +31,12 @@ for _, Safezone in ipairs(Workspace.Safezones:GetChildren()) do
 
 	Safezone.Touched:Connect(function(hit)
 		local hitCharacter = hit.Parent
+
 		local hitPlayer = Players:GetPlayerFromCharacter(hitCharacter)
 
+		if not lastTouched[hitPlayer] then
+			return
+		end
 		if not (hitPlayer and hitCharacter) then
 			return
 		end
@@ -41,9 +47,11 @@ for _, Safezone in ipairs(Workspace.Safezones:GetChildren()) do
 			if hitPlayer:FindFirstChild("CombatLogged") then
 				local hrp = hitCharacter:FindFirstChild("HumanoidRootPart")
 				if TeleportPart and hrp then
-					hitCharacter:SetPrimaryPartCFrame(TeleportPart.CFrame * CFrame.new(0, 0, -offset))
-					if NotificationEvent then
-						NotificationEvent:FireClient(hitPlayer, "You cannot enter here while combat logged.")
+					hitCharacter:SetPrimaryPartCFrame(TeleportPart.CFrame * CFrame.new(0, 0, 0))
+					if tick() - lastTouched[hitPlayer] > 1 then
+						notification:FireClient(hitPlayer, "You cannot enter here while combat logged.", "Error")
+
+						lastTouched[hitPlayer] = tick()
 					end
 				end
 				return
@@ -59,13 +67,13 @@ for _, Safezone in ipairs(Workspace.Safezones:GetChildren()) do
 			ExitSafezone(hitPlayer)
 		end
 	end)
-
-	Players.PlayerAdded:Connect(function(player)
+	local function playerAdded(player: Player)
+		lastTouched[player] = tick()
 		player.CharacterAdded:Connect(function(char)
 			local hrp = char:WaitForChild("HumanoidRootPart", 5)
 			if not hrp then
 				return
-			end -- prevents infinite yield freeze
+			end
 
 			task.wait(0.1)
 
@@ -73,5 +81,11 @@ for _, Safezone in ipairs(Workspace.Safezones:GetChildren()) do
 				EnterSafezone(player)
 			end
 		end)
-	end)
+	end
+
+	for _, player in Players:GetChildren() do
+		playerAdded(player)
+	end
+
+	Players.PlayerAdded:Connect(playerAdded)
 end

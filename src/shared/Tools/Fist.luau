@@ -3,9 +3,9 @@ local Fist = {}
 function Fist.new(Tool)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Players = game:GetService("Players")
+	local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll.Ragdoll)
 
 	local PunchedRemote = Tool:FindFirstChild("FistHandler")
-	local KnockoutRemote = ReplicatedStorage.Remotes:WaitForChild("KnockoutEvent")
 
 	local recentHits = {}
 
@@ -91,7 +91,7 @@ function Fist.new(Tool)
 		}
 
 		local function applyState(player, duration)
-			KnockoutRemote:FireClient(player, duration)
+			Ragdoll.new(player, duration)
 		end
 
 		local function playSound(sound, parent)

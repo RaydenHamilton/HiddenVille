@@ -3,7 +3,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Workspace = game:GetService("Workspace")
 local Prompt = Workspace.NPCs.Vender.UpperTorso.Main.SellPrompt
 
-local notification = ReplicatedStorage.Remotes.Notication
+local notification = ReplicatedStorage.Remotes.Notification
 local gamepassID = 1331110346
 
 local function checkForChips(player)
@@ -187,7 +187,7 @@ local function onTriggered(trigger, plr)
 	end
 
 	if states.inUse and states.inUse ~= plr.Name then
-		ReplicatedStorage.Remotes.NotificationEvent:FireClient(plr, "This pot is not useable.")
+		ReplicatedStorage.Remotes.Notification:FireClient(plr, "This pot is not useable.","Error")
 		return
 	end
 
@@ -197,7 +197,7 @@ local function onTriggered(trigger, plr)
 	local hasPowder = (char and char:FindFirstChild("Powder")) or (backpack and backpack:FindFirstChild("Powder"))
 
 	if not hasStick or not hasPowder then
-		ReplicatedStorage.Remotes.NotificationEvent:FireClient(plr, "You do not have the required ingredients.")
+		ReplicatedStorage.Remotes.Notification:FireClient(plr, "You do not have the required ingredients.","Error")
 		return
 	end
 
@@ -240,7 +240,7 @@ local function onTriggered(trigger, plr)
 			end)
 		end
 	else
-		ReplicatedStorage.Remotes.NotificationEvent:FireClient(plr, "This pot is not useable.")
+		ReplicatedStorage.Remotes.Notification:FireClient(plr, "This pot is not useable.","Error")
 	end
 end
 

@@ -5,7 +5,7 @@ for _, model in Workspace["Group Reward Circles"]:GetChildren() do
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 	-- notification system event
-	local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
+	local notification = ReplicatedStorage.Remotes:WaitForChild("Notification")
 
 	model.Part.ProximityPrompt.Triggered:Connect(function(Player)
 		if
@@ -28,7 +28,7 @@ for _, model in Workspace["Group Reward Circles"]:GetChildren() do
 					end
 
 					-- check group membership
-					if Player:IsInGroup(540064642) then
+					if Player:IsInGroup(850357584) then
 						if not claimedGroup.Value then
 							claimedGroup.Value = true
 
@@ -63,14 +63,10 @@ for _, model in Workspace["Group Reward Circles"]:GetChildren() do
 								adder:Destroy()
 							end)
 						else
-							NotificationEvent:FireClient(
-								Player,
-								"You already claimed this.",
-								Color3.fromRGB(255, 200, 0)
-							)
+							notification:FireClient(Player, "You already claimed this.", "Error")
 						end
 					else
-						NotificationEvent:FireClient(Player, "You are not in the group", Color3.fromRGB(255, 0, 0))
+						notification:FireClient(Player, "You are not in the group", "Error")
 					end
 				end
 			end

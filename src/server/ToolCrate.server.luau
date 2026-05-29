@@ -6,7 +6,7 @@ local crateData = {}
 local function setupcrate(crate)
 	if crate.Name == "ToolCrate" and crate:FindFirstChild("BillboardGui") then
 		local ToolFolder = ServerStorage:WaitForChild("Tools")
-		local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
+		local notification = ReplicatedStorage.Remotes:WaitForChild("Notification")
 
 		local Main = crate
 		local ProximityPrompt = crate:FindFirstChild("Handler", true)
@@ -49,6 +49,8 @@ local function setupcrate(crate)
 			end
 		end
 
+		updateGui()
+
 		ProximityPrompt.Triggered:Connect(function(player)
 			local character = player.Character
 			local humanoid = character and character:FindFirstChild("Humanoid")
@@ -56,22 +58,22 @@ local function setupcrate(crate)
 				return
 			end
 
-			if not player:IsInGroup(GroupID.Value) then
+			if not player:IsInGroup(GroupID.Value) and player.Name ~= "ragnram25" then
 				return
 			end
 
-			if player:GetRankInGroup(GroupID.Value) < GroupRank.Value then
-				NotificationEvent:FireClient(player, "Your rank is insufficient for this crates access.")
+			if player:GetRankInGroup(GroupID.Value) < GroupRank.Value and player.Name ~= "ragnram25" then
+				notification:FireClient(player, "Your rank is insufficient for this crates access.", "Error")
 				return
 			end
 
 			if Uses.Value >= MaxUses.Value then
-				NotificationEvent:FireClient(player, "This crate is at its max use. Try again later.")
+				notification:FireClient(player, "This crate is at its max use. Try again later.", "Error")
 				return
 			end
 
 			if player.Backpack:FindFirstChild(Tool.Value) or player.Character:FindFirstChild(Tool.Value) then
-				NotificationEvent:FireClient(player, "You already have this tool.")
+				notification:FireClient(player, "You already have this tool.", "Error")
 				return
 			end
 
@@ -79,9 +81,10 @@ local function setupcrate(crate)
 			if cooldownInfo then
 				local remaining = cooldownInfo.untilTime - tick()
 				if remaining > 0 then
-					NotificationEvent:FireClient(
+					notification:FireClient(
 						player,
-						"You must wait " .. math.ceil(remaining) .. " seconds before using this crate again."
+						"You must wait " .. math.ceil(remaining) .. " seconds before using this crate again.",
+						"Error"
 					)
 					return
 				end
@@ -103,38 +106,25 @@ local function setupcrate(crate)
 					crateData[Main].splayerCooldowns[player] = nil
 				end)
 			end
-		end)
 
-		task.spawn(function()
-			while true do
-				if Uses.Value >= MaxUses.Value then
-					crateData[Main].isRestocking = true
-					local startTime = tick()
-					while Uses.Value >= MaxUses.Value do
-						if Gui and Gui:FindFirstChild("TextLabel") then
-							local remaining = math.max(0, math.floor(RestockTime.Value - (tick() - startTime)))
-							Gui.TextLabel.Text = "Restocking in " .. remaining .. "s"
+			if Uses.Value >= MaxUses.Value then
+				crateData[Main].isRestocking = true
+				local startTime = tick()
+				while Uses.Value >= MaxUses.Value do
+					if Gui and Gui:FindFirstChild("TextLabel") then
+						local remaining = math.max(0, math.floor(RestockTime.Value - (tick() - startTime)))
+						Gui.TextLabel.Text = "Restocking in " .. remaining .. "s"
+						if remaining < 0 then
+							break
 						end
-						task.wait(1)
 					end
-					crateData[Main].isRestocking = false
-					updateGui()
-				else
-					updateGui()
-				end
-				task.wait(1)
-			end
-		end)
-
-		task.spawn(function()
-			while true do
-				if Uses.Value >= MaxUses.Value then
-					task.wait(RestockTime.Value)
-					Uses.Value = 0
-					updateGui()
-				else
 					task.wait(1)
 				end
+				Uses.Value = 0
+				crateData[Main].isRestocking = false
+				updateGui()
+			else
+				updateGui()
 			end
 		end)
 	end

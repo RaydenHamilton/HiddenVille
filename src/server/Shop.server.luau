@@ -3,14 +3,13 @@ local ServerStorage = game:GetService("ServerStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local notification = ReplicatedStorage.Remotes.Notication
+local notification = ReplicatedStorage.Remotes.Notification
 
 for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 	local Prompt = item:FindFirstChild("BuyGun", true)
 	local Gui = Prompt.Parent:FindFirstChild("Gui")
 	local GunModule = nil
 	local Gun = Prompt.Parent.Parent
-	local RequiredLevel = Gun:FindFirstChild("RequiredLevel")
 	local Price = Gun:FindFirstChild("Price")
 	Prompt.ObjectText = "Purchase " .. Gun.Name
 	Prompt.ActionText = "$" .. Price.Value
@@ -24,8 +23,8 @@ for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 		end
 
 		-- Validate Price & Required Level
-		if not Price or not RequiredLevel then
-			warn(Gun.Name .. " missing Price or RequiredLevel")
+		if not Price then
+			warn(Gun.Name .. " missing Price")
 			return
 		end
 
@@ -59,19 +58,14 @@ for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 			return
 		end
 
-		if Level.Value < RequiredLevel.Value then
-			debounce[Player] = nil
-			return
-		end
-
 		if Money.Value >= Price.Value then
 			Money.Value -= Price.Value
 
 			local newGun = GunToClone:Clone()
 			newGun.Parent = Player.Backpack
-			notification:FireClient(Player, "Success", `You purchased {newGun.Name}`)
+			notification:FireClient(Player, `You purchased {newGun.Name}`, "Success")
 		else
-			notification:FireClient(Player, "Error", `Not enough money`)
+			notification:FireClient(Player, `Not enough money`, "Error")
 		end
 
 		task.wait(0.5)
@@ -88,10 +82,6 @@ for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 	-- Safe GUI update
 	if Gui and Gui:FindFirstChild("Frame") then
 		local Frame = Gui.Frame
-
-		if Frame:FindFirstChild("Level") then
-			Frame.Level.Text = "Required Level: " .. RequiredLevel.Value
-		end
 
 		if GunModule then
 			if Frame:FindFirstChild("Accuracy") then
@@ -220,7 +210,7 @@ for _, item in Workspace.ChipsSystem:GetChildren() do
 					local giveObject = stick:Clone()
 					giveObject.Parent = player.Backpack
 
-					notification:FireClient(player, "Success", `You purchased {stick.Name}`)
+					notification:FireClient(player, `You purchased {stick.Name}`, "Success")
 					stock -= 1
 					updateText()
 
@@ -228,7 +218,7 @@ for _, item in Workspace.ChipsSystem:GetChildren() do
 						startRestocking()
 					end
 				else
-					notification:FireClient(player, "Error", `Not enough money`)
+					notification:FireClient(player, `Not enough money`, "Error")
 				end
 			end
 		end)

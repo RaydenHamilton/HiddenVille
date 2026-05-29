@@ -16,7 +16,6 @@ local FirstPersonFOV = 100
 local currentTween
 
 function CarCamera.init()
-	print("init")
 
 	-- Tween into first person FOV
 	local function EnterFirstPerson()
@@ -69,6 +68,7 @@ function CarCamera.init()
 		elseif state ~= Enum.HumanoidStateType.Running then
 			SetCameraOffset(char.Head.CFrame)
 			state = humanoid:GetState()
+			ExitFirstPerson()
 		end
 	end)
 

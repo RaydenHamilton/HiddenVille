@@ -8,7 +8,7 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 	local TweenService = game:GetService("TweenService")
 	local RunService = game:GetService("RunService")
 
-	local NotificationEvent = ReplicatedStorage.Remotes:WaitForChild("NotificationEvent")
+	local notification = ReplicatedStorage.Remotes:WaitForChild("Notification")
 
 	local ProximityPromptIn = Main:FindFirstChild("Inside", true).ProximityPrompt
 	local SoundIn = ProximityPromptIn:FindFirstChild("Sound")
@@ -142,7 +142,7 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 		end
 
 		if not TeleportOut then
-			NotificationEvent:FireClient(player, TurfName .. ": Teleport point missing.")
+			notification:FireClient(player, TurfName .. ": Teleport point missing.", "Error")
 			return
 		end
 
@@ -292,7 +292,7 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 		end
 
 		if not TeleportIn then
-			NotificationEvent:FireClient(player, TurfName .. ": Teleport point missing.")
+			notification:FireClient(player, TurfName .. ": Teleport point missing.", "Error")
 			return
 		end
 
@@ -312,12 +312,12 @@ for _, Main in Workspace.TurfSystem:getChildren() do
 		end
 
 		if not player:IsInGroup(GroupID.Value) then
-			NotificationEvent:FireClient(player, TurfName .. ": You must be in the group to enter the turf.")
+			notification:FireClient(player, TurfName .. ": You must be in the group to enter the turf.", "Error")
 			return
 		end
 
 		if RequiredRank and player:GetRankInGroup(GroupID.Value) < RequiredRank.Value then
-			NotificationEvent:FireClient(player, TurfName .. ": You are not high enough rank to enter the turf.")
+			notification:FireClient(player, TurfName .. ": You are not high enough rank to enter the turf.", "Error")
 			return
 		end
 
