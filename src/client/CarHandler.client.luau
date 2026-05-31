@@ -1,17 +1,26 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local CameraClient = require(ReplicatedStorage.Shared.Cars.CameraClient)
 local CarCameraEffect = require(ReplicatedStorage.Shared.Cars.CarCameraEffect)
 local CarGunClient = require(ReplicatedStorage.Shared.Cars.CarGunClient)
 local Controls = require(ReplicatedStorage.Shared.Cars.Controls)
+local DriveClient = require(ReplicatedStorage.Shared.Cars.DriveClient)
+local GaugesClient = require(ReplicatedStorage.Shared.Cars.GaugesClient)
+local IgnitionClient = require(ReplicatedStorage.Shared.Cars.SoundHanlder.IgnitionClient)
 local SoundClient = require(ReplicatedStorage.Shared.Cars.SoundHanlder.SoundClient)
 
-Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model) end)
+Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
+	IgnitionClient.new(CarModel)
+end)
 
 Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(a0: Instance)
 	if a0.Name == "A-Chassis Interface" then
+		GaugesClient.new()
+		DriveClient.new()
 		SoundClient.new()
 		Controls.new()
+		CameraClient.new()
 	end
 end)
 
