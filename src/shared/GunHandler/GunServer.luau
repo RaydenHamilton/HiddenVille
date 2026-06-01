@@ -1,9 +1,9 @@
 local GunHanlderServer = {}
 
-function GunHanlderServer.new(Tool)
-	local Workspace = game:GetService("Workspace")
-	local Debris = game:GetService("Debris")
+local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
 
+function GunHanlderServer.new(Tool)
 	local Setting = Tool:WaitForChild("Setting")
 	local Handle = Tool:WaitForChild(require(Setting).PrimaryHandle)
 	local Handle2
@@ -145,8 +145,7 @@ function GunHanlderServer.new(Tool)
 	local function GetInstanceFromAncestor(Table)
 		if Table[1] == "Tool" then
 			return Tool:FindFirstChild(Table[2], true)
-		end
-		if Table[1] == "Character" then
+		elseif Table[1] == "Character" then
 			return Tool.Parent:FindFirstChild(Table[2], true)
 		end
 	end

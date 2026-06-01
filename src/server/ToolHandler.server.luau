@@ -6,14 +6,13 @@ local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
 local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
 local Food = require(ReplicatedStorage.Shared.Foods.Food)
 local MAndM = require(ReplicatedStorage.Shared.Foods.MAndM)
+local SimulateBullet = require(ReplicatedStorage.Shared.GunHandler.SimulateBullet)
 local Fist = require(ReplicatedStorage.Shared.Tools.Fist)
-local MeleeServer = require(ReplicatedStorage.Shared.Tools.MeleeServer)
 local gunServer = require(gunHandler.GunServer)
 local gunWeld = require(gunHandler.GunWeld)
 local gunLaser = require(gunHandler.GunLaser)
 local SetUpTable = {}
-
-MeleeServer.init()
+SimulateBullet.init()
 
 local function setup(child: Tool, character)
 	print("Setting up tool:", child.Name, "for character:", character.Name)
@@ -33,6 +32,7 @@ local function setup(child: Tool, character)
 	-- bag
 
 	if child:FindFirstChild("Setting") and child:FindFirstChild("ChangeMagAndAmmo") then
+		print("client ", child.Name)
 		setupClient:FireClient(player, child, "Gun")
 	end
 

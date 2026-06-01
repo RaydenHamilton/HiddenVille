@@ -20,8 +20,12 @@ function clientRagdollModule.init()
 	local torso = char:FindFirstChild("Head")
 
 	local function moveToBody()
-		root.CFrame = CFrame.new(torso.Position, torso.Position + Vector3.new(0, 3, 0))
-		root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, root.Orientation.Y, 0)
+		if root and root.Parent then
+			root.CFrame = CFrame.new(torso.Position, torso.Position + Vector3.new(0, 3, 0))
+			root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, root.Orientation.Y, 0)
+		else
+			clear()
+		end
 	end
 	local function CharacterAdded()
 		char = player.Character or player.CharacterAdded:Wait()
@@ -42,8 +46,8 @@ function clientRagdollModule.init()
 
 	local remote = ReplicatedStorage.Remotes.KnockoutEvent
 
-	remote.OnClientEvent:Connect(clientRagdollModule.new)
-	player.CharacterAdded:Connect(CharacterAdded)
+	-- remote.OnClientEvent:Connect(clientRagdollModule.new)
+	-- player.CharacterAdded:Connect(CharacterAdded)
 end
 
 return clientRagdollModule

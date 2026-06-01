@@ -17,7 +17,6 @@ function ragdollModule.new(target: Player, timeDown)
 	local animation = ReplicatedStorage.UniveralAnimations.Ragdoll.GettingUp
 	local track = humanoid:LoadAnimation(animation)
 	humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-	humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 	humanoid:UnequipTools()
 
 	for _, instance in char:GetDescendants() do
@@ -27,8 +26,8 @@ function ragdollModule.new(target: Player, timeDown)
 			instance.CanCollide = true
 		end
 	end
-	root.CanCollide = false
 
+	root.CanCollide = false
 	root.Anchored = true
 
 	local function standup()
