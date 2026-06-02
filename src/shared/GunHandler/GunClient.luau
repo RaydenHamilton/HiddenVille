@@ -55,7 +55,6 @@ function ClientGunHandler.new(tool: Tool)
 	self.Torso = self.Character:FindFirstChild("Torso") or self.Character:FindFirstChild("UpperTorso")
 	self.PlayerGui = self.Player:WaitForChild("PlayerGui")
 	self.GunGUI = nil
-	self.Empty = self.Humanoid:LoadAnimation(self.Tool:FindFirstChild("Empty"))
 	self.Handle = self.Tool:WaitForChild(self.Module.PrimaryHandle)
 	--// connections
 	self.MarkerEvent = self.Tool:WaitForChild("MarkerEvent")
@@ -1345,7 +1344,6 @@ function ClientGun:Reload()
 			end
 		end
 		self.CommonVariables.Reloading = false
-		self.Empty:Stop()
 		self:UpdateGUI()
 	end
 end
@@ -1933,7 +1931,6 @@ function ClientGun:OnFiring()
 		self.CommonVariables.Enabled = true
 		if self.CurrentVariables.Mag <= 0 then
 			self.CurrentFireAnim:Stop()
-			self.Empty:Play()
 		end
 		if self.CommonVariables.ActuallyEquipped then
 			if self.CurrentModule.BatteryEnabled then
@@ -2028,7 +2025,6 @@ function ClientGun:OnEquip()
 	end)
 	if self.CurrentVariables.Mag <= 0 then
 		self.CurrentFireAnim:Stop()
-		self.Empty:Play()
 	end
 
 	self.CommonVariables.Equipped = true
@@ -2113,8 +2109,6 @@ function ClientGun:OnUnequipped()
 		if self.GunGUI then
 			self.GunGUI:Destroy()
 			self.GunGUI = nil
-
-			self.Empty:Stop()
 
 			self.CommonVariables.Equipped = false
 			self.CommonVariables.ActuallyEquipped = false

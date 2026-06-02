@@ -6,13 +6,11 @@ local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
 local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
 local Food = require(ReplicatedStorage.Shared.Foods.Food)
 local MAndM = require(ReplicatedStorage.Shared.Foods.MAndM)
-local SimulateBullet = require(ReplicatedStorage.Shared.GunHandler.SimulateBullet)
 local Fist = require(ReplicatedStorage.Shared.Tools.Fist)
 local gunServer = require(gunHandler.GunServer)
 local gunWeld = require(gunHandler.GunWeld)
 local gunLaser = require(gunHandler.GunLaser)
 local SetUpTable = {}
-SimulateBullet.init()
 
 local function setup(child: Tool, character)
 	print("Setting up tool:", child.Name, "for character:", character.Name)

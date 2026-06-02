@@ -21,8 +21,6 @@ local GamepassID = 1331110346
 local PlayerConnections = {}
 local PlayerAnimations = {}
 
-local notification = ReplicatedStorage.Remotes.Notification
-
 local function Randomize(min, max)
 	return math.random(min, max)
 end
@@ -110,82 +108,88 @@ local function RemoveBoxFromHand(player)
 	ToggleBackpackUI:FireClient(player, true)
 end
 
-GrabBoxPrompt.Triggered:Connect(function(player)
-	if player:FindFirstChild("CombatLogged") then
-		notification:FireClient(player, "You cannot start the box job while in combat.", "Error")
-		return
-	end
+local boxJobServer = {}
 
-	if PlayerConnections[player.Name] then
-		return
-	end
-	local box = player.Character:FindFirstChild("Box")
-	if box then
-		return
-	end
+function boxJobServer.init()
+	GrabBoxPrompt.Triggered:Connect(function(player)
+		if player:FindFirstChild("CombatLogged") then
+			notification:FireClient(player, "You cannot start the box job while in combat.", "Error")
+			return
+		end
 
-	AttachBoxToHand(player)
+		if PlayerConnections[player.Name] then
+			return
+		end
+		local box = player.Character:FindFirstChild("Box")
+		if box then
+			return
+		end
 
-	GrabBoxPrompt.GrabSound:Play()
+		AttachBoxToHand(player)
 
-	PlayerConnections[player.Name] = RunService.Heartbeat:Connect(function()
-		if not IsInRange(player) then
-			RemoveBoxFromHand(player)
+		GrabBoxPrompt.GrabSound:Play()
+
+		PlayerConnections[player.Name] = RunService.Heartbeat:Connect(function()
+			if not IsInRange(player) then
+				RemoveBoxFromHand(player)
+				PlayerConnections[player.Name]:Disconnect()
+				PlayerConnections[player.Name] = nil
+			end
+		end)
+	end)
+
+	PlaceBoxPrompt.Triggered:Connect(function(player)
+		local character = player.Character
+		if not character then
+			return
+		end
+
+		local box = character:FindFirstChild("Box")
+		if not box then
+			return
+		end
+
+		if PlayerConnections[player.Name] then
+			PlayerConnections[player.Name]:Disconnect()
+			PlayerConnections[player.Name] = nil
+		end
+
+		local leaderstats = player:FindFirstChild("leaderstats")
+		local hiddenstats = player:FindFirstChild("hiddenstats")
+
+		local reward = Randomize(100, 250)
+
+		local ownsMoneyGamepass = false
+		local success1, result1 = pcall(function()
+			return MarketplaceService:UserOwnsGamePassAsync(player.UserId, GamepassID)
+		end)
+		if success1 and result1 then
+			ownsMoneyGamepass = true
+		end
+
+		if ownsMoneyGamepass then
+			reward *= 2
+		end
+
+		if leaderstats and leaderstats:FindFirstChild("Money") then
+			notification:FireClient(player, `You deliverd the box for {reward}$`, "Success")
+			leaderstats.Money.Value += reward
+		end
+
+		if hiddenstats and hiddenstats:FindFirstChild("XP") then
+			hiddenstats.XP.Value += 1250
+		end
+
+		PlaceBoxPrompt.PlaceSound:Play()
+		RemoveBoxFromHand(player)
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		if PlayerConnections[player.Name] then
 			PlayerConnections[player.Name]:Disconnect()
 			PlayerConnections[player.Name] = nil
 		end
 	end)
-end)
+end
 
-PlaceBoxPrompt.Triggered:Connect(function(player)
-	local character = player.Character
-	if not character then
-		return
-	end
-
-	local box = character:FindFirstChild("Box")
-	if not box then
-		return
-	end
-
-	if PlayerConnections[player.Name] then
-		PlayerConnections[player.Name]:Disconnect()
-		PlayerConnections[player.Name] = nil
-	end
-
-	local leaderstats = player:FindFirstChild("leaderstats")
-	local hiddenstats = player:FindFirstChild("hiddenstats")
-
-	local reward = Randomize(100, 250)
-
-	local ownsMoneyGamepass = false
-	local success1, result1 = pcall(function()
-		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, GamepassID)
-	end)
-	if success1 and result1 then
-		ownsMoneyGamepass = true
-	end
-
-	if ownsMoneyGamepass then
-		reward *= 2
-	end
-
-	if leaderstats and leaderstats:FindFirstChild("Money") then
-		notification:FireClient(player, `You deliverd the box for {reward}$`, "Success")
-		leaderstats.Money.Value += reward
-	end
-
-	if hiddenstats and hiddenstats:FindFirstChild("XP") then
-		hiddenstats.XP.Value += 1250
-	end
-
-	PlaceBoxPrompt.PlaceSound:Play()
-	RemoveBoxFromHand(player)
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-	if PlayerConnections[player.Name] then
-		PlayerConnections[player.Name]:Disconnect()
-		PlayerConnections[player.Name] = nil
-	end
-end)
+return boxJobServer

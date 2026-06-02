@@ -49,6 +49,10 @@ local function onGoldCollected(promptObject, player)
 
 		promptObject.parent.Transparency = 1
 		promptObject.Enabled = false
+		local image = promptObject.parent:FindFirstChildOfClass("Decal")
+		if image then
+			image.Visible = false
+		end
 
 		task.delay(ResetTime, function()
 			promptObject.parent.Transparency = 0
@@ -81,70 +85,75 @@ local function resetGold()
 	connectGoldPrompts()
 end
 
-pp.Triggered:Connect(function(plr)
-	-- ❌ REMOVED MASK REQUIREMENT
-	-- No more balaclava check
+local bankServer = {}
 
-	local c4 = plr.Backpack:FindFirstChild("C4") or plr.Character:FindFirstChild("C4")
-	if not c4 then
-		return
-	end
+function bankServer.init()
+	pp.Triggered:Connect(function(plr)
+		-- ❌ REMOVED MASK REQUIREMENT
+		-- No more balaclava check
 
-	pp.Enabled = false
-	c4:Destroy()
-	partC4.Transparency = 0
-
-	notification:FireAllClients(`Bank is being robbed by {plr.Name}!!!`, "Warning")
-
-	c4Part.beep:Play()
-	task.wait(4)
-	c4Part.beep:Stop()
-	c4Part.explosion:Play()
-
-	local explosion = Instance.new("Explosion")
-	explosion.BlastRadius = 0.05
-	explosion.Position = partC4.Position
-	explosion.Parent = workspace
-
-	partC4.Transparency = 1
-	mainDoor.Parent = game.ReplicatedStorage
-
-	for _, player in ipairs(game.Players:GetPlayers()) do
-		if player == plr then
-			continue
+		local c4 = plr.Backpack:FindFirstChild("C4") or plr.Character:FindFirstChild("C4")
+		if not c4 then
+			return
 		end
 
-		local canrob = player:FindFirstChild("canrob")
-		local playerGui = player:FindFirstChild("PlayerGui")
-		if canrob and playerGui then
-			canrob.Value = true
-			local bankAlarm = playerGui:FindFirstChild("MainScreen")
-				and playerGui.MainScreen:FindFirstChild("BankAlarm")
-			if bankAlarm then
-				bankAlarm:Play()
+		pp.Enabled = false
+		c4:Destroy()
+		partC4.Transparency = 0
+
+		notification:FireAllClients(`Bank is being robbed by {plr.Name}!!!`, "Warning")
+
+		c4Part.beep:Play()
+		task.wait(4)
+		c4Part.beep:Stop()
+		c4Part.explosion:Play()
+
+		local explosion = Instance.new("Explosion")
+		explosion.BlastRadius = 0.05
+		explosion.Position = partC4.Position
+		explosion.Parent = workspace
+
+		partC4.Transparency = 1
+		mainDoor.Parent = game.ReplicatedStorage
+
+		for _, player in ipairs(game.Players:GetPlayers()) do
+			if player == plr then
+				continue
+			end
+
+			local canrob = player:FindFirstChild("canrob")
+			local playerGui = player:FindFirstChild("PlayerGui")
+			if canrob and playerGui then
+				canrob.Value = true
+				local bankAlarm = playerGui:FindFirstChild("MainScreen")
+					and playerGui.MainScreen:FindFirstChild("BankAlarm")
+				if bankAlarm then
+					bankAlarm:Play()
+				end
 			end
 		end
-	end
 
-	task.wait(ResetTime)
+		task.wait(ResetTime)
 
-	mainDoor.Parent = partC4.Parent
-	pp.Enabled = true
+		mainDoor.Parent = partC4.Parent
+		pp.Enabled = true
+
+		resetGold()
+
+		notification:FireAllClients(`Bank has reset`, "Success")
+
+		local removePlayersZone = mainDoor.Parent:FindFirstChild("RemovePlayers")
+		if removePlayersZone then
+			for _, part in ipairs(removePlayersZone:GetTouchingParts()) do
+				local char = part.Parent
+				local player = game.Players:GetPlayerFromCharacter(char)
+				if player and char and char:FindFirstChild("HumanoidRootPart") then
+					char.HumanoidRootPart.CFrame = mainDoor.PlayerTeleport.CFrame
+				end
+			end
+		end
+	end)
 
 	resetGold()
-
-	notification:FireAllClients(`Bank has reset`, "Success")
-
-	local removePlayersZone = mainDoor.Parent:FindFirstChild("RemovePlayers")
-	if removePlayersZone then
-		for _, part in ipairs(removePlayersZone:GetTouchingParts()) do
-			local char = part.Parent
-			local player = game.Players:GetPlayerFromCharacter(char)
-			if player and char and char:FindFirstChild("HumanoidRootPart") then
-				char.HumanoidRootPart.CFrame = mainDoor.PlayerTeleport.CFrame
-			end
-		end
-	end
-end)
-
-resetGold()
+end
+return bankServer

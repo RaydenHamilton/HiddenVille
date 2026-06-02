@@ -3,7 +3,7 @@ local Fist = {}
 function Fist.new(Tool)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Players = game:GetService("Players")
-	local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll.Ragdoll)
+	local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll.ServerRagdoll)
 
 	local PunchedRemote = Tool:FindFirstChild("FistHandler")
 

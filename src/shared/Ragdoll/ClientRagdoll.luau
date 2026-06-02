@@ -1,7 +1,9 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+
 local clientRagdollModule = {}
+
 function clientRagdollModule.init()
 	local player = Players.LocalPlayer
 	local playerModule = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")
@@ -46,8 +48,8 @@ function clientRagdollModule.init()
 
 	local remote = ReplicatedStorage.Remotes.KnockoutEvent
 
-	-- remote.OnClientEvent:Connect(clientRagdollModule.new)
-	-- player.CharacterAdded:Connect(CharacterAdded)
+	remote.OnClientEvent:Connect(clientRagdollModule.new)
+	player.CharacterAdded:Connect(CharacterAdded)
 end
 
 return clientRagdollModule

@@ -10,7 +10,7 @@ playerDataServerSetup.__index = playerDataServerSetup
 local profileTemplate = { Safe = {} }
 
 function playerDataServerSetup.init()
-	PlayerDataServerService.init(profileTemplate)
+	PlayerDataServerService.create(profileTemplate)
 
 	Players.PlayerAdded:Connect(PlayerDataServerService.playerAdded)
 	Players.PlayerRemoving:Connect(PlayerDataServerService.playerRemoving)

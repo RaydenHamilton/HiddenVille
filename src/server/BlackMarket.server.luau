@@ -40,6 +40,26 @@ Prompt.Triggered:Connect(function(Player)
 			Vector3.new(DuffelBagClone.Orientation.x, DuffelBagClone.Orientation.y - 180, DuffelBagClone.Orientation.z)
 		DuffelBagClone.WeldConstraint.Part1 = Player.Character.UpperTorso
 		DuffelBagClone.Parent = Player.Character
+
+		local goldValue = DuffelBagClone:WaitForChild("goldvalue")
+		local gamepass = DuffelBagClone:WaitForChild("gamepass")
+		local gui = DuffelBagClone:WaitForChild("guipart"):WaitForChild("SurfaceGui")
+		local frame = gui:WaitForChild("Frame")
+		local label = frame:WaitForChild("TextLabel")
+		local bar = frame:WaitForChild("greenbar")
+
+		local function updateDisplay()
+			local gold = goldValue.Value
+			local hasGamepass = gamepass.Value
+			local maxGold = hasGamepass and 10 or 5
+
+			label.Text = tostring(gold) .. "/" .. tostring(maxGold)
+			bar.Size = UDim2.fromScale(gold / maxGold, 1)
+		end
+
+		updateDisplay()
+		goldValue.Changed:Connect(updateDisplay)
+		gamepass.Changed:Connect(updateDisplay)
 	else
 		notification:FireClient(Player, `You do not have enough money`, "Error")
 	end

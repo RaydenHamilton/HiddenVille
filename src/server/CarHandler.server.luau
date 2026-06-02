@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
-local CarGun = require(ReplicatedStorage.Shared.Cars.CarGun)
 local DriverSeat = require(ReplicatedStorage.Shared.Cars.DriverSeat)
 local HitSystem = require(ReplicatedStorage.Shared.Cars.HitSystem)
 local InitCar = require(ReplicatedStorage.Shared.Cars.InitCar)
@@ -24,11 +23,9 @@ end)
 Players.PlayerAdded:Connect(function(player: Player)
 	player.CharacterAdded:Connect(function(character: Model)
 		for _, part in character:GetDescendants() do
-			if part:IsA("BasePart") then
+			if part:IsA("BasePart") and part:IsA("MeshPart") and part:IsA("Part") then
 				part.CollisionGroup = "Player"
 			end
 		end
 	end)
 end)
-
-CarGun.init()
