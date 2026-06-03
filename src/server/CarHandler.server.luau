@@ -13,7 +13,10 @@ Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
 	SoundServer.new(CarModel)
 	task.wait(5)
 	for _, obj in CarModel:GetDescendants() do
-		if obj:IsA("BasePart") and obj.Parent.Name ~= "Wheels" and obj.Parent.Parent.Name == "Body" then
+		if
+			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
+			and obj.Parent.Name ~= "Wheels"
+		then
 			obj.CollisionGroup = "Car"
 			obj.CanCollide = true
 		end
@@ -23,7 +26,7 @@ end)
 Players.PlayerAdded:Connect(function(player: Player)
 	player.CharacterAdded:Connect(function(character: Model)
 		for _, part in character:GetDescendants() do
-			if part:IsA("BasePart") and part:IsA("MeshPart") and part:IsA("Part") then
+			if part:IsA("UnionOperation") or part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Part") then
 				part.CollisionGroup = "Player"
 			end
 		end

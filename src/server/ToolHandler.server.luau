@@ -13,7 +13,6 @@ local gunLaser = require(gunHandler.GunLaser)
 local SetUpTable = {}
 
 local function setup(child: Tool, character)
-	print("Setting up tool:", child.Name, "for character:", character.Name)
 	--[[ Start Setup ]]
 	local player = Players:GetPlayerFromCharacter(character)
 

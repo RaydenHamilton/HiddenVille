@@ -1,8 +1,10 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local DriveModule = {}
 function DriveModule.new()
 	local gui = Players.LocalPlayer.PlayerGui:WaitForChild("A-Chassis Interface")
 
+	local connections = {}
 	--[[START]]
 
 	gui:WaitForChild("Car")
@@ -70,7 +72,7 @@ function DriveModule.new()
 
 	--[[Shutdown]]
 
-	car.DriveSeat.ChildRemoved:connect(function(child)
+	connections[#connections + 1] = car.DriveSeat.ChildRemoved:connect(function(child)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			gui:Destroy()
 		end
@@ -85,7 +87,7 @@ function DriveModule.new()
 		local a = Instance.new("StringValue", Controls)
 		a.Name = i
 		a.Value = v.Name
-		a.Changed:connect(function()
+		connections[#connections + 1] = a.Changed:connect(function()
 			if i == "MouseThrottle" or i == "MouseBrake" then
 				if a.Value == "MouseButton1" or a.Value == "MouseButton2" then
 					_CTRL[i] = Enum.UserInputType[a.Value]
@@ -104,7 +106,7 @@ function DriveModule.new()
 		local a = Instance.new("IntValue", Controls)
 		a.Name = i
 		a.Value = v
-		a.Changed:connect(function()
+		connections[#connections + 1] = a.Changed:connect(function()
 			a.Value = math.min(100, math.max(0, a.Value))
 			_PPH[i] = a.Value
 		end)
@@ -320,9 +322,9 @@ function DriveModule.new()
 		end
 	end
 
-	UserInputService.InputBegan:connect(DealWithInput)
-	UserInputService.InputChanged:connect(DealWithInput)
-	UserInputService.InputEnded:connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputBegan:connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputChanged:connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputEnded:connect(DealWithInput)
 
 	-- Mobile support
 	local Buttons = gui:WaitForChild("Buttons")
@@ -350,9 +352,8 @@ function DriveModule.new()
 			_SteerL = false
 		end
 	end
-	Left.InputBegan:Connect(LeftTurn)
-	Left.InputEnded:Connect(LeftTurn)
-	--Left.InputChanged:Connect(LeftTurn)
+	connections[#connections + 1] = Left.InputBegan:Connect(LeftTurn)
+	connections[#connections + 1] = Left.InputEnded:Connect(LeftTurn)
 
 	local function RightTurn(Touch, GPE)
 		if Touch.UserInputState == Enum.UserInputState.Begin then
@@ -368,9 +369,8 @@ function DriveModule.new()
 		end
 	end
 
-	Right.InputBegan:Connect(RightTurn)
-	Right.InputEnded:Connect(RightTurn)
-	--Right.InputChanged:Connect(RightTurn)
+	connections[#connections + 1] = Right.InputBegan:Connect(RightTurn)
+	connections[#connections + 1] = Right.InputEnded:Connect(RightTurn)
 
 	local function TouchThrottle(input, GPE)
 		if input.UserInputState == Enum.UserInputState.Begin and _IsOn then
@@ -380,9 +380,8 @@ function DriveModule.new()
 		end
 	end
 
-	Gas.InputBegan:Connect(TouchThrottle)
-	Gas.InputEnded:Connect(TouchThrottle)
-	--Gas.InputChanged:Connect(TouchThrottle)
+	connections[#connections + 1] = Gas.InputBegan:Connect(TouchThrottle)
+	connections[#connections + 1] = Gas.InputEnded:Connect(TouchThrottle)
 
 	local function TouchBrake(input, GPE)
 		if input.UserInputState == Enum.UserInputState.Begin then
@@ -392,9 +391,8 @@ function DriveModule.new()
 		end
 	end
 
-	Brake.InputBegan:Connect(TouchBrake)
-	Brake.InputEnded:Connect(TouchBrake)
-	--Brake.InputChanged:Connect(TouchBrake)
+	connections[#connections + 1] = Brake.InputBegan:Connect(TouchBrake)
+	connections[#connections + 1] = Brake.InputEnded:Connect(TouchBrake)
 
 	local function TouchHandbrake(input, GPE)
 		if input.UserInputState == Enum.UserInputState.Begin then
@@ -406,8 +404,8 @@ function DriveModule.new()
 		end
 	end
 
-	Handbrake.InputBegan:Connect(TouchHandbrake)
-	Handbrake.InputEnded:Connect(TouchHandbrake)
+	connections[#connections + 1] = Handbrake.InputBegan:Connect(TouchHandbrake)
+	connections[#connections + 1] = Handbrake.InputEnded:Connect(TouchHandbrake)
 
 	--[[Drivetrain Initialize]]
 
@@ -935,12 +933,13 @@ function DriveModule.new()
 	--Runtime Loops
 
 	-- ~60 c/s
-	game["Run Service"].Stepped:connect(function()
+	connections[#connections + 1] = game["Run Service"].Stepped:connect(function()
 		--Steering
 		Steering()
 
 		--RPM
 		RPM()
+
 		--Update External Values
 		_IsOn = gui.IsOn.Value
 		_InControls = gui.ControlsOpen.Value
@@ -963,18 +962,30 @@ function DriveModule.new()
 		gui.Values.Velocity.Value = car.DriveSeat.Velocity
 	end)
 
-	-- ~15 c/s
-	while task.wait(0.0667) do
-		--Power
-		Engine()
+	local elapsed = 0
+	connections[#connections + 1] = RunService.Heartbeat:Connect(function(dt)
+		elapsed += dt
 
-		--Flip
-		if _Tune.AutoFlip then
-			Flip()
+		if elapsed >= 0.0667 then
+			elapsed = 0
+
+			-- Power
+			Engine()
+
+			-- Flip
+			if _Tune.AutoFlip then
+				Flip()
+			end
 		end
-	end
+	end)
 
 	--[[END]]
+	local function clearConnections()
+		for _, connection: RBXScriptConnection in connections do
+			connection:Disconnect()
+		end
+	end
+	connections[#connections + 1] = gui.Destroying:Connect(clearConnections)
 end
 
 return DriveModule

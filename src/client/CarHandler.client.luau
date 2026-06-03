@@ -15,9 +15,9 @@ end)
 Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(a0: Instance)
 	if a0.Name == "A-Chassis Interface" then
 		GaugesClient.new()
-		DriveClient.new()
 		SoundClient.new()
-		Controls.new()
 		CameraClient.new()
+		DriveClient.new()
+		-- Controls.new() -- does not work looks like it never did
 	end
 end)

@@ -6,7 +6,10 @@ local ragdollEvent = ReplicatedStorage.Remotes.KnockoutEvent
 
 function ragdollModule.new(target: Player, timeDown)
 	local char = target.Character or target.CharacterAdded:Wait()
-	local humanoid = char:WaitForChild("Humanoid")
+	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+	if humanoid.Sit then
+		return
+	end
 
 	local root = char:WaitForChild("HumanoidRootPart") :: BasePart
 

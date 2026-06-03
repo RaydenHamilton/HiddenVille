@@ -4,16 +4,16 @@ initCar.new = function(car: Model)
 	local module = car:FindFirstChild("A-Chassis Tune")
 	--[[Weld functions]]
 
-	local JS = game:GetService("JointsService")
 	local PGS_ON = workspace:PGSIsEnabled()
 
 	function MakeWeld(x, y, type, s)
 		if type == nil then
 			type = "Weld"
 		end
-		local W = Instance.new(type, JS)
+		local W = Instance.new(type)
 		W.Part0 = x
 		W.Part1 = y
+		W.Parent = x
 		W.C0 = x.CFrame:inverse() * x.CFrame
 		W.C1 = y.CFrame:inverse() * x.CFrame
 		if type == "Motor" and s ~= nil then
@@ -129,10 +129,6 @@ initCar.new = function(car: Model)
 					end
 				end
 
-				billboard.TextLabel.Text = "Deleting Car in " .. i .. " Seconds"
-				billboard.Enabled = true
-				task.wait(1)
-
 				if i == 0 then
 					task.wait(0.5)
 					billboard.TextLabel.Text = "Deleting Car..."
@@ -141,6 +137,10 @@ initCar.new = function(car: Model)
 					end
 					countdownRunning = false
 					return
+				else
+					billboard.TextLabel.Text = "Deleting Car in " .. i .. " Seconds"
+					billboard.Enabled = true
+					task.wait(1)
 				end
 			end
 		end)
@@ -374,7 +374,7 @@ initCar.new = function(car: Model)
 				sp.MaxLength = _Tune.FSusLength or 0 + _Tune.FExtensionLim or 0
 				sp.MinLength = _Tune.FSusLength or 0 - _Tune.FCompressLim or 0
 			else
-				g.D = _Tune.RAntiRoll
+				-- g.D = _Tune.RAntiRoll
 				sp.Damping = _Tune.RSusDamping
 				sp.Stiffness = _Tune.RSusStiffness
 				sp.FreeLength = _Tune.RSusLength or 0 + _Tune.RPreCompressd or 0
@@ -581,7 +581,7 @@ initCar.new = function(car: Model)
 				end
 				table.insert(t, { v, v.CustomPhysicalProperties })
 				v.CustomPhysicalProperties = PhysicalProperties.new(
-					0,
+					0.0001,
 					v.CustomPhysicalProperties.Friction,
 					v.CustomPhysicalProperties.Elasticity,
 					v.CustomPhysicalProperties.FrictionWeight,
@@ -832,10 +832,6 @@ initCar.new = function(car: Model)
 		end
 
 		return players
-	end
-
-	local function inCar()
-		return #getPlayersInCar() > 0
 	end
 
 	local function destroyCar()

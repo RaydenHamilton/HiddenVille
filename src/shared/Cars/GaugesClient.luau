@@ -166,22 +166,11 @@ function GaugesModule.new()
 		end
 	end
 
-	gui.IsOn.Changed:connect(function()
-		if gui.IsOn.Value then
-			for i = 1, 0, 0.1 do
-				task.wait()
-				-- script.Speed.TextTransparency = i
-				-- script.Gear.TextTransparency = i
-				-- script.TMode.TextTransparency = i
-			end
-		end
-	end)
-
-	gui.Values.RPM.Changed:connect(function()
+	local function changeNeedle()
 		frame.Tach.Needle.Rotation = 45 + 225 * math.min(1, gui.Values.RPM.Value / (revEnd * 1000))
-	end)
+	end
 
-	gui.Values.Gear.Changed:connect(function()
+	local function changeGear()
 		local gearText = gui.Values.Gear.Value
 		if gearText > 0 then
 			gearText = "Gear: D"
@@ -191,9 +180,9 @@ function GaugesModule.new()
 			gearText = "Gear: R"
 		end
 		frame.Gear.Text = gearText
-	end)
+	end
 
-	gui.Values.TCS.Changed:connect(function()
+	local function changeTCS()
 		if _Tune.TCSEnabled then
 			if gui.Values.TCS.Value then
 				frame.TCS.TextColor3 = Color3.new(1, 170 / 255, 0)
@@ -213,9 +202,9 @@ function GaugesModule.new()
 		else
 			frame.TCS.Visible = false
 		end
-	end)
+	end
 
-	gui.Values.TCSActive.Changed:connect(function()
+	local function TCSActive()
 		if _Tune.TCSEnabled then
 			if gui.Values.TCSActive.Value and gui.Values.TCS.Value then
 				task.wait()
@@ -230,9 +219,9 @@ function GaugesModule.new()
 		else
 			frame.TCS.Visible = false
 		end
-	end)
+	end
 
-	frame.TCS.Changed:connect(function()
+	local function TCS()
 		if _Tune.TCSEnabled then
 			if gui.Values.TCSActive.Value and gui.Values.TCS.Value then
 				task.wait()
@@ -246,9 +235,9 @@ function GaugesModule.new()
 				frame.TCS.Visible = false
 			end
 		end
-	end)
+	end
 
-	gui.Values.ABS.Changed:connect(function()
+	local function ABS()
 		if _Tune.ABSEnabled then
 			if gui.Values.ABS.Value then
 				frame.ABS.TextColor3 = Color3.new(1, 170 / 255, 0)
@@ -268,9 +257,9 @@ function GaugesModule.new()
 		else
 			frame.ABS.Visible = false
 		end
-	end)
+	end
 
-	gui.Values.ABSActive.Changed:connect(function()
+	local function ABSActive()
 		if _Tune.ABSEnabled then
 			if gui.Values.ABSActive.Value and gui.Values.ABS.Value then
 				task.wait()
@@ -285,9 +274,9 @@ function GaugesModule.new()
 		else
 			frame.ABS.Visible = false
 		end
-	end)
+	end
 
-	frame.ABS.Changed:connect(function()
+	local function ABSGUI()
 		if _Tune.ABSEnabled then
 			if gui.Values.ABSActive.Value and gui.Values.ABS.Value then
 				task.wait()
@@ -301,12 +290,11 @@ function GaugesModule.new()
 				frame.ABS.Visible = false
 			end
 		end
-	end)
+	end
 
 	function PBrake()
 		frame.PBrake.Visible = gui.Values.PBrake.Value
 	end
-	gui.Values.PBrake.Changed:connect(PBrake)
 
 	function Gear()
 		if gui.Values.TransmissionMode.Value == "Auto" then
@@ -320,9 +308,8 @@ function GaugesModule.new()
 			frame.TMode.BackgroundColor3 = Color3.new(1, 85 / 255, 0.5)
 		end
 	end
-	gui.Values.TransmissionMode.Changed:connect(Gear)
 
-	gui.Values.Velocity.Changed:connect(function(property)
+	local function speedoNeedle()
 		frame.Speedo.Needle.Rotation = 45
 			+ 225
 				* math.min(
@@ -332,9 +319,9 @@ function GaugesModule.new()
 		frame.Speed.Text = math.floor(UNITS[currentUnits].scaling * gui.Values.Velocity.Value.Magnitude)
 			.. " "
 			.. UNITS[currentUnits].units
-	end)
+	end
 
-	frame.Speed.Activated:connect(function()
+	local function SpeedActive()
 		if currentUnits == #UNITS then
 			currentUnits = 1
 		else
@@ -346,7 +333,41 @@ function GaugesModule.new()
 		frame.Speed.Text = math.floor(UNITS[currentUnits].scaling * gui.Values.Velocity.Value.Magnitude)
 			.. " "
 			.. UNITS[currentUnits].units
-	end)
+	end
+
+	local connections = {}
+
+	connections[#connections + 1] = gui.Values.RPM.Changed:connect(changeNeedle)
+
+	connections[#connections + 1] = gui.Values.Gear.Changed:connect(changeGear)
+
+	connections[#connections + 1] = gui.Values.TCS.Changed:connect(changeTCS)
+
+	connections[#connections + 1] = gui.Values.TCSActive.Changed:connect(TCSActive)
+
+	connections[#connections + 1] = frame.TCS.Changed:connect(TCS)
+
+	connections[#connections + 1] = gui.Values.ABS.Changed:connect(ABS)
+
+	connections[#connections + 1] = gui.Values.ABSActive.Changed:connect(ABSActive)
+
+	connections[#connections + 1] = frame.ABS.Changed:connect(ABSGUI)
+
+	connections[#connections + 1] = gui.Values.PBrake.Changed:connect(PBrake)
+
+	connections[#connections + 1] = gui.Values.TransmissionMode.Changed:connect(Gear)
+
+	connections[#connections + 1] = gui.Values.Velocity.Changed:connect(speedoNeedle)
+
+	connections[#connections + 1] = frame.Speed.Activated:connect(SpeedActive)
+
+	local function removeConnections()
+		for _, connection: RBXScriptConnection in connections do
+			connection:Disconnect()
+		end
+	end
+
+	connections[#connections + 1] = gui.Destroying:Connect(removeConnections)
 
 	task.wait(0.1)
 	Gear()

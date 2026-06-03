@@ -1,6 +1,3 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local DriverSeat = {}
 
 DriverSeat.new = function(carModel: Model)
