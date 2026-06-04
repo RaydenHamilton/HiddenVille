@@ -721,9 +721,9 @@ initCar.new = function(car: Model)
 					return
 				end
 
-				local character = player.Character or player.CharacterAdded:Wait()
+				local character = player.Character or player.CharacterAdded:Wait() :: Model
 				local humanoid = character:FindFirstChildWhichIsA("Humanoid")
-				if not humanoid or humanoid.Sit or seat.Occupant then
+				if character:GetAttribute("Ragdoll") or not humanoid or humanoid.Sit or seat.Occupant then
 					return
 				end
 				character.HumanoidRootPart.CollisionGroup = "Car"

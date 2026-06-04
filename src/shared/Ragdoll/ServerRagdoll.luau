@@ -4,28 +4,33 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ragdollEvent = ReplicatedStorage.Remotes.KnockoutEvent
 
+local ragdallPlayers = {}
+
 function ragdollModule.new(target: Player, timeDown)
-	local char = target.Character or target.CharacterAdded:Wait()
-	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
-	if humanoid.Sit then
+	if table.find(ragdallPlayers, target) then
 		return
 	end
 
+	table.insert(ragdallPlayers, target)
+	local char = target.Character or target.CharacterAdded:Wait()
+	local humanoid = char:WaitForChild("Humanoid")
 	local root = char:WaitForChild("HumanoidRootPart") :: BasePart
-
-	humanoid.Sit = false
+	local animation = ReplicatedStorage.UniveralAnimations.Ragdoll.GettingUp
+	local track = humanoid:LoadAnimation(animation)
 
 	ragdollEvent:FireClient(target, timeDown)
 
-	local animation = ReplicatedStorage.UniveralAnimations.Ragdoll.GettingUp
-	local track = humanoid:LoadAnimation(animation)
-	humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
 	humanoid:UnequipTools()
 
-	for _, instance in char:GetDescendants() do
-		if instance:IsA("AnimationConstraint") then
-			instance.Enabled = false
-		elseif instance:IsA("BasePart") then
+	humanoid.Sit = false
+	char:SetAttribute("Ragdoll", true)
+
+	for _, instance in char:GetChildren() do
+		local constraint = instance:FindFirstChildOfClass("AnimationConstraint")
+		if constraint then
+			constraint.Enabled = false
+		end
+		if instance:IsA("MeshPart") then
 			instance.CanCollide = true
 		end
 	end
@@ -35,18 +40,22 @@ function ragdollModule.new(target: Player, timeDown)
 
 	local function standup()
 		-- re-enable constraints
-		for _, instance in char:GetDescendants() do
-			if instance:IsA("AnimationConstraint") then
-				instance.Enabled = true
-			elseif instance:IsA("BasePart") then
+
+		track:Play()
+		for _, instance in char:GetChildren() do
+			local constraint = instance:FindFirstChildOfClass("AnimationConstraint")
+			if constraint then
+				constraint.Enabled = true
+			end
+			if instance:IsA("BasePart") then
 				instance.CanCollide = false
 			end
 		end
 		root.Anchored = false
-		track:Play()
-
 		root.CanCollide = true
-		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+
+		char:SetAttribute("Ragdoll", nil)
+		table.remove(ragdallPlayers, table.find(ragdallPlayers, target))
 	end
 
 	task.delay(timeDown, standup)

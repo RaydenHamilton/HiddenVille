@@ -9,32 +9,31 @@ function clientRagdollModule.init()
 	local playerModule = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")
 	local controls = require(playerModule):GetControls()
 
-	local char = player.Character or player.CharacterAdded:Wait()
 	local connections = {}
 
+	local char = player.Character or player.CharacterAdded:Wait()
+	local root = char:WaitForChild("HumanoidRootPart") :: BasePart
+	local torso = char:WaitForChild("Head")
+
 	local function clear()
-		for i, v in connections do
+		for _, v in connections do
 			v:Disconnect()
 		end
 	end
 
-	local root = char:WaitForChild("HumanoidRootPart") :: BasePart
-	local torso = char:FindFirstChild("Head")
-
 	local function moveToBody()
-		if root and root.Parent then
-			root.CFrame = CFrame.new(torso.Position, torso.Position + Vector3.new(0, 3, 0))
-			root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, root.Orientation.Y, 0)
+		if root and root.Parent and torso then
+			root.CFrame = CFrame.new(torso.Position + Vector3.new(0, 3, 0))
 		else
 			clear()
 		end
 	end
+
 	local function CharacterAdded()
+		clear()
 		char = player.Character or player.CharacterAdded:Wait()
 		root = char:WaitForChild("HumanoidRootPart") :: BasePart
-		torso = char:FindFirstChild("Head")
-
-		clear()
+		torso = char:WaitForChild("Head")
 		controls:Enable()
 	end
 
@@ -42,8 +41,8 @@ function clientRagdollModule.init()
 		table.insert(connections, RunService.RenderStepped:Connect(moveToBody))
 		controls:Disable()
 		task.wait(time)
-		controls:Enable()
 		clear()
+		controls:Enable()
 	end
 
 	local remote = ReplicatedStorage.Remotes.KnockoutEvent

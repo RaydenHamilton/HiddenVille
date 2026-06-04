@@ -9,7 +9,12 @@ DriverSeat.new = function(carModel: Model)
 	local CurrentOccupant
 
 	DrivePrompt.Triggered:Connect(function(Player)
-		local Character = Player.Character or Player.CharacterAdded:Wait()
+		local Character = Player.Character or Player.CharacterAdded:Wait() :: Model
+
+		if Character:GetAttribute("Ragdoll") then
+			return
+		end
+
 		local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
 		local Shiftlock = Character:FindFirstChild("Shiftlock")
 
