@@ -89,7 +89,7 @@ initCar.new = function(car: Model)
 					v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
 				end
 				v.CustomPhysicalProperties = PhysicalProperties.new(
-					0.01,
+					0.0001,
 					v.CustomPhysicalProperties.Friction,
 					v.CustomPhysicalProperties.Elasticity,
 					v.CustomPhysicalProperties.FrictionWeight,

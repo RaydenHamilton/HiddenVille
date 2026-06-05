@@ -8,41 +8,20 @@ local CanRagdoll = true
 local CarRagdoll = {}
 
 function CarRagdoll.init()
-	local function recoverFromRagdoll(hit)
-		local healthConnection
-		healthConnection = humanoid.HealthChanged:Connect(function()
-			if humanoid.Health < humanoid.MaxHealth then
-				CanRagdoll = true
-				healthConnection:Disconnect()
-				hit.CanCollide = false
-			end
-		end)
-
-		if not CanRagdoll then
-			hit.CanCollide = false
-			if healthConnection then
-				healthConnection:Disconnect()
-			end
-		end
-		task.wait(5)
-		CanRagdoll = true
-	end
-
 	local function onTouched(hit: BasePart)
-		if hit.Name == "FRONT" and CanRagdoll then
-			if humanoid.Sit then
-				return
-			end
-			if hit.Velocity.Magnitude < 10 then
-				return
-			end
-
-			soundEvent:FireServer(hit.Velocity * 1.2)
-
-			CanRagdoll = false
-
-			recoverFromRagdoll(hit)
+		if hit.Name ~= "FRONT" and not CanRagdoll then
+			return
 		end
+
+		if humanoid.Sit or hit.AssemblyLinearVelocity.Magnitude < 10 then
+			return
+		end
+
+		CanRagdoll = false
+
+		task.wait(5)
+
+		CanRagdoll = true
 	end
 
 	for _, part in pairs(character:GetDescendants()) do

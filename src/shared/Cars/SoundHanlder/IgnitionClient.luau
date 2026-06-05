@@ -10,8 +10,10 @@ function IgnitionClient.new(model)
 		if name ~= "Occupant" or seat.Occupant == nil then
 			return
 		end
+
 		local gui = player.PlayerGui:WaitForChild("A-Chassis Interface")
 		local car = model
+
 		gui:WaitForChild("Start1")
 		gui:WaitForChild("Start2")
 
@@ -30,23 +32,32 @@ function IgnitionClient.new(model)
 
 		s1.Parent = car.DriveSeat
 		s2.Parent = car.DriveSeat
+
+		local function stopSound()
+			if not gui or not gui.Parent then
+				s1:Stop()
+				s2:Stop()
+				return false
+			end
+		end
+
 		task.wait()
-		if not gui or not gui.Parent then
+
+		if stopSound() then
 			return
 		end
+
 		s1:Play()
 
 		task.wait(7.3)
 
-		if not gui or not gui.Parent then
-			s1:Stop()
+		if stopSound() then
 			return
 		end
+
 		s2:Play()
 
-		if not gui or not gui.Parent then
-			s1:Stop()
-			s2:Stop()
+		if stopSound() then
 			return
 		end
 

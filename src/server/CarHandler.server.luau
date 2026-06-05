@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local DriverSeat = require(ReplicatedStorage.Shared.Cars.DriverSeat)
 local HitSystem = require(ReplicatedStorage.Shared.Cars.HitSystem)
 local InitCar = require(ReplicatedStorage.Shared.Cars.InitCar)
+local CarHitSoundServer = require(ReplicatedStorage.Shared.Cars.SoundHanlder.CarHitSoundServer)
 local SoundServer = require(ReplicatedStorage.Shared.Cars.SoundHanlder.SoundServer)
 
 Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
@@ -11,11 +12,15 @@ Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
 	HitSystem.new(CarModel)
 	DriverSeat.new(CarModel)
 	SoundServer.new(CarModel)
+	CarHitSoundServer.new(CarModel)
+
 	task.wait(5)
+
 	for _, obj in CarModel:GetDescendants() do
 		if
 			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
 			and obj.Parent.Name ~= "Wheels"
+			and obj.Name ~= "Floor"
 		then
 			obj.CollisionGroup = "Car"
 			obj.CanCollide = true

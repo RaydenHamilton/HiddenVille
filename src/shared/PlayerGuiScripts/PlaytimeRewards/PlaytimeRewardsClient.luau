@@ -202,7 +202,8 @@ function playtimeClientModule.init()
 							end
 
 							if data.reward == "Money" then
-								NotificationModule.Success(`CLAIMED {data.value}$`, 3)
+								local message = PlayerGui.GiftNotification:WaitForChild(`${data.value}`)
+								message.Text = `CLAIMED {message.Text}`
 							else
 								NotificationModule.Success(`CLAIMED GUN!`, 3)
 							end
