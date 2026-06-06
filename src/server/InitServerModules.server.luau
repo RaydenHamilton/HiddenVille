@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local function canInit(theModule: ModuleScript)
 	if string.find(string.lower(theModule.Name), "server") then
 		local module = require(theModule)
+		print(theModule.Name)
 		local containsFunction = (type(module) == "table") and (type(module["init"]) == "function")
 		if containsFunction then
 			module.init()

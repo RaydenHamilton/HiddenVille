@@ -6,7 +6,7 @@
       "Shared": {
         "$path": "src/shared"
       },
-      "Packages": {
+      "PackagesNew": {
         "$path": "ServerPackages"
       },
       "BlinkEvents": {

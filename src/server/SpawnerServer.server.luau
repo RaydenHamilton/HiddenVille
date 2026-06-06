@@ -46,6 +46,9 @@ local function initializePlayer(player)
 			"RAYDEN M4",
 			"RPGSwitch",
 			"GLOKK",
+			"PurpleButton",
+			"G27ESwitch",
+			"G19x 100Rnd",
 		},
 		["ragnram25"] = {
 			"Jaden's Banana Switch",
