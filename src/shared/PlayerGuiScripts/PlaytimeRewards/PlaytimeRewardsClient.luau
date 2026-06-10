@@ -201,17 +201,19 @@ function playtimeClientModule.init()
 								ClaimMoney:FireServer(data.value, index)
 							end
 
-							if data.reward == "Money" then
-								local message = PlayerGui.GiftNotification:WaitForChild(`${data.value}`)
-								message.Text = `CLAIMED {message.Text}`
-							else
-								NotificationModule.Success(`CLAIMED GUN!`, 3)
-							end
-
 							claimedRewards[index] = true
 							claimButton.Text = "Claimed"
 							claimButton.AutoButtonColor = false
 							claimButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+
+							if data.reward == "Money" then
+								local message = PlayerGui.GiftNotification:WaitForChild(`${data.value}`, 0.3)
+								if message then
+									message.Text = `CLAIMED {message.Text}`
+								end
+							else
+								NotificationModule.Success(`CLAIMED GUN!`, 3)
+							end
 						end
 					end)
 				end

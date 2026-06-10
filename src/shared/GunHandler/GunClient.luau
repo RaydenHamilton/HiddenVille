@@ -15,6 +15,8 @@ local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local client = require(ReplicatedStorage.BlinkEvents.client)
+local GunLaser = require(script.Parent.GunLaser)
 
 function ClientGunHandler.new(tool: Tool)
 	local self = setmetatable({}, ClientGun)
@@ -624,6 +626,64 @@ function ClientGun:FindNearestEntity()
 	return TargetModel, TargetHumanoid, TargetTorso
 end
 
+function ClientGun:newMobileGui()
+	if not UserInputService.TouchEnabled then
+		return
+	end
+
+	local touchGui = self.PlayerGui:FindFirstChild("TouchGui") or self.PlayerGui:WaitForChild("TouchGui", 5)
+
+	if not touchGui then
+		warn("[Movement] TouchGui not found in PlayerGui (mobile buttons not attached).")
+		return
+	end
+
+	self.buttonFrame = touchGui:FindFirstChild("TouchControlFrame") or touchGui:WaitForChild("TouchControlFrame", 5)
+
+	if not self.buttonFrame then
+		warn("[Movement] TouchControlFrame not found in TouchGui (mobile buttons not attached).")
+		return
+	end
+	local gunGui = self.buttonFrame.GunGui
+	local AimButton = gunGui.AimButton
+	local HoldDownButton = gunGui.HoldDownButton
+	local InspectButton = gunGui.InspectButton
+	local ReloadButton = gunGui.ReloadButton
+	local SwitchButton = gunGui.SwitchButton
+	local AltButton = gunGui.AltButton
+	local FireButton = gunGui.FireButton
+
+	AimButton.Visible = self.CurrentModule.SniperEnabled or self.CurrentModule.IronsightEnabled
+	HoldDownButton.Visible = self.CurrentModule.HoldDownEnabled
+	InspectButton.Visible = self.CurrentModule.InspectAnimationEnabled
+	SwitchButton.Visible = self.CurrentModule.SelectiveFireEnabled
+	ReloadButton.Visible = not self.CurrentModule.BatteryEnabled
+	AltButton.Visible = self.Module.AltFire
+	FireButton.Visible = true
+
+	self.connections[#self.connections + 1] = HoldDownButton.MouseButton1Click:Connect(function()
+		self:OnHoldingDown()
+	end)
+	self.connections[#self.connections + 1] = InspectButton.MouseButton1Click:Connect(function()
+		self:OnInspecting()
+	end)
+	self.connections[#self.connections + 1] = SwitchButton.MouseButton1Click:Connect(function()
+		self:OnSwitching()
+	end)
+	self.connections[#self.connections + 1] = ReloadButton.MouseButton1Click:Connect(function()
+		self:Reload()
+	end)
+	self.connections[#self.connections + 1] = FireButton.MouseButton1Down:Connect(function()
+		self:OnFiring()
+	end)
+	self.connections[#self.connections + 1] = FireButton.MouseButton1Up:Connect(function()
+		self:OnStoppingFiring()
+	end)
+	self.connections[#self.connections + 1] = AltButton.MouseButton1Click:Connect(function()
+		self:OnAlting()
+	end)
+end
+
 function ClientGun:UpdateGUI()
 	self.GunGUI.Frame.Mag.Fill:TweenSize(
 		UDim2.fromScale(self.CurrentVariables.Mag / self.CurrentModule.AmmoPerMag, 1),
@@ -678,20 +738,7 @@ function ClientGun:UpdateGUI()
 	self.GunGUI.Frame.Ammo.Visible = self.CurrentModule.LimitedAmmoEnabled
 	self.GunGUI.Frame.Heat.Visible = self.CurrentModule.BatteryEnabled
 
-	self.GunGUI.MobileButtons.Visible = UserInputService.TouchEnabled --For mobile version
-	local AimButton = self.GunGUI.MobileButtons.AimButton
-	local HoldDownButton = self.GunGUI.MobileButtons.HoldDownButton
-	local InspectButton = self.GunGUI.MobileButtons.InspectButton
-	local ReloadButton = self.GunGUI.MobileButtons.ReloadButton
-	local SwitchButton = self.GunGUI.MobileButtons.SwitchButton
-	local AltButton = self.GunGUI.MobileButtons.AltButton
-
-	AimButton.Visible = self.CurrentModule.SniperEnabled or self.CurrentModule.IronsightEnabled
-	HoldDownButton.Visible = self.CurrentModule.HoldDownEnabled
-	InspectButton.Visible = self.CurrentModule.InspectAnimationEnabled
-	SwitchButton.Visible = self.CurrentModule.SelectiveFireEnabled
-	ReloadButton.Visible = not self.CurrentModule.BatteryEnabled
-	AltButton.Visible = self.Module.AltFire
+	self:newMobileGui()
 end
 
 function ClientGun:RenderMouse()
@@ -1265,11 +1312,6 @@ function ClientGun:Reload()
 								self.CurrentVariables.Mag = self.CurrentVariables.Mag + 1
 								self.CurrentVariables.Ammo = self.CurrentVariables.Ammo - 1
 								self:updateServerChangeMagAndAmmo()
-								-- if self.Module.MagCartridge and not self.CurrentModule.BatteryEnabled then
-								-- 	for i = 1, self.CurrentVariables.Mag do
-								-- 		self.GunGUI.MagCartridge[i].Visible = true
-								-- 	end
-								-- end
 								self:UpdateGUI()
 							end
 						else
@@ -1969,32 +2011,6 @@ end
 function ClientGun:OnEquip()
 	self.GunGUI = self.Hud:Clone()
 	self.GunGUI.Parent = self.PlayerGui
-	if UserInputService.TouchEnabled then
-		local MobileButtons = self.GunGUI:WaitForChild("MobileButtons")
-		MobileButtons.Visible = true
-
-		self.connections[#self.connections + 1] = MobileButtons.HoldDownButton.MouseButton1Click:Connect(function()
-			self:OnHoldingDown()
-		end)
-		self.connections[#self.connections + 1] = MobileButtons.InspectButton.MouseButton1Click:Connect(function()
-			self:OnInspecting()
-		end)
-		self.connections[#self.connections + 1] = MobileButtons.SwitchButton.MouseButton1Click:Connect(function()
-			self:OnSwitching()
-		end)
-		self.connections[#self.connections + 1] = MobileButtons.ReloadButton.MouseButton1Click:Connect(function()
-			self:Reload()
-		end)
-		self.connections[#self.connections + 1] = MobileButtons.FireButton.MouseButton1Down:Connect(function()
-			self:OnFiring()
-		end)
-		self.connections[#self.connections + 1] = MobileButtons.FireButton.MouseButton1Up:Connect(function()
-			self:OnStoppingFiring()
-		end)
-		self.connections[#self.connections + 1] = MobileButtons.AltButton.MouseButton1Click:Connect(function()
-			self:OnAlting()
-		end)
-	end
 	self.connections[#self.connections + 1] = UserInputService.InputBegan:Connect(function(...)
 		self:InputBegin(...)
 	end)
@@ -2023,6 +2039,14 @@ function ClientGun:OnEquip()
 	self.connections[#self.connections + 1] = self.Player.CharacterRemoving:Connect(function()
 		self:OnUnequipped()
 	end)
+
+	self.connections[#self.connections + 1] = self.PlayerGui.ChildAdded:Connect(function(child)
+		if child.Name == "TouchGui" or child.Name == "MobileGui" then
+			task.wait(0.1)
+			self:newMobileGui()
+		end
+	end)
+
 	if self.CurrentVariables.Mag <= 0 then
 		self.CurrentFireAnim:Stop()
 	end
@@ -2149,6 +2173,11 @@ function ClientGun:OnUnequipped()
 			for _, a in pairs(self.CurrentAnimTable) do
 				if a and a.IsPlaying then
 					a:Stop()
+				end
+			end
+			if self.buttonFrame then
+				for _, mobileButton in self.buttonFrame.GunGui:GetChildren() do
+					mobileButton.Visible = false
 				end
 			end
 

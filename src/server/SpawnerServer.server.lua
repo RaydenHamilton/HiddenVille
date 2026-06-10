@@ -83,7 +83,7 @@ local function initializePlayer(player)
 			"GLOKK",
 		},
 		["Dolla2Unk"] = { "KrissVector", "DOLLA 10 MM GLOCK", "DOLLAZ MPX", "DOLLAZ AR" },
-		["Jaecyondabest"] = { "KrissVector", "Jaecyon's Toy Gun", "Golden Ak" },
+		["sacramento_ar"] = { "SAC ARP Fully", "Golden Ak" },
 		["LEGALPAPO"] = { "KrissVector", "PAPO 10 MM GLOCK", "DROPP", "PAPO'S AR", "PAPO VECTOR", "PAPO MPX" },
 		["Legal_Rez"] = { "KrissVector", "REZ", "Golden Ak" },
 	}
@@ -201,3 +201,4 @@ end)
 
 Players.PlayerAdded:Connect(initializePlayer)
 SpawnToolEvent.OnServerEvent:Connect(spawnTool)
+
