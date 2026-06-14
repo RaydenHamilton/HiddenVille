@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local SpawnToolEvent = ReplicatedStorage.Remotes:WaitForChild("SpawnTool")
 local UpdateSpawns = ReplicatedStorage.Remotes:WaitForChild("UpdateSpawns")
@@ -34,59 +35,7 @@ local function initializePlayer(player)
 		},
 	}
 
-	local customSpawners = {
-		["WarInGlokk"] = {
-			"Jaden's Banana Switch",
-			"ChainSaw",
-			"REAPER SWITCH",
-			"Admin Fist",
-			"NerfGun",
-			"Golden Ak",
-			"KrissVector",
-			"RAYDEN M4",
-			"RPGSwitch",
-			"GLOKK",
-			"PurpleButton",
-			"G27ESwitch",
-			"G19x 100Rnd",
-		},
-		["ragnram25"] = {
-			"Jaden's Banana Switch",
-			"ChainSaw",
-			"RAYDEN M4",
-			"Admin Fist",
-			"NerfGun",
-			"Golden Ak",
-			"KrissVector",
-			"DOLLAZ AR",
-			"RPGSwitch",
-			"GLOKK",
-		},
-		["warrenduran1214"] = {
-			"Jaden's Banana Switch",
-			"ChainSaw",
-			"YOU GONE LOVE THIS",
-			"NerfGun",
-			"Golden Ak",
-			"KrissVector",
-			"DOLLAZ AR",
-			"RPGSwitch",
-			"GLOKK",
-		},
-		["ZayFrmEnvy"] = {
-			"Jaden's Banana Switch",
-			"ChainSaw",
-			"Zay27White Drum",
-			"NerfGun",
-			"Golden Ak",
-			"KrissVector",
-			"GLOKK",
-		},
-		["Dolla2Unk"] = { "KrissVector", "DOLLA 10 MM GLOCK", "DOLLAZ MPX", "DOLLAZ AR" },
-		["sacramento_ar"] = { "SAC ARP Fully", "Golden Ak" },
-		["LEGALPAPO"] = { "KrissVector", "PAPO 10 MM GLOCK", "DROPP", "PAPO'S AR", "PAPO VECTOR", "PAPO MPX" },
-		["Legal_Rez"] = { "KrissVector", "REZ", "Golden Ak" },
-	}
+	local customSpawners = require(ServerScriptService.Settings.SpawnerSettings)
 
 	local gamepassSpawners = {
 		[1607160181] = "Mac11",
@@ -201,4 +150,3 @@ end)
 
 Players.PlayerAdded:Connect(initializePlayer)
 SpawnToolEvent.OnServerEvent:Connect(spawnTool)
-

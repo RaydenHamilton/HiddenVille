@@ -254,6 +254,16 @@ function SerdesFunctions.WriteEVENT_MoveSafeItem(Value1: string, Value2: string)
 	buffer.writestring(SendBuffer, SendOffset, Value2, Length)
 end
 
+function SerdesFunctions.WriteEVENT_lightsOn(Value: string): ()
+	-- Allocate BLOCK: 3 bytes
+	local BLOCK_START = Allocate(3)
+	buffer.writeu8(SendBuffer, BLOCK_START + 0, 3)
+	local Length = #Value
+	buffer.writeu16(SendBuffer, BLOCK_START + 1, Length)
+	Allocate(Length)
+	buffer.writestring(SendBuffer, SendOffset, Value, Length)
+end
+
 if not RunService:IsRunning() then
 	local NOOP = function() end
 	local Returns = table.freeze({
@@ -264,6 +274,9 @@ if not RunService:IsRunning() then
 		On = NOOP
 	},
 	MoveSafeItem = {
+		Fire = NOOP
+	},
+	lightsOn = {
 		Fire = NOOP
 	},
 	})
@@ -369,6 +382,11 @@ local Returns = table.freeze({
 	MoveSafeItem = {
 		Fire = function(Value1: string, Value2: string): ()
 			SerdesFunctions.WriteEVENT_MoveSafeItem(Value1, Value2)
+		end
+	},
+	lightsOn = {
+		Fire = function(Value: string): ()
+			SerdesFunctions.WriteEVENT_lightsOn(Value)
 		end
 	},
 })

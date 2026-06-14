@@ -163,6 +163,7 @@ local SerdesEvent = "?"
 local SerdesThread: thread?
 Queue.Reliable[0] = table.create(256)
 Queue.Reliable[2] = table.create(256)
+Queue.Reliable[3] = table.create(256)
 function SerdesFunctions.ReadEVENT_SendHeadAndBodyMovementToServer(): (CFrame, CFrame, CFrame, CFrame)
 	-- Read BLOCK: 96 bytes
 	local BLOCK_START = Read(96)
@@ -253,6 +254,14 @@ function SerdesFunctions.ReadEVENT_MoveSafeItem(): (string, string)
 	return Value1, Value2
 end
 
+function SerdesFunctions.ReadEVENT_lightsOn(): (string)
+	-- Read BLOCK: 2 bytes
+	local BLOCK_START = Read(2)
+	local Length = buffer.readu16(RecieveBuffer, BLOCK_START + 0)
+	local Value = buffer.readstring(RecieveBuffer, Read(Length), Length)
+	return Value
+end
+
 if not RunService:IsRunning() then
 	local NOOP = function() end
 	local Returns = table.freeze({
@@ -266,6 +275,9 @@ if not RunService:IsRunning() then
 		FireExcept = NOOP
 	},
 	MoveSafeItem = {
+		On = NOOP
+	},
+	lightsOn = {
 		On = NOOP
 	},
 	})
@@ -351,6 +363,17 @@ Reliable.OnServerEvent:Connect(function(Player: Player, Buffer: buffer, Instance
 					warn("[Blink]: Event queue of \"MoveSafeItem\" exceeded 256, did you forget to implement a listener?")
 				end
 				table.insert(Queue.Reliable[2], {Player, Value1, Value2} :: {any})
+			end
+		elseif Index == 3 then
+			local Value: string = SerdesFunctions.ReadEVENT_lightsOn()
+			if Events.Reliable[3] ~= nil then
+				SerdesEvent = "lightsOn"
+				Events.Reliable[3](Player, Value)
+			else
+				if #Queue.Reliable[3] > 256 then
+					warn("[Blink]: Event queue of \"lightsOn\" exceeded 256, did you forget to implement a listener?")
+				end
+				table.insert(Queue.Reliable[3], {Player, Value} :: {any})
 			end
 		end
 	end
@@ -447,6 +470,20 @@ local Returns = table.freeze({
 			return function (): ()
 				if Events.Reliable[2] == Listener then
 					Events.Reliable[2] = nil
+				end
+			end
+		end
+	},
+	lightsOn = {
+		On = function(Listener: (Player: Player, Value: string) -> ()): () -> ()
+			Events.Reliable[3] = Listener
+			for Index, Arguments in Queue.Reliable[3] do
+				Listener(table.unpack(Arguments))
+			end
+			Queue.Reliable[3] = {}
+			return function (): ()
+				if Events.Reliable[3] == Listener then
+					Events.Reliable[3] = nil
 				end
 			end
 		end

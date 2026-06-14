@@ -376,8 +376,6 @@ function FistClient.new(Tool)
 					return
 				end
 				Punch()
-			elseif input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonL2 then
-				Dodge()
 			end
 		end)
 		UserInputService.InputEnded:Connect(function(input, gameProcessed)

@@ -64,8 +64,10 @@ end
 local function CharacterAdded(character: Model)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 	local player = Players:GetPlayerFromCharacter(character)
-	humanoid.Died:Connect(function()
-		ragdollModule.new(player, 10)
+	humanoid.HealthChanged:Connect(function()
+		if humanoid.Health <= 0 then
+			ragdollModule.new(player, 10)
+		end
 	end)
 end
 

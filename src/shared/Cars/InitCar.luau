@@ -1,19 +1,28 @@
 local initCar = {}
 
 initCar.new = function(car: Model)
-	local module = car:FindFirstChild("A-Chassis Tune")
+	--[[
+		___      _______                _     
+	   / _ |____/ ___/ /  ___ ____ ___ (_)__ 
+	  / __ /___/ /__/ _ \/ _ `(_-<(_-</ (_-<
+	 /_/ |_|   \___/_//_/\_,_/___/___/_/___/
+ 						SecondLogic @ Inspare
+]]
+
+	--[[START]]
+
 	--[[Weld functions]]
 
+	local JS = game:GetService("JointsService")
 	local PGS_ON = workspace:PGSIsEnabled()
 
 	function MakeWeld(x, y, type, s)
 		if type == nil then
 			type = "Weld"
 		end
-		local W = Instance.new(type)
+		local W = Instance.new(type, JS)
 		W.Part0 = x
 		W.Part1 = y
-		W.Parent = x
 		W.C0 = x.CFrame:inverse() * x.CFrame
 		W.C1 = y.CFrame:inverse() * x.CFrame
 		if type == "Motor" and s ~= nil then
@@ -42,34 +51,8 @@ initCar.new = function(car: Model)
 	end
 
 	--[[Initialize]]
-	module:WaitForChild("A-Chassis Interface")
-	module:WaitForChild("Plugins")
-	module:WaitForChild("README")
 
-	local interface = module:WaitForChild("A-Chassis Interface", 8)
-	if not interface then
-		warn("A-Chassis Interface not found!")
-		return
-	end
-
-	local sitting = interface:WaitForChild("Sitting", 8)
-	if not sitting then
-		warn("Sitting not found!")
-		return
-	end
-
-	local parked = interface:FindFirstChild("Parked")
-	local driveSeat = car:WaitForChild("DriveSeat", 8)
-	local billboard = driveSeat:WaitForChild("Billboard", 8)
-	local locked = car:WaitForChild("Locked", 8)
-	local proximityPrompt = driveSeat:WaitForChild("Sit", 8)
-
-	local countdownTime = 120
-	local countdownRunning = false
-	local countdownCoroutine
-	local stopCountdownFlag = false
-
-	local _Tune = require(module)
+	local _Tune = require(car["A-Chassis Tune"])
 
 	task.wait(_Tune.LoadDelay)
 
@@ -89,7 +72,7 @@ initCar.new = function(car: Model)
 					v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
 				end
 				v.CustomPhysicalProperties = PhysicalProperties.new(
-					0.0001,
+					0,
 					v.CustomPhysicalProperties.Friction,
 					v.CustomPhysicalProperties.Elasticity,
 					v.CustomPhysicalProperties.FrictionWeight,
@@ -100,61 +83,6 @@ initCar.new = function(car: Model)
 		end
 	end
 	DReduce(car)
-
-	local function startCountdown(time)
-		if countdownRunning then
-			return
-		end
-		countdownRunning = true
-		stopCountdownFlag = false
-
-		countdownCoroutine = coroutine.create(function()
-			for i = time, 0, -1 do
-				if stopCountdownFlag then
-					countdownRunning = false
-					billboard.TextLabel.Text = ""
-					billboard.Enabled = false
-					return
-				end
-
-				while sitting.Value or locked.Value or (parked and parked.Value) do
-					billboard.Enabled = false
-					task.wait(1)
-
-					if stopCountdownFlag then
-						countdownRunning = false
-						billboard.TextLabel.Text = ""
-						billboard.Enabled = false
-						return
-					end
-				end
-
-				if i == 0 then
-					task.wait(0.5)
-					billboard.TextLabel.Text = "Deleting Car..."
-					if _G.hookCarRemove then
-						_G.hookCarRemove(car)
-					end
-					countdownRunning = false
-					return
-				else
-					billboard.TextLabel.Text = "Deleting Car in " .. i .. " Seconds"
-					billboard.Enabled = true
-					task.wait(1)
-				end
-			end
-		end)
-
-		coroutine.resume(countdownCoroutine)
-	end
-
-	local function stopCountdown()
-		if countdownRunning then
-			countdownRunning = false
-			billboard.Enabled = false
-			stopCountdownFlag = true
-		end
-	end
 
 	--[[Wheel Configuration]]
 
@@ -367,19 +295,19 @@ initCar.new = function(car: Model)
 			sp.Coils = _Tune.SusCoilCount
 
 			if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
-				g.D = _Tune.FAntiRoll or 0
+				g.D = _Tune.FAntiRoll
 				sp.Damping = _Tune.FSusDamping
 				sp.Stiffness = _Tune.FSusStiffness
-				sp.FreeLength = _Tune.FSusLength or 0 + _Tune.FPreCompress or 0
-				sp.MaxLength = _Tune.FSusLength or 0 + _Tune.FExtensionLim or 0
-				sp.MinLength = _Tune.FSusLength or 0 - _Tune.FCompressLim or 0
+				sp.FreeLength = _Tune.FSusLength + _Tune.FPreCompress
+				sp.MaxLength = _Tune.FSusLength + _Tune.FExtensionLim
+				sp.MinLength = _Tune.FSusLength - _Tune.FCompressLim
 			else
-				-- g.D = _Tune.RAntiRoll
+				g.D = _Tune.RAntiRoll
 				sp.Damping = _Tune.RSusDamping
 				sp.Stiffness = _Tune.RSusStiffness
-				sp.FreeLength = _Tune.RSusLength or 0 + _Tune.RPreCompressd or 0
-				sp.MaxLength = _Tune.RSusLength or 0 + _Tune.RExtensionLim or 0
-				sp.MinLength = _Tune.RSusLength or 0 - _Tune.RCompressLim or 0
+				sp.FreeLength = _Tune.RSusLength + _Tune.RPreCompress
+				sp.MaxLength = _Tune.RSusLength + _Tune.RExtensionLim
+				sp.MinLength = _Tune.RSusLength - _Tune.RCompressLim
 			end
 
 			MakeWeld(car.DriveSeat, sa)
@@ -513,6 +441,7 @@ initCar.new = function(car: Model)
 		--Existing Weight Is Too Massive
 		warn(
 			"\n\t [AC"
+				.. _BuildVersion
 				.. "]: Mass too high for specified weight."
 				.. "\n\t    Target Mass:\t"
 				.. (math.ceil(_Tune.Weight * weightScaling * 100) / 100)
@@ -529,8 +458,8 @@ initCar.new = function(car: Model)
 	flipG.P = 0
 
 	--[[Finalize Chassis]]
-	--Misc Weld
 
+	--Weld Body
 	task.wait()
 	ModelWeld(car.Body, car.DriveSeat)
 
@@ -540,8 +469,8 @@ initCar.new = function(car: Model)
 
 	--[[Manage Plugins]]
 
-	module["A-Chassis Interface"].Car.Value = car
-	for i, v in pairs(module.Plugins:GetChildren()) do
+	car:FindFirstChild("A-Chassis Interface", true).Car.Value = car
+	for i, v in pairs(car:FindFirstChild("Plugins", true):GetChildren()) do
 		for _, a in pairs(v:GetChildren()) do
 			if a:IsA("RemoteEvent") or a:IsA("RemoteFunction") then
 				a.Parent = car
@@ -552,9 +481,9 @@ initCar.new = function(car: Model)
 				end
 			end
 		end
-		v.Parent = module["A-Chassis Interface"]
+		v.Parent = car:FindFirstChild("A-Chassis Interface", true)
 	end
-	module.Plugins:Destroy()
+	car:FindFirstChild("Plugins", true):Destroy()
 
 	--[[Remove Character Weight]]
 	--Get Seats
@@ -581,7 +510,7 @@ initCar.new = function(car: Model)
 				end
 				table.insert(t, { v, v.CustomPhysicalProperties })
 				v.CustomPhysicalProperties = PhysicalProperties.new(
-					0.0001,
+					0,
 					v.CustomPhysicalProperties.Friction,
 					v.CustomPhysicalProperties.Elasticity,
 					v.CustomPhysicalProperties.FrictionWeight,
@@ -630,255 +559,42 @@ initCar.new = function(car: Model)
 			and child:IsA("Weld")
 			and game.Players:GetPlayerFromCharacter(child.Part1.Parent) ~= nil
 		then
+			--Distribute Client Interface
 			local p = game.Players:GetPlayerFromCharacter(child.Part1.Parent)
-
-			for _, part in ipairs(car.Body:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = false
-				end
-			end
-
-			local g = module["A-Chassis Interface"]:Clone()
-			g.Parent = p.PlayerGui
-
-			stopCountdown()
-
 			car.DriveSeat:SetNetworkOwner(p)
+			local g = car:FindFirstChild("A-Chassis Interface", true):Clone()
+			g.Parent = p.PlayerGui
 		end
 	end)
 
-	driveSeat.ChildRemoved:Connect(function(child)
+	--Driver Leave
+	car.DriveSeat.ChildRemoved:connect(function(child)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
-			local p = game.Players:GetPlayerFromCharacter(child.Part1.Parent)
-			if p and p:FindFirstChild("PlayerGui") then
-				local gui = p.PlayerGui
-				if gui:FindFirstChild("Interface") then
-					gui.Interface:Destroy()
-				end
-				if gui:FindFirstChild("CarGui") then
-					gui.CarGui:Destroy()
-				end
+			--Remove Flip Force
+			if car.DriveSeat:FindFirstChild("Flip") ~= nil then
+				car.DriveSeat.Flip.MaxTorque = Vector3.new()
 			end
 
-			if driveSeat:FindFirstChild("Flip") then
-				driveSeat.Flip.MaxTorque = Vector3.new()
-			end
-
-			if p and p.Character:FindFirstChild("InCar") then
-				p.Character.InCar.Value = false
-			end
-			sitting.Value = false
-
-			if proximityPrompt then
-				proximityPrompt.Enabled = true
-			end
-
-			for _, wheel in ipairs(car.Wheels:GetChildren()) do
-				local av = wheel:FindFirstChild("#AV")
-				if av then
-					if av:IsA("BodyAngularVelocity") then
-						av.AngularVelocity = Vector3.zero
-						av.MaxTorque = Vector3.zero
+			--Remove Wheel Force
+			for i, v in pairs(car.Wheels:GetChildren()) do
+				if v:FindFirstChild("#AV") ~= nil then
+					if v["#AV"]:IsA("BodyAngularVelocity") then
+						if v["#AV"].AngularVelocity.Magnitude > 0 then
+							v["#AV"].AngularVelocity = Vector3.new()
+							v["#AV"].MaxTorque = Vector3.new()
+						end
 					else
-						av.AngularVelocity = 0
-						av.MotorMaxTorque = 0
-					end
-				end
-			end
-
-			task.spawn(function()
-				task.wait(3)
-				if not driveSeat.Occupant then
-					for _, part in ipairs(car.Body:GetChildren()) do
-						if
-							(part:IsA("BasePart") or part:IsA("UnionOperation"))
-							and not table.find({ "FRONT", "Drag", "DownforceR", "DownforceF" }, part.Name)
-						then
-							part.Anchored = false
+						if v["#AV"].AngularVelocity > 0 then
+							v["#AV"].AngularVelocity = 0
+							v["#AV"].MotorMaxTorque = 0
 						end
 					end
 				end
-			end)
-
-			if parked and not parked.Value then
-				startCountdown(countdownTime)
 			end
 		end
 	end)
 
-	local removedTools = {}
-
-	for _, seat in ipairs(car.Body:GetChildren()) do
-		if seat:IsA("VehicleSeat") or seat:IsA("Seat") then
-			local SeatClone = module:FindFirstChild("Sit"):Clone()
-			SeatClone.Parent = seat
-
-			SeatClone.Triggered:Connect(function(player)
-				if seat:FindFirstChild("Locked") then
-					game:GetService("ReplicatedStorage")
-						:FindFirstChild("Notify")
-						:FireClient(player, "Vehicle is locked.", 2)
-					return
-				end
-
-				local character = player.Character or player.CharacterAdded:Wait() :: Model
-				local humanoid = character:FindFirstChildWhichIsA("Humanoid")
-				if character:GetAttribute("Ragdoll") or not humanoid or humanoid.Sit or seat.Occupant then
-					return
-				end
-				character.HumanoidRootPart.CollisionGroup = "Car"
-
-				removedTools[player.UserId] = {}
-				for _, toolName in ipairs({ "Fist", "Admin Fist", "Boxing Gloves" }) do
-					local backpackTool = player.Backpack:FindFirstChild(toolName)
-					if backpackTool then
-						table.insert(removedTools[player.UserId], backpackTool:Clone())
-						backpackTool:Destroy()
-					end
-
-					local charTool = character:FindFirstChild(toolName)
-					if charTool then
-						table.insert(removedTools[player.UserId], charTool:Clone())
-						charTool:Destroy()
-					end
-				end
-
-				seat:Sit(humanoid)
-			end)
-
-			seat:GetPropertyChangedSignal("Occupant"):Connect(function()
-				local occupant = seat.Occupant
-
-				if occupant == nil then
-					for _, player in ipairs(game.Players:GetPlayers()) do
-						local character = player.Character
-						if character and character:FindFirstChildWhichIsA("Humanoid") then
-							if removedTools[player.UserId] then
-								task.wait()
-								local root: Model = player.Character
-								root:PivotTo(seat.CFrame * CFrame.new(seat.Name == "BackL" and -5 or 5, 0, 0))
-								character.HumanoidRootPart.CollisionGroup = "Player"
-								for _, tool in ipairs(removedTools[player.UserId]) do
-									if tool then
-										tool.Parent = player.Backpack
-									end
-								end
-								removedTools[player.UserId] = nil
-							end
-						end
-					end
-				end
-			end)
-		end
-	end
-
-	sitting.Changed:Connect(function()
-		if sitting.Value then
-			stopCountdown()
-		else
-			if not countdownRunning and not locked.Value and not parked.Value then
-				startCountdown(countdownTime)
-			end
-		end
-	end)
-
-	locked.Changed:Connect(function()
-		if locked.Value then
-			stopCountdown()
-			for _, part in ipairs(car.Body:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = false
-				end
-			end
-		else
-			if not countdownRunning and not sitting.Value and not parked.Value then
-				startCountdown(countdownTime)
-				for _, part in ipairs(car.Body:GetDescendants()) do
-					if part:IsA("BasePart") then
-						part.Anchored = false
-					end
-				end
-			end
-		end
-	end)
-
-	if parked then
-		parked:GetPropertyChangedSignal("Value"):Connect(function()
-			if parked.Value then
-				stopCountdown()
-			else
-				if not countdownRunning and not sitting.Value and not locked.Value then
-					startCountdown(countdownTime)
-				end
-			end
-		end)
-	end
-
-	local carDestroyed = false
-	local carOnFire = false
-
-	local function getPlayersInCar()
-		local players = {}
-
-		for _, player in ipairs(game.Players:GetPlayers()) do
-			local character = player.Character
-			local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
-
-			if humanoid and humanoid.Sit and humanoid.SeatPart then
-				if humanoid.SeatPart:IsDescendantOf(car) then
-					table.insert(players, player)
-				end
-			end
-		end
-
-		return players
-	end
-
-	local function destroyCar()
-		if carDestroyed then
-			return
-		end
-		carDestroyed = true
-		carOnFire = true
-
-		if car.Body and car.Body.FRONT then
-			if car.Body.FRONT:FindFirstChild("Smoke") then
-				car.Body.FRONT.Smoke.Enabled = true
-			end
-			if car.Body.FRONT:FindFirstChild("Fire") then
-				car.Body.FRONT.Fire.Enabled = true
-			end
-		end
-
-		startCountdown(15)
-
-		task.spawn(function()
-			while car and car.Parent do
-				if carOnFire then
-					for _, player in ipairs(getPlayersInCar()) do
-						local humanoid = player.Character and player.Character:FindFirstChildWhichIsA("Humanoid")
-						if humanoid and humanoid.Health > 0 then
-							humanoid:TakeDamage(20)
-						end
-					end
-				end
-				task.wait(0.5)
-			end
-		end)
-
-		task.delay(15, function()
-			if car and car.Parent then
-				car:Destroy()
-			end
-		end)
-	end
-
-	local carHealth = car:WaitForChild("Health")
-	carHealth:GetPropertyChangedSignal("Value"):Connect(function()
-		if not carDestroyed and carHealth.Value <= 0 then
-			destroyCar()
-		end
-	end)
+	--[END]]
 end
 
 return initCar

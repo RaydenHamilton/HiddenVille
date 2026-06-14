@@ -22,3 +22,10 @@ event MoveSafeItem {
     call: SingleSync,
     data: (string ,string)
 }
+
+event lightsOn {
+    from: Client,
+    type:Reliable,
+    call:SingleSync,
+    data: string 
+}
