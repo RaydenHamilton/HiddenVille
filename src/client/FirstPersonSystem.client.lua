@@ -70,13 +70,15 @@ RunService.RenderStepped:Connect(function()
 	if humanoid:GetState() == Enum.HumanoidStateType.Seated then
 		return
 	end
-	if char:WaitForChild("Head").LocalTransparencyModifier > 0.4 then
-		SetCameraOffset()
-		EnterFirstPerson()
-		SetCharacterVisible(char, true)
-		state = "First"
-	elseif state ~= "Third" then
-		state = "Third"
-		ExitFirstPerson()
+	if char:FindFirstChild("Head") then
+		if char:WaitForChild("Head").LocalTransparencyModifier > 0.4 then
+			SetCameraOffset()
+			EnterFirstPerson()
+			SetCharacterVisible(char, true)
+			state = "First"
+		elseif state ~= "Third" then
+			state = "Third"
+			ExitFirstPerson()
+		end
 	end
 end)

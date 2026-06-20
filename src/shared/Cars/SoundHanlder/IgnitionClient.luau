@@ -34,11 +34,12 @@ function IgnitionClient.new(model)
 		s2.Parent = car.DriveSeat
 
 		local function stopSound()
-			if not gui or not gui.Parent then
+			if not gui or not gui.Parent or not gui:FindFirstChild("IsOn") then
 				s1:Stop()
 				s2:Stop()
-				return false
+				return true
 			end
+			return true
 		end
 
 		task.wait()

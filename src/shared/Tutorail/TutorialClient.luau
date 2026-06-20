@@ -35,7 +35,6 @@ local function findClosestCar(): BasePart
 		if v.Name == "Car" then
 			local glass: BasePart = v:FindFirstChild("Glass")
 			local rootpart = character:WaitForChild("HumanoidRootPart")
-			print(glass, rootpart)
 			if glass and rootpart then
 				local mag = (glass.Position - rootpart.Position).magnitude
 				if not closest or mag < closest then

@@ -300,7 +300,6 @@ function SimulteBulletModule.init()
 						Sound.Ended:Connect(function()
 							Sound:Destroy()
 						end)
-						print("script fire")
 					end
 				end
 			else
@@ -312,7 +311,6 @@ function SimulteBulletModule.init()
 	end)
 
 	local function InflictGun(Player, Tool, ClientModule, TargetHumanoid, TargetTorso, Hit, Misc, HitDist)
-		print("damage")
 		SecureSettings(Player, Tool, ClientModule)
 		local ModifiedSetting = {
 			ExplosiveEnabled = AddressTableValue(ClientModule.ExplosiveEnabled),
@@ -461,7 +459,6 @@ function SimulteBulletModule.init()
 				end
 			end
 			if TargetHumanoid and TargetTorso and CanDamage then
-				print("creator made 1")
 				local creator = TargetHumanoid:FindFirstChild("creator")
 				if not creator then
 					creator = Instance.new("ObjectValue")
@@ -472,7 +469,6 @@ function SimulteBulletModule.init()
 				creator.Value = Player
 				if TargetHumanoid.Health > 0 then
 					if ClientModule.CriticalDamageEnabled then
-						print("Do damage")
 						local CriticalChanceRandom = Random.new():NextInteger(0, 100)
 						if CriticalChanceRandom <= ModifiedSetting.CriticalBaseChance then
 							TargetHumanoid:TakeDamage(TrueDamage * ModifiedSetting.CriticalDamageMultiplier)
@@ -564,81 +560,6 @@ function SimulteBulletModule.init()
 		end
 	end
 
-	local function InflictGunMelee(Player, Tool, ClientModule, TargetHumanoid, TargetTorso, Hit)
-		SecureSettings(Player, Tool, ClientModule)
-		local character = Player and Player.Character
-		if character then
-			local seatedVehicle = getSeatedCarModel(character)
-			if seatedVehicle then
-				-- 1) Never allow damage to resolve back to the shooter while seated
-				if TargetHumanoid and TargetHumanoid.Parent == character then
-					return
-				end
-
-				-- 2) If the hit part is inside the seated vehicle, only block it when it's NOT a humanoid target.
-				-- This keeps "shoot other players from inside car" working, even if their rig ends up parented under the car.
-				if Hit and typeof(Hit) == "Instance" and Hit:IsDescendantOf(seatedVehicle) then
-					local isHumanoidTarget = (TargetHumanoid ~= nil)
-						and (TargetHumanoid.Parent ~= nil)
-						and (TargetHumanoid.Parent ~= character)
-					if not isHumanoidTarget then
-						return
-					end
-				end
-			end
-		end
-
-		local Character = Player.Character
-		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-		local IsHeadshot = (Hit and Hit.Name == "Head" and ClientModule.MeleeHeadshotEnabled)
-		local TrueDamage = IsHeadshot and ClientModule.MeleeDamage * ClientModule.MeleeHeadshotDamageMultiplier
-			or ClientModule.MeleeDamage
-		if Player and Character and Humanoid then
-			if
-				TargetHumanoid
-				and TargetHumanoid.Health ~= 0
-				and TargetTorso
-				and DamageModule.CanDamage(TargetHumanoid.Parent, Character, ClientModule.FriendlyFire)
-			then
-				print("creator made 2")
-				local creator = TargetHumanoid:FindFirstChild("creator")
-				if not creator then
-					creator = Instance.new("ObjectValue")
-					creator.Name = "creator"
-					creator.Parent = TargetHumanoid
-				end
-
-				creator.Value = Player
-				if ClientModule.MeleeCriticalDamageEnabled then
-					local CriticalChanceRandom = Random.new():NextInteger(0, 100)
-					if CriticalChanceRandom <= ClientModule.MeleeCriticalBaseChance then
-						TargetHumanoid:TakeDamage(TrueDamage * ClientModule.MeleeCriticalDamageMultiplier)
-					else
-						TargetHumanoid:TakeDamage(TrueDamage)
-					end
-				else
-					TargetHumanoid:TakeDamage(TrueDamage)
-				end
-				if ClientModule.MeleeKnockback > 0 then
-					local Shover = Character:FindFirstChild("HumanoidRootPart") or Character:FindFirstChild("Head")
-					local Duration = 0.1
-					local Speed = ClientModule.MeleeKnockback / Duration
-					local Velocity = (TargetTorso.Position - Shover.Position).Unit * Speed
-					local ShoveForce = Instance.new("BodyVelocity")
-					ShoveForce.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-					ShoveForce.Velocity = Velocity
-					ShoveForce.Parent = TargetTorso
-					Debris:AddItem(ShoveForce, Duration)
-				end
-				if ClientModule.MeleeLifesteal > 0 and Humanoid.Health ~= 0 then
-					local HealAmount = TrueDamage * ClientModule.MeleeLifesteal
-					Humanoid.Health = Humanoid.Health + HealAmount
-				end
-			end
-		else
-			warn("Unable to register damage because player/character is no longer existing here")
-		end
-	end
 	local MAX_GUN_RANGE = 700
 	local SHOTS_PER_SECOND = 15
 
@@ -699,113 +620,96 @@ function SimulteBulletModule.init()
 	end
 
 	InflictTarget.OnServerInvoke = function(Player, Type, ...)
-		print("fire", tick())
-		if Type == "Gun" then
-			local Tool, ClientModule, _TargetHumanoid, _TargetTorso, ClientHit, Misc, _HitDist = ...
+		local Tool, ClientModule, _TargetHumanoid, _TargetTorso, ClientHit, Misc, _HitDist = ...
 
-			-- Basic tool sanity (prevents invoking with a random Tool instance)
-			if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then
-				return false, "bad_tool"
-			end
-			if not Player.Character or Tool.Parent ~= Player.Character then
-				return false, "tool_not_equipped"
-			end
-
-			if not allowShot(Player) then
-				return false, "rate_limited"
-			end
-
-			if typeof(Misc) ~= "table" then
-				Misc = {}
-			end
-			-- Prevent crazy values (still allows 1-3)
-			Misc.ChargeLevel = math.clamp(tonumber(Misc.ChargeLevel) or 1, 1, 3)
-
-			local origin = getMuzzleOrigin(Player, Tool)
-			if not origin then
-				return false, "no_origin"
-			end
-
-			-- We only have an Instance (ClientHit) to aim at, so we raycast to its position.
-			if typeof(ClientHit) ~= "Instance" or not ClientHit:IsA("BasePart") then
-				return false, "bad_hit"
-			end
-
-			local claimedPos = ClientHit.Position
-			local delta = claimedPos - origin
-			local dist = delta.Magnitude
-			if dist <= 0 or dist > MAX_GUN_RANGE then
-				return false, "out_of_range"
-			end
-
-			local params = RaycastParams.new()
-			params.FilterType = Enum.RaycastFilterType.Exclude
-
-			local ignore = { Player.Character, Tool }
-			for i, v in pairs(CollectionService:GetTagged("Glass")) do
-				table.insert(ignore, v)
-			end
-
-			for _, character in Workspace:GetChildren() do -- make only players by doing player.character
-				if character:FindFirstChild("Humanoid") then
-					table.insert(ignore, character:FindFirstChild("HumanoidRootPart"))
-				end
-			end
-
-			local seatedCar = getSeatedCarModel(Player.Character)
-			if seatedCar then
-				table.insert(ignore, seatedCar) -- key fix
-			end
-
-			params.FilterDescendantsInstances = ignore
-			params.IgnoreWater = true
-
-			local result = Workspace:Raycast(origin, delta, params)
-			if not result or not result.Instance then
-				return false, "no_raycast_hit"
-			end
-
-			local hitPart = result.Instance
-			local targetModel = hitPart:FindFirstAncestorOfClass("Model")
-			if not targetModel or targetModel == Player.Character then
-				return false, "bad_target"
-			end
-
-			local targetHumanoid = targetModel:FindFirstChildOfClass("Humanoid")
-			if not targetHumanoid or targetHumanoid.Health <= 0 then
-				return false, "not_humanoid"
-			end
-
-			local targetTorso = getTorso(targetModel)
-			if not targetTorso or not targetTorso:IsA("BasePart") then
-				return false, "no_torso"
-			end
-
-			-- Server-authoritative distance
-			local hitDist = (result.Position - origin).Magnitude
-
-			-- IMPORTANT: we pass SERVER-derived Hit/TargetHumanoid/TargetTorso/HitDist into InflictGun
-			InflictGun(Player, Tool, ClientModule, targetHumanoid, targetTorso, hitPart, Misc, hitDist)
-			return true
-		elseif Type == "GunMelee" then
-			local Tool, ClientModule, TargetHumanoid, TargetTorso, Hit = ...
-
-			-- Minimal melee sanity (prevents “hit anyone anywhere”)
-			local char = Player.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if not hrp then
-				return false, "no_hrp"
-			end
-			if typeof(TargetTorso) ~= "Instance" or not TargetTorso:IsA("BasePart") then
-				return false, "bad_melee_target"
-			end
-			if (TargetTorso.Position - hrp.Position).Magnitude > 10 then
-				return false, "melee_too_far"
-			end
-
-			InflictGunMelee(Player, Tool, ClientModule, TargetHumanoid, TargetTorso, Hit)
-			return true
+		-- Basic tool sanity (prevents invoking with a random Tool instance)
+		if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then
+			return false, "bad_tool"
 		end
+		if not Player.Character or Tool.Parent ~= Player.Character then
+			return false, "tool_not_equipped"
+		end
+
+		if not allowShot(Player) then
+			return false, "rate_limited"
+		end
+
+		if typeof(Misc) ~= "table" then
+			Misc = {}
+		end
+		-- Prevent crazy values (still allows 1-3)
+		Misc.ChargeLevel = math.clamp(tonumber(Misc.ChargeLevel) or 1, 1, 3)
+
+		local origin = getMuzzleOrigin(Player, Tool)
+		if not origin then
+			return false, "no_origin"
+		end
+
+		-- We only have an Instance (ClientHit) to aim at, so we raycast to its position.
+		if typeof(ClientHit) ~= "Instance" or not ClientHit:IsA("BasePart") then
+			return false, "bad_hit"
+		end
+
+		local claimedPos = ClientHit.Position
+		local delta = claimedPos - origin
+		local dist = delta.Magnitude
+		if dist <= 0 or dist > MAX_GUN_RANGE then
+			return false, "out_of_range"
+		end
+
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+
+		local ignore = { Player.Character, Tool }
+
+		for _, player: Player in Player:GetChildren() do -- make only players by doing player.character
+			local character = player.Character
+			if character then
+				table.insert(ignore, character:FindFirstChild("HumanoidRootPart"))
+			end
+		end
+
+		local seatedCar = getSeatedCarModel(Player.Character)
+		if seatedCar then
+			table.insert(ignore, seatedCar) -- key fix
+		end
+
+		params.FilterDescendantsInstances = ignore
+		params.IgnoreWater = true
+
+		local result = Workspace:Raycast(origin, delta, params)::raycastResult
+
+		task.wait(0.05)
+		if (origin - result.position).magnitude
+		
+
+		local result = Workspace:Raycast(origin, delta, params)
+		if not result or not result.Instance then
+			return false, "no_raycast_hit"
+		end
+
+		local hitPart = result.Instance
+		local targetModel = hitPart:FindFirstAncestorOfClass("Model")
+		if not targetModel or targetModel == Player.Character then
+			return false, "bad_target"
+		end
+
+		local targetHumanoid = targetModel:FindFirstChildOfClass("Humanoid")
+		if not targetHumanoid or targetHumanoid.Health <= 0 then
+			return false, "not_humanoid"
+		end
+
+		local targetTorso = getTorso(targetModel)
+		if not targetTorso or not targetTorso:IsA("BasePart") then
+			return false, "no_torso"
+		end
+
+		-- Server-authoritative distance
+		local hitDist = (result.Position - origin).Magnitude
+
+		-- IMPORTANT: we pass SERVER-derived Hit/TargetHumanoid/TargetTorso/HitDist into InflictGun
+		InflictGun(Player, Tool, ClientModule, targetHumanoid, targetTorso, hitPart, Misc, hitDist)
+		return true
 	end
 
 	Players.PlayerAdded:Connect(function(player)

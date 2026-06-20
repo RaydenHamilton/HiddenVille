@@ -11,7 +11,13 @@ function CameraModule.new()
 	car.DriveSeat.ChildRemoved:connect(function(child)
 		if child.Name == "SeatWeld" then
 			RS:UnbindFromRenderStep("MCam")
+			car.DriveSeat.Anchored = true
 			cam.CameraType = Enum.CameraType.Custom
+		end
+	end)
+	car.DriveSeat.ChildAdded:connect(function(child)
+		if child.Name == "SeatWeld" then
+			car.DriveSeat.Anchored = false
 		end
 	end)
 

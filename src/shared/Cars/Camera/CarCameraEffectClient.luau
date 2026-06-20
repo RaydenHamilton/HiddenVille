@@ -16,7 +16,6 @@ local FirstPersonFOV = 100
 local currentTween
 
 function CarCamera.init()
-
 	-- Tween into first person FOV
 	local function EnterFirstPerson()
 		if currentTween then
@@ -63,7 +62,6 @@ function CarCamera.init()
 	RunService.RenderStepped:Connect(function(a0: number)
 		if humanoid:GetState() == Enum.HumanoidStateType.Seated then
 			EnterFirstPerson()
-			SetCameraOffset(humanoid.SeatPart.Parent.Body.FRONT.CFrame)
 			state = humanoid:GetState()
 		elseif state ~= Enum.HumanoidStateType.Running then
 			SetCameraOffset(char.Head.CFrame)
@@ -72,7 +70,6 @@ function CarCamera.init()
 		end
 	end)
 
-	-- SetCameraOffset(humanoid.SeatPart.Parent.Body.FRONT.CFrame)
 	player.CharacterAdded:Connect(function(character: Model)
 		humanoid = char:WaitForChild("Humanoid") :: Humanoid
 		char = character

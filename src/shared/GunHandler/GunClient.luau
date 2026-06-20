@@ -50,7 +50,7 @@ function ClientGunHandler.new(tool: Tool)
 	self.Player = Players.LocalPlayer
 	self.Mouse = self.Player:GetMouse()
 	self.Camera = Workspace.CurrentCamera
-	self.Hud = ReplicatedStorage:WaitForChild("GunGUI")
+	self.Hud = ReplicatedStorage.GunAssets:WaitForChild("GunGUI")
 	self.Character = Workspace:WaitForChild(self.Player.Name)
 	self.Humanoid = self.Character:WaitForChild("Humanoid")
 	self.HumanoidRootPart = self.Character:WaitForChild("HumanoidRootPart")
@@ -341,7 +341,7 @@ function ClientGun:SetCrosshairColor(color)
 	if self.GunGUI and self.GunGUI:FindFirstChild("Crosshair") then
 		local CrossFrame = self.GunGUI.Crosshair:FindFirstChild("Main")
 		if CrossFrame then
-			local Center = CrossFrame:FindFirstChild("Center")
+			local Center = CrossFrame:FindFirstChild("Center") :: ImageButton
 			if Center then
 				Center.ImageColor3 = color
 			end
@@ -685,58 +685,8 @@ function ClientGun:newMobileGui()
 end
 
 function ClientGun:UpdateGUI()
-	self.GunGUI.Frame.Mag.Fill:TweenSize(
-		UDim2.fromScale(self.CurrentVariables.Mag / self.CurrentModule.AmmoPerMag, 1),
-		Enum.EasingDirection.Out,
-		Enum.EasingStyle.Quint,
-		0.25,
-		true
-	)
-	self.GunGUI.Frame.Ammo.Fill:TweenSize(
-		UDim2.fromScale(self.CurrentVariables.Ammo / self.CurrentModule.MaxAmmo, 1),
-		Enum.EasingDirection.Out,
-		Enum.EasingStyle.Quint,
-		0.25,
-		true
-	)
-	self.GunGUI.Frame.Heat.Fill:TweenSize(
-		UDim2.fromScale(self.CurrentVariables.Heat / self.CurrentModule.MaxHeat, 1),
-		Enum.EasingDirection.Out,
-		Enum.EasingStyle.Quint,
-		0.25,
-		true
-	)
-	self.GunGUI.Frame.Mag.Current.Text = self.CurrentVariables.Mag
-	self.GunGUI.AmmoWidgetContainer.ContentLayer.CurrentAmmoTxt.Text = self.CurrentVariables.Mag
-	self.GunGUI.Frame.Mag.Max.Text = self.CurrentModule.AmmoPerMag
-	self.GunGUI.Frame.Mag.FireMode.Text = self.Tool.Name
-	self.GunGUI.Frame.Ammo.Current.Text = self.CurrentVariables.Ammo
-	self.GunGUI.Frame.Ammo.Max.Text = self.CurrentModule.MaxAmmo
-	self.GunGUI.Frame.Heat.Current.Text = self.CurrentVariables.Heat
-	self.GunGUI.Frame.Heat.Max.Text = self.CurrentModule.MaxHeat
-	self.GunGUI.Frame.Heat.FireMode.Text = self.CurrentModule.FireModeTexts[self.CurrentVariables.FireMode]
-
-	self.GunGUI.Frame.Mag.Current.Visible = not self.CommonVariables.Reloading
-	self.GunGUI.Frame.Mag.Max.Visible = not self.CommonVariables.Reloading
-	self.GunGUI.Frame.Mag.Frame.Visible = not self.CommonVariables.Reloading
-	self.GunGUI.Frame.Mag.Reloading.Visible = self.CommonVariables.Reloading
-	self.GunGUI.Frame.Mag.FireMode.Visible = self.CurrentModule.SelectiveFireEnabled
-
-	self.GunGUI.Frame.Ammo.Current.Visible = not (self.CurrentVariables.Ammo <= 0)
-	self.GunGUI.Frame.Ammo.Max.Visible = not (self.CurrentVariables.Ammo <= 0)
-	self.GunGUI.Frame.Ammo.Frame.Visible = not (self.CurrentVariables.Ammo <= 0)
-	self.GunGUI.Frame.Ammo.NoMoreAmmo.Visible = (self.CurrentVariables.Ammo <= 0)
-
-	self.GunGUI.Frame.Heat.Visible = self.CurrentModule.BatteryEnabled
-	self.GunGUI.Frame.Heat.Current.Visible = not self.CommonVariables.Overheated
-	self.GunGUI.Frame.Heat.Max.Visible = not self.CommonVariables.Overheated
-	self.GunGUI.Frame.Heat.Frame.Visible = not self.CommonVariables.Overheated
-	self.GunGUI.Frame.Heat.Overheated.Visible = self.CommonVariables.Overheated
-	self.GunGUI.Frame.Heat.FireMode.Visible = self.CurrentModule.SelectiveFireEnabled
-
-	self.GunGUI.Frame.Mag.Visible = not self.CurrentModule.BatteryEnabled
-	self.GunGUI.Frame.Ammo.Visible = self.CurrentModule.LimitedAmmoEnabled
-	self.GunGUI.Frame.Heat.Visible = self.CurrentModule.BatteryEnabled
+	self.GunGUI.AmmoWidgetContainer.CurrentAmmoTxt.Text = `{self.CurrentVariables.Mag}`
+	self.GunGUI.AmmoWidgetContainer.MaxAmmoTxt.Text = `{self.CurrentModule.AmmoPerMag} /`
 
 	self:newMobileGui()
 end

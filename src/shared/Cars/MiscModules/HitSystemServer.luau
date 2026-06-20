@@ -75,11 +75,15 @@ HitSystem.new = function(car: Model)
 
 						local sound = math.random(1, 2)
 						if sound == 1 then
-							driveSeat:WaitForChild("Sound"):Clone().Parent = cp
-							cp.Sound:Play()
+							if driveSeat:FindFirstChild("Sound") then
+								driveSeat:WaitForChild("Sound"):Clone().Parent = cp
+								cp.Sound:Play()
+							end
 						else
-							driveSeat:WaitForChild("Sound"):Clone().Parent = cp
-							cp.Sound2:Play()
+							if driveSeat:FindFirstChild("Sound") then
+								driveSeat:WaitForChild("Sound"):Clone().Parent = cp
+								cp.Sound2:Play()
+							end
 						end
 						game.Debris:AddItem(cp, 3)
 						task.wait(0.4)

@@ -292,11 +292,11 @@ function GaugesModule.new()
 		end
 	end
 
-	function PBrake()
+	local function PBrake()
 		frame.PBrake.Visible = gui.Values.PBrake.Value
 	end
 
-	function Gear()
+	local function Gear()
 		if gui.Values.TransmissionMode.Value == "Auto" then
 			frame.TMode.Text = "A/T"
 			frame.TMode.BackgroundColor3 = Color3.new(1, 170 / 255, 0)

@@ -6,7 +6,7 @@ local clientRagdollModule = {}
 
 function clientRagdollModule.init()
 	local player = Players.LocalPlayer
-	local playerModule = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")
+	local playerModule = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule") :: ModuleScript
 	local controls = require(playerModule):GetControls()
 
 	local connections = {}
@@ -24,6 +24,13 @@ function clientRagdollModule.init()
 	local function moveToBody()
 		if root and root.Parent and torso then
 			root.CFrame = CFrame.new(torso.Position + Vector3.new(0, 3, 0))
+			for _, instance in char:GetChildren() do
+				if instance:IsA("MeshPart") then
+					instance.CanCollide = true
+				end
+			end
+			root.Anchored = true
+			root.CanCollide = false
 		else
 			clear()
 		end
@@ -40,8 +47,23 @@ function clientRagdollModule.init()
 	function clientRagdollModule.new(time)
 		table.insert(connections, RunService.RenderStepped:Connect(moveToBody))
 		controls:Disable()
+
+		for _, instance in char:GetChildren() do
+			if instance:IsA("MeshPart") then
+				instance.CanCollide = true
+			end
+		end
 		task.wait(time)
 		clear()
+
+		for _, instance in char:GetChildren() do
+			if instance:IsA("MeshPart") then
+				instance.CanCollide = false
+			end
+		end
+
+		root.CanCollide = true
+		root.Anchored = false
 		controls:Enable()
 	end
 

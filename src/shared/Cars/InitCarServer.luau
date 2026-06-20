@@ -1,58 +1,85 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local initCar = {}
 
-initCar.new = function(car: Model)
-	--[[
-		___      _______                _     
-	   / _ |____/ ___/ /  ___ ____ ___ (_)__ 
-	  / __ /___/ /__/ _ \/ _ `(_-<(_-</ (_-<
-	 /_/ |_|   \___/_//_/\_,_/___/___/_/___/
- 						SecondLogic @ Inspare
-]]
+local function getParts(model, t, a)
+	for _, v in pairs(model:GetChildren()) do
+		if v:IsA("BasePart") then
+			table.insert(t, { v, a.CFrame:toObjectSpace(v.CFrame) })
+		elseif v:IsA("Model") then
+			getParts(v, t, a)
+		end
+	end
+end
 
+local function DReduce(p)
+	for _, v in pairs(p:GetChildren()) do
+		if v:IsA("BasePart") then
+			if v.CustomPhysicalProperties == nil then
+				v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
+			end
+			v.CustomPhysicalProperties = PhysicalProperties.new(
+				0.0001,
+				v.CustomPhysicalProperties.Friction,
+				v.CustomPhysicalProperties.Elasticity,
+				v.CustomPhysicalProperties.FrictionWeight,
+				v.CustomPhysicalProperties.ElasticityWeight
+			)
+		end
+		DReduce(v)
+	end
+end
+
+local function MakeWeld(x, y, type, s)
+	if type == nil then
+		type = "Weld"
+	end
+	local W = Instance.new(type)
+	W.Part0 = x
+	W.Part1 = y
+	W.Parent = x
+	W.C0 = x.CFrame:inverse() * x.CFrame
+	W.C1 = y.CFrame:inverse() * x.CFrame
+	if type == "Motor" and s ~= nil then
+		W.MaxVelocity = s
+	end
+	return W
+end
+
+local function ModelWeld(a, b)
+	if a:IsA("BasePart") then
+		MakeWeld(b, a, "Weld")
+	elseif a:IsA("Model") then
+		for _, v in pairs(a:GetChildren()) do
+			ModelWeld(v, b)
+		end
+	end
+end
+
+local function UnAnchor(a)
+	if a:IsA("BasePart") then
+		a.Anchored = false
+	end
+	for _, v in pairs(a:GetChildren()) do
+		UnAnchor(v)
+	end
+end
+
+initCar.new = function(car: Model)
 	--[[START]]
 
 	--[[Weld functions]]
 
-	local JS = game:GetService("JointsService")
 	local PGS_ON = workspace:PGSIsEnabled()
 
-	function MakeWeld(x, y, type, s)
-		if type == nil then
-			type = "Weld"
-		end
-		local W = Instance.new(type, JS)
-		W.Part0 = x
-		W.Part1 = y
-		W.C0 = x.CFrame:inverse() * x.CFrame
-		W.C1 = y.CFrame:inverse() * x.CFrame
-		if type == "Motor" and s ~= nil then
-			W.MaxVelocity = s
-		end
-		return W
-	end
-
-	function ModelWeld(a, b)
-		if a:IsA("BasePart") then
-			MakeWeld(b, a, "Weld")
-		elseif a:IsA("Model") then
-			for i, v in pairs(a:GetChildren()) do
-				ModelWeld(v, b)
-			end
-		end
-	end
-
-	function UnAnchor(a)
-		if a:IsA("BasePart") then
-			a.Anchored = false
-		end
-		for i, v in pairs(a:GetChildren()) do
-			UnAnchor(v)
-		end
-	end
-
 	--[[Initialize]]
+	local module = car:WaitForChild("A-Chassis Tune")
 
-	local _Tune = require(car["A-Chassis Tune"])
+	local _Tune = require(module)
+	local wheels = car:WaitForChild("Wheels")
+	local body = car:WaitForChild("Body")
+	local plugins = car:FindFirstChild("Plugins", true)
+	local driveSeat = car:WaitForChild("DriveSeat")
 
 	task.wait(_Tune.LoadDelay)
 
@@ -62,40 +89,14 @@ initCar.new = function(car: Model)
 		weightScaling = _Tune.LegacyScaling
 	end
 
-	local Drive = car.Wheels:GetChildren()
+	local Drive = wheels:GetChildren()
 
 	--Remove Existing Mass
-	function DReduce(p)
-		for i, v in pairs(p:GetChildren()) do
-			if v:IsA("BasePart") then
-				if v.CustomPhysicalProperties == nil then
-					v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
-				end
-				v.CustomPhysicalProperties = PhysicalProperties.new(
-					0,
-					v.CustomPhysicalProperties.Friction,
-					v.CustomPhysicalProperties.Elasticity,
-					v.CustomPhysicalProperties.FrictionWeight,
-					v.CustomPhysicalProperties.ElasticityWeight
-				)
-			end
-			DReduce(v)
-		end
-	end
 	DReduce(car)
 
 	--[[Wheel Configuration]]
 
 	--Store Reference Orientation Function
-	function getParts(model, t, a)
-		for i, v in pairs(model:GetChildren()) do
-			if v:IsA("BasePart") then
-				table.insert(t, { v, a.CFrame:toObjectSpace(v.CFrame) })
-			elseif v:IsA("Model") then
-				getParts(v, t, a)
-			end
-		end
-	end
 
 	--PGS/Legacy
 	local fDensity = _Tune.FWheelDensity
@@ -117,32 +118,17 @@ initCar.new = function(car: Model)
 
 	for _, v in pairs(Drive) do
 		--Apply Wheel Density
-		if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
-			if v:IsA("BasePart") then
-				if v.CustomPhysicalProperties == nil then
-					v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
-				end
-				v.CustomPhysicalProperties = PhysicalProperties.new(
-					fDensity,
-					v.CustomPhysicalProperties.Friction,
-					v.CustomPhysicalProperties.Elasticity,
-					v.CustomPhysicalProperties.FrictionWeight,
-					v.CustomPhysicalProperties.ElasticityWeight
-				)
+		if v:IsA("BasePart") then
+			if v.CustomPhysicalProperties == nil then
+				v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
 			end
-		else
-			if v:IsA("BasePart") then
-				if v.CustomPhysicalProperties == nil then
-					v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
-				end
-				v.CustomPhysicalProperties = PhysicalProperties.new(
-					rDensity,
-					v.CustomPhysicalProperties.Friction,
-					v.CustomPhysicalProperties.Elasticity,
-					v.CustomPhysicalProperties.FrictionWeight,
-					v.CustomPhysicalProperties.ElasticityWeight
-				)
-			end
+			v.CustomPhysicalProperties = PhysicalProperties.new(
+				(v.Name == "FL" or v.Name == "FR") and fDensity or rDensity,
+				v.CustomPhysicalProperties.Friction,
+				v.CustomPhysicalProperties.Elasticity,
+				v.CustomPhysicalProperties.FrictionWeight,
+				v.CustomPhysicalProperties.ElasticityWeight
+			)
 		end
 
 		--Resurface Wheels
@@ -153,11 +139,11 @@ initCar.new = function(car: Model)
 		--Store Axle-Anchored/Suspension-Anchored Part Orientation
 		local WParts = {}
 
-		local tPos = v.Position - car.DriveSeat.Position
+		local tPos = v.Position - driveSeat.Position
 		if v.Name == "FL" or v.Name == "RL" then
-			v.CFrame = car.DriveSeat.CFrame * CFrame.Angles(math.rad(90), 0, math.rad(90))
+			v.CFrame = driveSeat.CFrame * CFrame.Angles(math.rad(90), 0, math.rad(90))
 		else
-			v.CFrame = car.DriveSeat.CFrame * CFrame.Angles(math.rad(90), 0, math.rad(-90))
+			v.CFrame = driveSeat.CFrame * CFrame.Angles(math.rad(90), 0, math.rad(-90))
 		end
 		v.CFrame = v.CFrame + tPos
 
@@ -192,7 +178,8 @@ initCar.new = function(car: Model)
 
 		--[[Chassis Assembly]]
 		--Create Steering Axle
-		local arm = Instance.new("Part", v)
+		local arm = Instance.new("Part")
+		arm.Parent = v
 		arm.Name = "Arm"
 		arm.Anchored = true
 		arm.CanCollide = false
@@ -261,12 +248,14 @@ initCar.new = function(car: Model)
 
 			sb.FrontSurface = Enum.SurfaceType.Hinge
 
-			local g = Instance.new("BodyGyro", sb)
+			local g = Instance.new("BodyGyro")
+			g.Parent = sb
 			g.Name = "Stabilizer"
 			g.MaxTorque = Vector3.new(0, 0, 1)
 			g.P = 0
 
-			local sf1 = Instance.new("Attachment", sa)
+			local sf1 = Instance.new("Attachment")
+			sf1.Parent = sa
 			sf1.Name = "SAtt"
 
 			local sf2 = sf1:Clone()
@@ -282,7 +271,8 @@ initCar.new = function(car: Model)
 
 			sb:MakeJoints()
 
-			local sp = Instance.new("SpringConstraint", v)
+			local sp = Instance.new("SpringConstraint")
+			sp.Parent = v
 			sp.Name = "Spring"
 			sp.Attachment0 = sf1
 			sp.Attachment1 = sf2
@@ -295,14 +285,14 @@ initCar.new = function(car: Model)
 			sp.Coils = _Tune.SusCoilCount
 
 			if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
-				g.D = _Tune.FAntiRoll
+				-- g.D = _Tune.FAntiRoll
 				sp.Damping = _Tune.FSusDamping
 				sp.Stiffness = _Tune.FSusStiffness
 				sp.FreeLength = _Tune.FSusLength + _Tune.FPreCompress
 				sp.MaxLength = _Tune.FSusLength + _Tune.FExtensionLim
 				sp.MinLength = _Tune.FSusLength - _Tune.FCompressLim
 			else
-				g.D = _Tune.RAntiRoll
+				-- .D = _Tune.RAntiRoll
 				sp.Damping = _Tune.RSusDamping
 				sp.Stiffness = _Tune.RSusStiffness
 				sp.FreeLength = _Tune.RSusLength + _Tune.RPreCompress
@@ -310,10 +300,10 @@ initCar.new = function(car: Model)
 				sp.MinLength = _Tune.RSusLength - _Tune.RCompressLim
 			end
 
-			MakeWeld(car.DriveSeat, sa)
+			MakeWeld(driveSeat, sa)
 			MakeWeld(sb, base)
 		else
-			MakeWeld(car.DriveSeat, base)
+			MakeWeld(driveSeat, base)
 		end
 
 		--Lock Rear Steering Axle
@@ -323,7 +313,7 @@ initCar.new = function(car: Model)
 
 		--Weld Assembly
 		if v.Parent.Name == "RL" or v.Parent.Name == "RR" or v.Name == "R" then
-			MakeWeld(car.DriveSeat, arm)
+			MakeWeld(driveSeat, arm)
 		end
 
 		MakeWeld(arm, axle)
@@ -333,7 +323,7 @@ initCar.new = function(car: Model)
 
 		--Weld Miscelaneous Parts
 		if v:FindFirstChild("SuspensionFixed") ~= nil then
-			ModelWeld(v.SuspensionFixed, car.DriveSeat)
+			ModelWeld(v.SuspensionFixed, driveSeat)
 		end
 		if v:FindFirstChild("WheelFixed") ~= nil then
 			ModelWeld(v.WheelFixed, axle)
@@ -353,7 +343,8 @@ initCar.new = function(car: Model)
 		end
 
 		if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
-			local steer = Instance.new("BodyGyro", arm)
+			local steer = Instance.new("BodyGyro")
+			steer.Parent = arm
 			steer.Name = "Steer"
 			steer.P = _Tune.SteerP
 			steer.D = _Tune.SteerD
@@ -362,7 +353,8 @@ initCar.new = function(car: Model)
 		end
 
 		--Add Stabilization Gyro
-		local gyro = Instance.new("BodyGyro", v)
+		local gyro = Instance.new("BodyGyro")
+		gyro.Parent = v
 		gyro.Name = "Stabilizer"
 		gyro.MaxTorque = Vector3.new(1, 0, 1)
 		gyro.P = 0
@@ -373,7 +365,8 @@ initCar.new = function(car: Model)
 		end
 
 		--Add Rotational BodyMover
-		local AV = Instance.new("BodyAngularVelocity", v)
+		local AV = Instance.new("BodyAngularVelocity")
+		AV.Parent = v
 		AV.Name = "#AV"
 		AV.angularvelocity = Vector3.new(0, 0, 0)
 		AV.maxTorque = Vector3.new(_Tune.PBrakeForce, 0, _Tune.PBrakeForce)
@@ -384,8 +377,8 @@ initCar.new = function(car: Model)
 	--Determine Current Mass
 	local mass = 0
 
-	function getMass(p)
-		for i, v in pairs(p:GetChildren()) do
+	local function getMass(p)
+		for _, v in pairs(p:GetChildren()) do
 			if v:IsA("BasePart") then
 				mass = mass + v:GetMass()
 			end
@@ -402,7 +395,7 @@ initCar.new = function(car: Model)
 		local countF = 0
 		local countR = 0
 
-		for i, v in pairs(Drive) do
+		for _, v in pairs(Drive) do
 			if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
 				centerF = centerF + v.CFrame.p
 				countF = countF + 1
@@ -416,7 +409,8 @@ initCar.new = function(car: Model)
 		local center = centerR:Lerp(centerF, _Tune.WeightDist / 100)
 
 		--Create Weight Brick
-		local weightB = Instance.new("Part", car.Body)
+		local weightB = Instance.new("Part")
+		weightB.Parent = body
 		weightB.Name = "#Weight"
 		weightB.Anchored = true
 		weightB.CanCollide = false
@@ -436,22 +430,11 @@ initCar.new = function(car: Model)
 			0,
 			0
 		)
-		weightB.CFrame = (car.DriveSeat.CFrame - car.DriveSeat.Position + center) * CFrame.new(0, _Tune.CGHeight, 0)
-	else
-		--Existing Weight Is Too Massive
-		warn(
-			"\n\t [AC"
-				.. _BuildVersion
-				.. "]: Mass too high for specified weight."
-				.. "\n\t    Target Mass:\t"
-				.. (math.ceil(_Tune.Weight * weightScaling * 100) / 100)
-				.. "\n\t    Current Mass:\t"
-				.. (math.ceil(mass * 100) / 100)
-				.. "\n\t Reduce part size or axle density to achieve desired weight."
-		)
+		weightB.CFrame = (driveSeat.CFrame - driveSeat.Position + center) * CFrame.new(0, _Tune.CGHeight, 0)
 	end
 
-	local flipG = Instance.new("BodyGyro", car.DriveSeat)
+	local flipG = Instance.new("BodyGyro")
+	flipG.Parent = driveSeat
 	flipG.Name = "Flip"
 	flipG.D = 0
 	flipG.MaxTorque = Vector3.new(0, 0, 0)
@@ -461,7 +444,7 @@ initCar.new = function(car: Model)
 
 	--Weld Body
 	task.wait()
-	ModelWeld(car.Body, car.DriveSeat)
+	ModelWeld(body, driveSeat)
 
 	--Unanchor
 	task.wait()
@@ -469,8 +452,74 @@ initCar.new = function(car: Model)
 
 	--[[Manage Plugins]]
 
-	car:FindFirstChild("A-Chassis Interface", true).Car.Value = car
-	for i, v in pairs(car:FindFirstChild("Plugins", true):GetChildren()) do
+	local removedTools = {}
+	for _, seat in ipairs(body:GetChildren()) do
+		if seat:IsA("VehicleSeat") or seat:IsA("Seat") then
+			local SeatClone = module:FindFirstChild("Sit"):Clone()
+			SeatClone.Parent = seat
+
+			SeatClone.Triggered:Connect(function(player)
+				if seat:FindFirstChild("Locked") then
+					game:GetService("ReplicatedStorage")
+						:FindFirstChild("Notify")
+						:FireClient(player, "Vehicle is locked.", 2)
+					return
+				end
+
+				local character = player.Character or player.CharacterAdded:Wait() :: Model
+				local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+				if character:GetAttribute("Ragdoll") or not humanoid or humanoid.Sit or seat.Occupant then
+					return
+				end
+				character.HumanoidRootPart.CollisionGroup = "Car"
+
+				removedTools[player.UserId] = {}
+				for _, toolName in ipairs({ "Fist", "Admin Fist", "Boxing Gloves" }) do
+					local backpackTool = player.Backpack:FindFirstChild(toolName)
+					if backpackTool then
+						table.insert(removedTools[player.UserId], backpackTool:Clone())
+						backpackTool:Destroy()
+					end
+
+					local charTool = character:FindFirstChild(toolName)
+					if charTool then
+						table.insert(removedTools[player.UserId], charTool:Clone())
+						charTool:Destroy()
+					end
+				end
+
+				seat:Sit(humanoid)
+			end)
+
+			seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+				local occupant = seat.Occupant
+
+				if occupant == nil then
+					for _, player in ipairs(game.Players:GetPlayers()) do
+						local character = player.Character
+						if character and character:FindFirstChildWhichIsA("Humanoid") then
+							if removedTools[player.UserId] then
+								task.wait()
+								local root: Model = player.Character
+								root:PivotTo(seat.CFrame * CFrame.new(seat.Name == "BackL" and -5 or 5, 0, 0))
+								character.HumanoidRootPart.CollisionGroup = "Player"
+								for _, tool in ipairs(removedTools[player.UserId]) do
+									if tool then
+										tool.Parent = player.Backpack
+									end
+								end
+								removedTools[player.UserId] = nil
+							end
+						end
+					end
+				end
+			end)
+		end
+	end
+
+	local interface = car:FindFirstChild("A-Chassis Interface", true)
+	interface.Car.Value = car
+	for _, v in pairs(plugins:GetChildren()) do
 		for _, a in pairs(v:GetChildren()) do
 			if a:IsA("RemoteEvent") or a:IsA("RemoteFunction") then
 				a.Parent = car
@@ -483,13 +532,13 @@ initCar.new = function(car: Model)
 		end
 		v.Parent = car:FindFirstChild("A-Chassis Interface", true)
 	end
-	car:FindFirstChild("Plugins", true):Destroy()
+	plugins:Destroy()
 
 	--[[Remove Character Weight]]
 	--Get Seats
 	local Seats = {}
-	function getSeats(p)
-		for i, v in pairs(p:GetChildren()) do
+	local function getSeats(p)
+		for _, v in pairs(p:GetChildren()) do
 			if v:IsA("VehicleSeat") or v:IsA("Seat") then
 				local seat = {}
 				seat.Seat = v
@@ -502,15 +551,15 @@ initCar.new = function(car: Model)
 	getSeats(car)
 
 	--Store Physical Properties/Remove Mass Function
-	function getPProperties(mod, t)
-		for i, v in pairs(mod:GetChildren()) do
+	local function getPProperties(mod, t)
+		for _, v in pairs(mod:GetChildren()) do
 			if v:IsA("BasePart") then
 				if v.CustomPhysicalProperties == nil then
 					v.CustomPhysicalProperties = PhysicalProperties.new(v.Material)
 				end
 				table.insert(t, { v, v.CustomPhysicalProperties })
 				v.CustomPhysicalProperties = PhysicalProperties.new(
-					0,
+					0.0001,
 					v.CustomPhysicalProperties.Friction,
 					v.CustomPhysicalProperties.Elasticity,
 					v.CustomPhysicalProperties.FrictionWeight,
@@ -522,7 +571,7 @@ initCar.new = function(car: Model)
 	end
 
 	--Apply Seat Handler
-	for i, v in pairs(Seats) do
+	for _, v in pairs(Seats) do
 		--Sit Handler
 		v.Seat.ChildAdded:connect(function(child)
 			if
@@ -540,9 +589,9 @@ initCar.new = function(car: Model)
 		--Leave Handler
 		v.Seat.ChildRemoved:connect(function(child)
 			if child.Name == "SeatWeld" and child:IsA("Weld") then
-				for i, v in pairs(v.Parts) do
-					if v[1] ~= nil and v[2] ~= nil and v[1]:IsDescendantOf(workspace) then
-						v[1].CustomPhysicalProperties = v[2]
+				for _, part in pairs(v.Parts) do
+					if part[1] ~= nil and part[2] ~= nil and part[1]:IsDescendantOf(Workspace) then
+						part[1].CustomPhysicalProperties = part[2]
 					end
 				end
 				v.Parts = {}
@@ -553,30 +602,32 @@ initCar.new = function(car: Model)
 	--[[Driver Handling]]
 
 	--Driver Sit
-	car.DriveSeat.ChildAdded:connect(function(child)
+
+	local wheelNames = { "FR", "RL", "RR", "FL" }
+	driveSeat.ChildAdded:connect(function(child)
 		if
 			child.Name == "SeatWeld"
 			and child:IsA("Weld")
-			and game.Players:GetPlayerFromCharacter(child.Part1.Parent) ~= nil
+			and Players:GetPlayerFromCharacter(child.Part1.Parent) ~= nil
 		then
 			--Distribute Client Interface
-			local p = game.Players:GetPlayerFromCharacter(child.Part1.Parent)
-			car.DriveSeat:SetNetworkOwner(p)
-			local g = car:FindFirstChild("A-Chassis Interface", true):Clone()
+			local p = Players:GetPlayerFromCharacter(child.Part1.Parent)
+			driveSeat:SetNetworkOwner(p)
+			local g = interface:Clone()
 			g.Parent = p.PlayerGui
 		end
 	end)
 
 	--Driver Leave
-	car.DriveSeat.ChildRemoved:connect(function(child)
+	driveSeat.ChildRemoved:connect(function(child)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			--Remove Flip Force
-			if car.DriveSeat:FindFirstChild("Flip") ~= nil then
-				car.DriveSeat.Flip.MaxTorque = Vector3.new()
+			if driveSeat:FindFirstChild("Flip") ~= nil then
+				driveSeat.Flip.MaxTorque = Vector3.new()
 			end
 
 			--Remove Wheel Force
-			for i, v in pairs(car.Wheels:GetChildren()) do
+			for _, v: BasePart in pairs(wheels:GetChildren()) do
 				if v:FindFirstChild("#AV") ~= nil then
 					if v["#AV"]:IsA("BodyAngularVelocity") then
 						if v["#AV"].AngularVelocity.Magnitude > 0 then

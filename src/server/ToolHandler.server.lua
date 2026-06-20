@@ -29,7 +29,6 @@ local function setup(child: Tool, character)
 	-- bag
 
 	if child:FindFirstChild("Setting") and child:FindFirstChild("ChangeMagAndAmmo") then
-		print("client ", child.Name)
 		setupClient:FireClient(player, child, "Gun")
 	end
 
@@ -54,7 +53,6 @@ local function setup(child: Tool, character)
 
 	-- Vest
 	if not SetUpTable[child] and hasTag("Vest") then
-		print("fire")
 		VestServer.new(child)
 	end
 

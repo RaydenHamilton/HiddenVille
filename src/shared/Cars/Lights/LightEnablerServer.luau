@@ -29,11 +29,11 @@ function serverLights.new(Car)
 		Car.Body.Reverse.on.Value = NewValue
 	end
 
-	local function SetHorn()
-		Car.DriveSeat.Horn.Playing = not Car.DriveSeat.Horn.Playing
-	end
+	-- local function SetHorn()
+	-- 	Car.DriveSeat.Horn.Playing = not Car.DriveSeat.Horn.Playing
+	-- end
 
-	server.lightsOn.On(function(Player, Data)
+	server.lightsOn.On(function(_, Data)
 		if Data == "ToggleLight" then
 			ToggleLight(Car.Body.Headlight)
 			ToggleLight(Car.Body.Highlight)
@@ -51,8 +51,8 @@ function serverLights.new(Car)
 			SetReverse(true)
 		elseif Data == "ToggleReverse2" then
 			SetReverse(false)
-		elseif Data == "ToggleHorn" then
-			SetHorn()
+			-- elseif Data == "ToggleHorn" then
+			-- 	SetHorn()
 		end
 	end)
 end

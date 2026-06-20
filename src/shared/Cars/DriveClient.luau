@@ -1,10 +1,13 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local DriveModule = {}
-function DriveModule.new()
-	local gui = Players.LocalPlayer.PlayerGui:WaitForChild("A-Chassis Interface")
 
-	local connections = {}
+local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+function DriveModule.new()
+	local gui = playerGui:WaitForChild("A-Chassis Interface")
+
+	local connections: { RBXScriptConnection } = {}
 	--[[START]]
 
 	gui:WaitForChild("Car")
@@ -18,7 +21,11 @@ function DriveModule.new()
 	local mouse = player:GetMouse()
 	local UserInputService = game:GetService("UserInputService")
 	local car = gui.Car.Value
-	local _Tune = require(car["A-Chassis Tune"])
+	local module = car:WaitForChild("A-Chassis Tune") :: ModuleScript
+	if not module then
+		return
+	end
+	local _Tune = require(module)
 
 	--[[Output Scaling Factor]]
 
@@ -72,19 +79,31 @@ function DriveModule.new()
 
 	--[[Shutdown]]
 
-	connections[#connections + 1] = car.DriveSeat.ChildRemoved:connect(function(child)
-		if child.Name == "SeatWeld" and child:IsA("Weld") then
-			gui:Destroy()
+	local function clearConnections()
+		for _, connection: RBXScriptConnection in connections do
+			connection:Disconnect()
 		end
-	end)
+	end
+	local function removeGui(child)
+		if child.Name == "SeatWeld" and child:IsA("Weld") then
+			for _, playerui in playerGui:GetChildren() do
+				if playerui.Name == "A-Chassis Interface" then
+					playerui:Destroy()
+				end
+			end
+		end
+		clearConnections()
+	end
 
 	--[[Controls]]
 
 	local _CTRL = _Tune.Controls
-	local Controls = Instance.new("Folder", gui)
+	local Controls = Instance.new("Folder")
+	Controls.Parent = gui
 	Controls.Name = "Controls"
 	for i, v in pairs(_CTRL) do
-		local a = Instance.new("StringValue", Controls)
+		local a = Instance.new("StringValue")
+		a.Parent = Controls
 		a.Name = i
 		a.Value = v.Name
 		connections[#connections + 1] = a.Changed:connect(function()
@@ -103,7 +122,8 @@ function DriveModule.new()
 	--Deadzone Adjust
 	local _PPH = _Tune.Peripherals
 	for i, v in pairs(_PPH) do
-		local a = Instance.new("IntValue", Controls)
+		local a = Instance.new("IntValue")
+		a.Parent = Controls
 		a.Name = i
 		a.Value = v
 		connections[#connections + 1] = a.Changed:connect(function()
@@ -113,7 +133,7 @@ function DriveModule.new()
 	end
 
 	--Input Handler
-	function DealWithInput(input, IsRobloxFunction)
+	local function DealWithInput(input)
 		if (UserInputService:GetFocusedTextBox() == nil) and not _InControls then --Ignore when UI Focus
 			--Shift Down [Manual Transmission]
 			if
@@ -122,7 +142,7 @@ function DriveModule.new()
 				and (_TMode == "Semi" or (_TMode == "Manual" and not _ClutchOn))
 				and input.UserInputState == Enum.UserInputState.Begin
 			then
-				if _CGear == 0 and (_TMode == "Auto" or not _ClPressing) then
+				if _CGear == 0 and not _ClPressing then
 					_ClutchOn = true
 				end
 				_CGear = math.max(_CGear - 1, -1)
@@ -134,7 +154,7 @@ function DriveModule.new()
 				and (_TMode == "Semi" or (_TMode == "Manual" and not _ClutchOn))
 				and input.UserInputState == Enum.UserInputState.Begin
 			then
-				if _CGear == 0 and (_TMode == "Auto" or not _ClPressing) then
+				if _CGear == 0 and not _ClPressing then
 					_ClutchOn = true
 				end
 				_CGear = math.min(_CGear + 1, #_Tune.Ratios - 2)
@@ -322,10 +342,6 @@ function DriveModule.new()
 		end
 	end
 
-	connections[#connections + 1] = UserInputService.InputBegan:connect(DealWithInput)
-	connections[#connections + 1] = UserInputService.InputChanged:connect(DealWithInput)
-	connections[#connections + 1] = UserInputService.InputEnded:connect(DealWithInput)
-
 	-- Mobile support
 	local Buttons = gui:WaitForChild("Buttons")
 	local Left = Buttons:WaitForChild("Left")
@@ -339,7 +355,7 @@ function DriveModule.new()
 		gui:WaitForChild("AC6_Stock_Gauges").Visible = false
 	end
 
-	local function LeftTurn(Touch, GPE)
+	local function LeftTurn(Touch)
 		if Touch.UserInputState == Enum.UserInputState.Begin then
 			_GSteerT = -1
 			_SteerL = true
@@ -352,10 +368,8 @@ function DriveModule.new()
 			_SteerL = false
 		end
 	end
-	connections[#connections + 1] = Left.InputBegan:Connect(LeftTurn)
-	connections[#connections + 1] = Left.InputEnded:Connect(LeftTurn)
 
-	local function RightTurn(Touch, GPE)
+	local function RightTurn(Touch)
 		if Touch.UserInputState == Enum.UserInputState.Begin then
 			_GSteerT = 1
 			_SteerR = true
@@ -369,10 +383,7 @@ function DriveModule.new()
 		end
 	end
 
-	connections[#connections + 1] = Right.InputBegan:Connect(RightTurn)
-	connections[#connections + 1] = Right.InputEnded:Connect(RightTurn)
-
-	local function TouchThrottle(input, GPE)
+	local function TouchThrottle(input)
 		if input.UserInputState == Enum.UserInputState.Begin and _IsOn then
 			_GThrot = 1
 		else
@@ -380,10 +391,7 @@ function DriveModule.new()
 		end
 	end
 
-	connections[#connections + 1] = Gas.InputBegan:Connect(TouchThrottle)
-	connections[#connections + 1] = Gas.InputEnded:Connect(TouchThrottle)
-
-	local function TouchBrake(input, GPE)
+	local function TouchBrake(input)
 		if input.UserInputState == Enum.UserInputState.Begin then
 			_GBrake = 1
 		else
@@ -391,10 +399,7 @@ function DriveModule.new()
 		end
 	end
 
-	connections[#connections + 1] = Brake.InputBegan:Connect(TouchBrake)
-	connections[#connections + 1] = Brake.InputEnded:Connect(TouchBrake)
-
-	local function TouchHandbrake(input, GPE)
+	local function TouchHandbrake(input)
 		if input.UserInputState == Enum.UserInputState.Begin then
 			_PBrake = not _PBrake
 		elseif input.UserInputState == Enum.UserInputState.End then
@@ -404,16 +409,13 @@ function DriveModule.new()
 		end
 	end
 
-	connections[#connections + 1] = Handbrake.InputBegan:Connect(TouchHandbrake)
-	connections[#connections + 1] = Handbrake.InputEnded:Connect(TouchHandbrake)
-
 	--[[Drivetrain Initialize]]
 
 	local Drive = {}
 
 	--Power Front Wheels
 	if _Tune.Config == "FWD" or _Tune.Config == "AWD" then
-		for i, v in pairs(car.Wheels:GetChildren()) do
+		for _, v in pairs(car.Wheels:GetChildren()) do
 			if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
 				table.insert(Drive, v)
 			end
@@ -422,7 +424,7 @@ function DriveModule.new()
 
 	--Power Rear Wheels
 	if _Tune.Config == "RWD" or _Tune.Config == "AWD" then
-		for i, v in pairs(car.Wheels:GetChildren()) do
+		for _, v in pairs(car.Wheels:GetChildren()) do
 			if v.Name == "RL" or v.Name == "RR" or v.Name == "R" then
 				table.insert(Drive, v)
 			end
@@ -431,14 +433,14 @@ function DriveModule.new()
 
 	--Determine Wheel Size
 	local wDia = 0
-	for i, v in pairs(Drive) do
+	for _, v in pairs(Drive) do
 		if v.Size.x > wDia then
 			wDia = v.Size.x
 		end
 	end
 
 	--Pre-Toggled PBrake
-	for i, v in pairs(car.Wheels:GetChildren()) do
+	for _, v in pairs(car.Wheels:GetChildren()) do
 		if v["#AV"]:IsA("BodyAngularVelocity") then
 			if math.abs(v["#AV"].maxTorque.Magnitude - PBrakeForce) < 1 then
 				_PBrake = true
@@ -452,7 +454,7 @@ function DriveModule.new()
 
 	--[[Steering]]
 
-	function Steering()
+	local function Steering()
 		--Mouse Steer
 		if _MSteer then
 			local msWidth = math.max(1, mouse.ViewSizeX * _Tune.Peripherals.MSteerWidth / 200)
@@ -486,7 +488,7 @@ function DriveModule.new()
 		local sDecay = (1 - math.min(car.DriveSeat.Velocity.Magnitude / _Tune.SteerDecay, 1 - (_Tune.MinSteer / 100)))
 
 		--Apply Steering
-		for i, v in pairs(car.Wheels:GetChildren()) do
+		for _, v in pairs(car.Wheels:GetChildren()) do
 			if v.Name == "F" then
 				v.Arm.Steer.CFrame = car.Wheels.F.Base.CFrame
 					* CFrame.Angles(0, -math.rad(_GSteerC * _Tune.SteerInner * sDecay), 0)
@@ -526,7 +528,7 @@ function DriveModule.new()
 	local fgc_a = _Tune.PeakSharpness
 	local fgc_c = _Tune.CurveMult
 
-	function FGC(x)
+	local function FGC(x)
 		x = x / 1000
 		return (((-(x - fgc_n) ^ 2) * math.min(fgc_h / (fgc_n ^ 2), fgc_c ^ (fgc_n / fgc_h))) + fgc_h)
 			* (x - ((x ^ fgc_a) / ((fgc_a * fgc_n) ^ (fgc_a - 1))))
@@ -534,7 +536,7 @@ function DriveModule.new()
 	local PeakFGC = FGC(_Tune.PeakRPM)
 
 	--Plot Current Horsepower
-	function GetCurve(x, gear)
+	local function GetCurve(x, gear)
 		local hp = math.max((FGC(x) * _Tune.Horsepower) / PeakFGC, 0)
 		return hp, hp * (_Tune.EqPoint / x) * _Tune.Ratios[gear + 2] * fFD * hpScaling
 	end
@@ -545,12 +547,12 @@ function DriveModule.new()
 	local HPInc = 100
 
 	if CacheTorque then
-		for gear, ratio in pairs(_Tune.Ratios) do
+		for gear in pairs(_Tune.Ratios) do
 			local hpPlot = {}
 			for rpm = math.floor(_Tune.IdleRPM / HPInc), math.ceil((_Tune.Redline + 100) / HPInc) do
 				local tqPlot = {}
 				tqPlot.Horsepower, tqPlot.Torque = GetCurve(rpm * HPInc, gear - 2)
-				hp1, tq1 = GetCurve((rpm + 1) * HPInc, gear - 2)
+				local hp1, tq1 = GetCurve((rpm + 1) * HPInc, gear - 2)
 				tqPlot.HpSlope = (hp1 - tqPlot.Horsepower) / (HPInc / 1000)
 				tqPlot.TqSlope = (tq1 - tqPlot.Torque) / (HPInc / 1000)
 				hpPlot[rpm] = tqPlot
@@ -562,7 +564,7 @@ function DriveModule.new()
 	--Powertrain
 
 	--Update RPM
-	function RPM()
+	local function RPM()
 		--Neutral Gear
 		if _CGear == 0 then
 			_ClutchOn = false
@@ -579,7 +581,7 @@ function DriveModule.new()
 
 		--Determine RPM
 		local maxSpin = 0
-		for i, v in pairs(Drive) do
+		for _, v in pairs(Drive) do
 			if v.RotVelocity.Magnitude > maxSpin then
 				maxSpin = v.RotVelocity.Magnitude
 			end
@@ -612,10 +614,10 @@ function DriveModule.new()
 	end
 
 	--Apply Power
-	function Engine()
+	local function Engine()
 		--Get Torque
 		local maxSpin = 0
-		for i, v in pairs(Drive) do
+		for _, v in pairs(Drive) do
 			if v.RotVelocity.Magnitude > maxSpin then
 				maxSpin = v.RotVelocity.Magnitude
 			end
@@ -688,7 +690,7 @@ function DriveModule.new()
 		local rwspeed = 0
 		local rwcount = 0
 
-		for i, v in pairs(car.Wheels:GetChildren()) do
+		for _, v in pairs(car.Wheels:GetChildren()) do
 			if v.Name == "FL" or v.Name == "FR" or v.Name == "F" then
 				fwspeed = fwspeed + v.RotVelocity.Magnitude
 				fwcount = fwcount + 1
@@ -702,7 +704,7 @@ function DriveModule.new()
 		local cwspeed = (fwspeed + rwspeed) / 2
 
 		--Update Wheels
-		for i, v in pairs(car.Wheels:GetChildren()) do
+		for _, v in pairs(car.Wheels:GetChildren()) do
 			--Reference Wheel Orientation
 			local Ref = (CFrame.new(v.Position - (v.Arm.CFrame * cfWRot).lookVector, v.Position) * cfYRot).lookVector
 			local aRef = 1
@@ -903,7 +905,7 @@ function DriveModule.new()
 
 	--[[Flip]]
 
-	function Flip()
+	local function Flip()
 		--Detect Orientation
 		if (car.DriveSeat.CFrame * CFrame.Angles(math.pi / 2, 0, 0)).lookVector.y > 0.1 or FlipDB then
 			FlipWait = tick()
@@ -925,15 +927,8 @@ function DriveModule.new()
 		end
 	end
 
-	--[[Run]]
-
-	--Print Version
-	local ver = require(car["A-Chassis Tune"].README)
-
-	--Runtime Loops
-
-	-- ~60 c/s
-	connections[#connections + 1] = game["Run Service"].Stepped:connect(function()
+	local elapsed = 0
+	local function Runtime(dt)
 		--Steering
 		Steering()
 
@@ -960,10 +955,7 @@ function DriveModule.new()
 		gui.Values.ABSActive.Value = _ABSActive
 		gui.Values.MouseSteerOn.Value = _MSteer
 		gui.Values.Velocity.Value = car.DriveSeat.Velocity
-	end)
 
-	local elapsed = 0
-	connections[#connections + 1] = RunService.Heartbeat:Connect(function(dt)
 		elapsed += dt
 
 		if elapsed >= 0.0667 then
@@ -977,15 +969,29 @@ function DriveModule.new()
 				Flip()
 			end
 		end
-	end)
+	end
+
+	--[[Run]]
+
+	--Runtime Loops
+
+	connections[#connections + 1] = car.DriveSeat.ChildRemoved:connect(removeGui)
+	connections[#connections + 1] = UserInputService.InputBegan:connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputChanged:connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputEnded:connect(DealWithInput)
+	connections[#connections + 1] = Left.InputBegan:Connect(LeftTurn)
+	connections[#connections + 1] = Left.InputEnded:Connect(LeftTurn)
+	connections[#connections + 1] = Right.InputBegan:Connect(RightTurn)
+	connections[#connections + 1] = Right.InputEnded:Connect(RightTurn)
+	connections[#connections + 1] = Gas.InputBegan:Connect(TouchThrottle)
+	connections[#connections + 1] = Gas.InputEnded:Connect(TouchThrottle)
+	connections[#connections + 1] = Brake.InputBegan:Connect(TouchBrake)
+	connections[#connections + 1] = Brake.InputEnded:Connect(TouchBrake)
+	connections[#connections + 1] = Handbrake.InputBegan:Connect(TouchHandbrake)
+	connections[#connections + 1] = Handbrake.InputEnded:Connect(TouchHandbrake)
+	connections[#connections + 1] = RunService.Stepped:connect(Runtime)
 
 	--[[END]]
-	local function clearConnections()
-		for _, connection: RBXScriptConnection in connections do
-			connection:Disconnect()
-		end
-	end
-	connections[#connections + 1] = gui.Destroying:Connect(clearConnections)
 end
 
 return DriveModule

@@ -61,7 +61,6 @@ local function SetupMobileButtons()
 	GunGui:Clone().Parent = buttonFrame
 	local button = buttonFrame:WaitForChild("JumpButton") :: GuiButton
 
-	print(button)
 	local offset = button.Position
 	for i, v in buttonFrame:GetDescendants() do
 		if v:IsA("GuiButton") then

@@ -11,10 +11,8 @@ local allLights = { "Right", "Reverse", "Left", "Brakes", "Headlight", "DRL" }
 function lightsModule.new(carModel: Model)
 	for _, lightModel in carModel:GetDescendants() do
 		if table.find(allLights, lightModel.Name) and lightModel:IsA("Model") then
-			print(lightModel.Name)
 
 			lightModel.on.Changed:Connect(function()
-				print("fire")
 				local lights = lightModel.G1:GetChildren()
 				local isOn = lightModel.on.Value
 

@@ -1,6 +1,6 @@
 local MiscWeld = {}
 function MiscWeld.new(car)
-	function MakeWeld(x, y, type, s)
+	local function MakeWeld(x, y, type, s)
 		if type == nil then
 			type = "Weld"
 		end
@@ -15,32 +15,15 @@ function MiscWeld.new(car)
 		end
 		return W
 	end
-	function ModelWeld(a, b)
+	local function ModelWeld(a, b)
 		if a:IsA("BasePart") then
 			MakeWeld(b, a, "Weld")
 		elseif a:IsA("Model") then
-			for i, v in pairs(a:GetChildren()) do
+			for _, v in pairs(a:GetChildren()) do
 				ModelWeld(v, b)
 			end
 		end
 	end
-
-	misc = car:WaitForChild("Misc")
-
-	---------------------------
-	--[[
-	--Main anchor point is the DriveSeat <car.DriveSeat>	
-	
-	Usage:
-		MakeWeld(Part1,Part2,WeldType*,MotorVelocity**) *default is "Weld"  **Applies to Motor welds only
-		ModelWeld(Model,MainPart)
-	Example:
-		MakeWeld(car.DriveSeat,misc.PassengerSeat)
-		MakeWeld(car.DriveSeat,misc.SteeringWheel,"Motor",.2)
-		ModelWeld(car.DriveSeat,misc.Door)
-]]
-
-	--Weld stuff here
 
 	car.DriveSeat.ChildAdded:connect(function(child)
 		if

@@ -50,7 +50,7 @@ DriverSeat.new = function(carModel: Model)
 			root:PivotTo(DriveSeat.CFrame * CFrame.new(-5, 0, 0))
 			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Player"
 
-			for i, v in carModel:GetDescendants() do
+			for _, v in carModel:GetDescendants() do
 				if v:IsA("ProximityPrompt") then
 					v.Enabled = true
 				end

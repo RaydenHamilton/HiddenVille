@@ -1,7 +1,6 @@
 local FistClient = {}
 
 function FistClient.new(Tool)
-	print("Initializing FistClient for tool:", Tool.Name)
 	local UserInputService = game:GetService("UserInputService")
 	local Players = game:GetService("Players")
 	local RunService = game:GetService("RunService")

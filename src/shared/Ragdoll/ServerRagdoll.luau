@@ -12,17 +12,8 @@ function ragdollModule.new(target: Player, timeDown)
 	end
 
 	table.insert(ragdallPlayers, target)
+
 	local char = target.Character or target.CharacterAdded:Wait()
-	local humanoid = char:WaitForChild("Humanoid")
-	local root = char:WaitForChild("HumanoidRootPart") :: BasePart
-	local animation = ReplicatedStorage.UniveralAnimations.Ragdoll.GettingUp
-	local track = humanoid:LoadAnimation(animation)
-
-	ragdollEvent:FireClient(target, timeDown)
-
-	humanoid:UnequipTools()
-
-	humanoid.Sit = false
 	char:SetAttribute("Ragdoll", true)
 
 	for _, instance in char:GetChildren() do
@@ -30,28 +21,27 @@ function ragdollModule.new(target: Player, timeDown)
 		if constraint then
 			constraint.Enabled = false
 		end
-		if instance:IsA("MeshPart") then
-			instance.CanCollide = true
-		end
 	end
 
+	local humanoid = char:WaitForChild("Humanoid")
+	local animation = ReplicatedStorage.UniveralAnimations.Ragdoll.GettingUp
+	local track = humanoid:LoadAnimation(animation)
+
+	local root = char:WaitForChild("HumanoidRootPart") :: Part
+
+	ragdollEvent:FireClient(target, timeDown)
+	humanoid:UnequipTools()
+	humanoid.Sit = false
 	root.CanCollide = false
-	root.Anchored = true
 
 	local function standup()
-		-- re-enable constraints
-
 		track:Play()
 		for _, instance in char:GetChildren() do
 			local constraint = instance:FindFirstChildOfClass("AnimationConstraint")
 			if constraint then
 				constraint.Enabled = true
 			end
-			if instance:IsA("BasePart") then
-				instance.CanCollide = false
-			end
 		end
-		root.Anchored = false
 		root.CanCollide = true
 
 		char:SetAttribute("Ragdoll", nil)
@@ -66,7 +56,7 @@ local function CharacterAdded(character: Model)
 	local player = Players:GetPlayerFromCharacter(character)
 	humanoid.HealthChanged:Connect(function()
 		if humanoid.Health <= 0 then
-			ragdollModule.new(player, 10)
+			ragdollModule.new(player, 99)
 		end
 	end)
 end
