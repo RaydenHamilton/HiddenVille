@@ -23,7 +23,6 @@ function CameraModule.new()
 				until (driveSeat.Position - oldPosition).Magnitude < 0.1
 
 				if driveSeat.Occupant == nil then
-					print("stopped")
 					driveSeat.Anchored = true
 				end
 			end
@@ -31,12 +30,11 @@ function CameraModule.new()
 	end)
 	driveSeat.Changed:connect(function()
 		if driveSeat.Occupant and driveSeat.Occupant.Parent.Name == player.Name then
-			print("changed")
 			driveSeat.Anchored = false
 		end
 	end)
 
-	gui.Values.MouseSteerOn.Changed:connect(function(property)
+	gui.Values.MouseSteerOn.Changed:connect(function()
 		if gui.Values.MouseSteerOn.Value then
 			RS:BindToRenderStep("MCam", Enum.RenderPriority.Camera.Value, function()
 				cam.CameraType = Enum.CameraType.Scriptable

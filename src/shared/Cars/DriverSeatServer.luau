@@ -35,11 +35,6 @@ DriverSeat.new = function(carModel: Model)
 			CurrentOccupant = Player
 			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Car"
 		end
-		for i, v in carModel:GetDescendants() do
-			if v:IsA("ProximityPrompt") then
-				v.Enabled = false
-			end
-		end
 	end)
 
 	DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(function()

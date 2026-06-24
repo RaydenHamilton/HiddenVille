@@ -50,21 +50,13 @@ function CarCamera.init()
 
 		currentTween:Play()
 	end
-	local function SetCameraOffset(cframe)
-		if not humanoid then
-			return
-		end
-		local objectSpace = (char.HumanoidRootPart.CFrame + Vector3.new(0, 1.5, 0)):ToObjectSpace(cframe)
-		humanoid.CameraOffset = objectSpace.Position + Vector3.new(0, 0, -0.5)
-	end
 
 	local state
-	RunService.RenderStepped:Connect(function(a0: number)
+	RunService.RenderStepped:Connect(function()
 		if humanoid:GetState() == Enum.HumanoidStateType.Seated then
-			EnterFirstPerson()
 			state = humanoid:GetState()
+			EnterFirstPerson()
 		elseif state ~= Enum.HumanoidStateType.Running then
-			SetCameraOffset(char.Head.CFrame)
 			state = humanoid:GetState()
 			ExitFirstPerson()
 		end

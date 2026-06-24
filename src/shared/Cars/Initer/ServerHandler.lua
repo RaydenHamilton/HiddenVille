@@ -29,7 +29,8 @@ function serverInit.init()
 			if
 				(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
 				and obj.Parent.Name ~= "Wheels"
-				and obj.Name ~= "Floor"
+				and obj.Name ~= "#Weight"
+				and obj.Name ~= "FRONT"
 			then
 				obj.CollisionGroup = "Car"
 				obj.CanCollide = true

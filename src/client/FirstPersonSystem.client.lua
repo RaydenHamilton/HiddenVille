@@ -67,17 +67,19 @@ local state
 RunService.RenderStepped:Connect(function()
 	local char = player.Character or player.CharacterAdded:Wait()
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
-	if humanoid:GetState() == Enum.HumanoidStateType.Seated then
+	if humanoid:GetState() == Enum.HumanoidStateType.Seated or not humanoid.Sit then
 		return
 	end
 	if char:FindFirstChild("Head") then
 		if char:WaitForChild("Head").LocalTransparencyModifier > 0.4 then
+			print("enter")
 			SetCameraOffset()
 			EnterFirstPerson()
 			SetCharacterVisible(char, true)
 			state = "First"
 		elseif state ~= "Third" then
 			state = "Third"
+			print("exit")
 			ExitFirstPerson()
 		end
 	end

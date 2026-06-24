@@ -43,6 +43,8 @@ local function characterAdded(character)
 		local model = seat.Parent
 		if model.Name == "Body" then
 			disabledPrompt(model.Parent)
+		else
+			disabledPrompt(model)
 		end
 	end)
 end
