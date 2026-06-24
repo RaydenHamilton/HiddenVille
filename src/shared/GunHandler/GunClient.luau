@@ -15,8 +15,6 @@ local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local client = require(ReplicatedStorage.BlinkEvents.client)
-local GunLaser = require(script.Parent.GunLaser)
 
 function ClientGunHandler.new(tool: Tool)
 	local self = setmetatable({}, ClientGun)
@@ -961,10 +959,6 @@ function ClientGun:MarkHit(ClientModule, IsHeadshot)
 		end
 	end
 
-	-- Play cool crosshair hit animation
-	-- self:PlayCrosshairHitAnimation(IsHeadshot)
-
-	-- Set crosshair to red temporarily when hitting someone
 	self:SetCrosshairColor(self.CrossHairColors.Hit)
 	self.LastHit = elapsedTime()
 end
@@ -1177,7 +1171,6 @@ function ClientGun:Overheat()
 
 			self.Handle[self.CurrentFireMode].OverheatSound:Play()
 		end
-		--self.Thread:Wait(self.CurrentModule.OverheatTime)
 		for _ = 1, self.CurrentModule.MaxHeat do
 			self.Thread:Wait(self.CurrentModule.OverheatTime / self.CurrentModule.MaxHeat)
 			self.CurrentVariables.Heat = self.CurrentVariables.Heat - 1

@@ -268,9 +268,6 @@ function playtimeClientModule.init()
 		if not MainMenu.Enabled and not popup then
 			local transparencyMap = getOriginalTransparencies(Main)
 			makeDescendantsInvisible(transparencyMap)
-
-			Main.Parent.Visible = true
-
 			tweenToTransparency(transparencyMap, 0.5)
 		end
 	end)

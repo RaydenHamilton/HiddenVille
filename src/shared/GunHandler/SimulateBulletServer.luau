@@ -8,7 +8,6 @@ function SimulteBulletModule.init()
 	local MarketplaceService = game:GetService("MarketplaceService")
 	local Modules = ReplicatedStorage:WaitForChild("Modules")
 	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-	local CollectionService = game:GetService("CollectionService")
 	local DamageModule = require(Modules.DamageModule)
 
 	local PlayAudio = Remotes.PlayAudio
@@ -20,7 +19,7 @@ function SimulteBulletModule.init()
 	_G.TempBannedPlayers = {}
 
 	local KickPlayer = true
-	local PhysicEffect = true --For base parts (blocks) only (Glass shattering)
+	local PhysicEffect = true
 
 	-- Blood splatter related variables
 	local splatids = { "" } -- Update this list with valid decal IDs
@@ -28,21 +27,25 @@ function SimulteBulletModule.init()
 
 	local function getSeatedCarModel(character)
 		if not character then
+			warn("char")
 			return nil
 		end
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if not humanoid then
+			warn("humanoid")
 			return nil
 		end
 
 		local seat = humanoid.SeatPart
 		if not seat or not (seat:IsA("Seat") or seat:IsA("VehicleSeat")) then
+			warn("seat")
 			return nil
 		end
 
 		local cur = seat
 		while cur and cur ~= CivCars do
 			if cur:IsA("Model") and cur.Parent == CivCars then
+				warn("model")
 				return cur
 			end
 			cur = cur.Parent
@@ -84,7 +87,7 @@ function SimulteBulletModule.init()
 	end
 
 	-- Function to spawn blood in multiple directions from the hit position
-	local function spawnBloodInAllDirections(hitPart, hitPosition, hitNormal)
+	local function spawnBloodInAllDirections(hitPart, hitPosition)
 		-- Define the directions to cast rays (backward, forward, left, right, up, down)
 		local directions = {
 			Vector3.new(-1, 0, 0), -- Left
@@ -258,57 +261,6 @@ function SimulteBulletModule.init()
 			end
 		end
 	)
-
-	ShatterGlass.OnServerEvent:Connect(function(_, Hit)
-		if Hit then
-			if Hit.Name == "_glass" then
-				local ogtran = Hit.Transparency
-				if Hit.Transparency ~= 1 then
-					if PhysicEffect then
-						if Hit.Parent:FindFirstChild("_repair") then
-							Hit.Parent:FindFirstChild("_repair").ClickDetector.Enabled = true
-						end
-						local Sound = Instance.new("Sound")
-						Sound.SoundId = "http://roblox.com/asset/?id=2978605361"
-						Sound.TimePosition = 0.1
-						Sound.Volume = 1
-						Sound.Parent = Hit
-						Sound:Play()
-						Sound.Ended:Connect(function()
-							Sound:Destroy()
-						end)
-						Hit.CanCollide = false
-						Hit.CanQuery = false
-						Hit.Transparency = 1
-
-						task.wait(RegenTime)
-						if Hit.Parent:FindFirstChild("_repair") then
-							Hit.Parent:FindFirstChild("_repair").ClickDetector.Enabled = false
-							Hit.Parent:FindFirstChild("_repair").CanCollide = false
-							Hit.Parent:FindFirstChild("_repair").Transparency = 1
-						end
-						Hit.CanQuery = true
-						Hit.CanCollide = true
-						Hit.Transparency = ogtran
-					else
-						local Sound = Instance.new("Sound")
-						Sound.SoundId = "http://roblox.com/asset/?id=2978605361"
-						Sound.TimePosition = 0.1
-						Sound.Volume = 1
-						Sound.Parent = Hit
-						Sound:Play()
-						Sound.Ended:Connect(function()
-							Sound:Destroy()
-						end)
-					end
-				end
-			else
-				error("Hit part's name must be '_glass'.")
-			end
-		else
-			error("Hit part doesn't exist.")
-		end
-	end)
 
 	local function InflictGun(Player, Tool, ClientModule, TargetHumanoid, TargetTorso, Hit, Misc, HitDist)
 		SecureSettings(Player, Tool, ClientModule)
@@ -624,14 +576,17 @@ function SimulteBulletModule.init()
 
 		-- Basic tool sanity (prevents invoking with a random Tool instance)
 		if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then
-			return false, "bad_tool"
+			warn("bad_tool")
+			return false
 		end
 		if not Player.Character or Tool.Parent ~= Player.Character then
-			return false, "tool_not_equipped"
+			warn("tool_not_equipped")
+			return false
 		end
 
 		if not allowShot(Player) then
-			return false, "rate_limited"
+			warn("rate_limited")
+			return false
 		end
 
 		if typeof(Misc) ~= "table" then
@@ -642,12 +597,14 @@ function SimulteBulletModule.init()
 
 		local origin = getMuzzleOrigin(Player, Tool)
 		if not origin then
-			return false, "no_origin"
+			warn("no_origin")
+			return false
 		end
 
 		-- We only have an Instance (ClientHit) to aim at, so we raycast to its position.
 		if typeof(ClientHit) ~= "Instance" or not ClientHit:IsA("BasePart") then
-			return false, "bad_hit"
+			warn("bad_hit")
+			return false
 		end
 
 		local claimedPos = ClientHit.Position
@@ -662,52 +619,48 @@ function SimulteBulletModule.init()
 
 		local ignore = { Player.Character, Tool }
 
-		for _, player: Player in Player:GetChildren() do -- make only players by doing player.character
-			local character = player.Character
-			if character then
+		for _, character: Player in Workspace:GetChildren() do
+			if character:FindFirstChild("Humanoid") then
 				table.insert(ignore, character:FindFirstChild("HumanoidRootPart"))
 			end
 		end
 
 		local seatedCar = getSeatedCarModel(Player.Character)
 		if seatedCar then
-			table.insert(ignore, seatedCar) -- key fix
+			table.insert(ignore, seatedCar)
 		end
 
 		params.FilterDescendantsInstances = ignore
 		params.IgnoreWater = true
 
-		local result = Workspace:Raycast(origin, delta, params)::raycastResult
-
-		task.wait(0.05)
-		if (origin - result.position).magnitude
-		
-
 		local result = Workspace:Raycast(origin, delta, params)
+
 		if not result or not result.Instance then
-			return false, "no_raycast_hit"
+			warn("no_raycast_hit")
+			return false
 		end
 
 		local hitPart = result.Instance
 		local targetModel = hitPart:FindFirstAncestorOfClass("Model")
 		if not targetModel or targetModel == Player.Character then
-			return false, "bad_target"
+			warn("bad_target")
+			return false
 		end
 
 		local targetHumanoid = targetModel:FindFirstChildOfClass("Humanoid")
 		if not targetHumanoid or targetHumanoid.Health <= 0 then
-			return false, "not_humanoid"
+			warn("not_humanoid")
+			return false
 		end
 
 		local targetTorso = getTorso(targetModel)
 		if not targetTorso or not targetTorso:IsA("BasePart") then
-			return false, "no_torso"
+			warn("no_torso")
+			return false
 		end
 
-		-- Server-authoritative distance
 		local hitDist = (result.Position - origin).Magnitude
 
-		-- IMPORTANT: we pass SERVER-derived Hit/TargetHumanoid/TargetTorso/HitDist into InflictGun
 		InflictGun(Player, Tool, ClientModule, targetHumanoid, targetTorso, hitPart, Misc, hitDist)
 		return true
 	end

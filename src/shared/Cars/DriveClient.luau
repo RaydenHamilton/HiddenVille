@@ -85,6 +85,9 @@ function DriveModule.new()
 		end
 	end
 	local function removeGui(child)
+		_PBrake = true
+		task.wait()
+		clearConnections()
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			for _, playerui in playerGui:GetChildren() do
 				if playerui.Name == "A-Chassis Interface" then
@@ -92,7 +95,6 @@ function DriveModule.new()
 				end
 			end
 		end
-		clearConnections()
 	end
 
 	--[[Controls]]
@@ -928,6 +930,8 @@ function DriveModule.new()
 	end
 
 	local elapsed = 0
+
+	_PBrake = false
 	local function Runtime(dt)
 		--Steering
 		Steering()

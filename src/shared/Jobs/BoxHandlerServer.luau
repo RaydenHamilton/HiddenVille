@@ -172,7 +172,6 @@ function boxJobServer.init()
 		end
 
 		if leaderstats and leaderstats:FindFirstChild("Money") then
-			notification:FireClient(player, `You deliverd the box for {reward}$`, "Success")
 			leaderstats.Money.Value += reward
 		end
 

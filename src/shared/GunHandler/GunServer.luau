@@ -1,8 +1,5 @@
 local GunHanlderServer = {}
 
-local Workspace = game:GetService("Workspace")
-local Debris = game:GetService("Debris")
-
 function GunHanlderServer.new(Tool)
 	local Setting = Tool:WaitForChild("Setting")
 	local Handle = Tool:WaitForChild(require(Setting).PrimaryHandle)
@@ -238,8 +235,8 @@ function GunHanlderServer.new(Tool)
 			end
 		end
 	end
-	Tool.Equipped:Connect(OnEquip)
 
+	Tool.Equipped:Connect(OnEquip)
 	Tool.Unequipped:Connect(function()
 		if Module.CustomGripEnabled and not Tool.RequiresHandle then
 			if Motor6DInstance then
@@ -291,7 +288,7 @@ function GunHanlderServer.new(Tool)
 		local humanoid = model:FindFirstChildOfClass("Humanoid")
 		if humanoid and humanoid.Health > 0 then
 			return
-		end -- Only fling dead bodies
+		end
 
 		local force = (direction.Unit * FLING_FORCE) + Vector3.new(0, FLING_UPWARD, 0)
 

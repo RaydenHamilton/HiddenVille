@@ -7,17 +7,32 @@ function CameraModule.new()
 	local gui = Players.LocalPlayer.PlayerGui:WaitForChild("A-Chassis Interface")
 	local car = gui.Car.Value
 	local cam = workspace.CurrentCamera
+	local driveSeat = car.DriveSeat :: VehicleSeat
+	local player = Players.LocalPlayer
 
 	car.DriveSeat.ChildRemoved:connect(function(child)
 		if child.Name == "SeatWeld" then
 			RS:UnbindFromRenderStep("MCam")
-			car.DriveSeat.Anchored = true
 			cam.CameraType = Enum.CameraType.Custom
+
+			if driveSeat.Occupant.Parent.Name == player.Name then
+				local oldPosition
+				repeat
+					oldPosition = driveSeat.Position
+					task.wait(0.1)
+				until (driveSeat.Position - oldPosition).Magnitude < 0.1
+
+				if driveSeat.Occupant == nil then
+					print("stopped")
+					driveSeat.Anchored = true
+				end
+			end
 		end
 	end)
-	car.DriveSeat.ChildAdded:connect(function(child)
-		if child.Name == "SeatWeld" then
-			car.DriveSeat.Anchored = false
+	driveSeat.Changed:connect(function()
+		if driveSeat.Occupant and driveSeat.Occupant.Parent.Name == player.Name then
+			print("changed")
+			driveSeat.Anchored = false
 		end
 	end)
 
