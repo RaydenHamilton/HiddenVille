@@ -63,8 +63,8 @@ function CarCamera.init()
 	end)
 
 	player.CharacterAdded:Connect(function(character: Model)
-		humanoid = char:WaitForChild("Humanoid") :: Humanoid
 		char = character
+		humanoid = char:WaitForChild("Humanoid") :: Humanoid
 	end)
 end
 return CarCamera
