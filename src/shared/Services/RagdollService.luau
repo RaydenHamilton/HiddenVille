@@ -1,1 +1,2 @@
 --!strict
+-- comment 2
