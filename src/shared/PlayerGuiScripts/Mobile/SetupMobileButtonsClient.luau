@@ -43,12 +43,14 @@ local function SetupMobileButtons()
 
 	MobileGui.Enabled = false
 
-	-- Movment
+	-- Movement
 	local RunGui = MobileGui:FindFirstChild("SprintButton")
 	local CrouchGui = MobileGui:FindFirstChild("CrouchButton")
 	local DiveGui = MobileGui:FindFirstChild("DiveButton")
 	-- Gun
 	local GunGui = MobileGui:FindFirstChild("GunGui")
+	-- Fist
+	local FistGui = MobileGui:FindFirstChild("FistGui")
 
 	if not (RunGui and CrouchGui and DiveGui) then
 		warn("[Movement] SprintButton or CrouchButton missing inside MobileGui.")
@@ -59,6 +61,8 @@ local function SetupMobileButtons()
 	CrouchGui:Clone().Parent = buttonFrame
 	DiveGui:Clone().Parent = buttonFrame
 	GunGui:Clone().Parent = buttonFrame
+	FistGui:Clone().Parent = buttonFrame
+
 	local button = buttonFrame:WaitForChild("JumpButton") :: GuiButton
 
 	local offset = button.Position

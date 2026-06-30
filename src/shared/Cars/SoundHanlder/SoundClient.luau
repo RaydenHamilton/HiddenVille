@@ -1,15 +1,25 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local soundClient = {}
 
+local connections: { RBXScriptConnection } = {}
+
+local function clearConnections()
+	for _, connection in connections do
+		connection:Disconnect()
+	end
+end
+
 function soundClient.new()
-	local gui = player.PlayerGui:WaitForChild("A-Chassis Interface")
+	local gui = player.PlayerGui:WaitForChild("A-Chassis Interface") :: PlayerGui
 
 	local FE = Workspace.FilteringEnabled
 	local car = gui.Car.Value
-	local handler = car:WaitForChild("AC6_FE_Sounds")
+	local handler = ReplicatedStorage.Remotes.CarSounds
 
 	local _Tune = require(car["A-Chassis Tune"])
 
@@ -42,7 +52,7 @@ function soundClient.new()
 	local revVolume = rev.Volume
 
 	-- /// GEAR CHANGE SHIFT POP FIX
-	gui.Values.Gear.Changed:Connect(function()
+	connections[#connections + 1] = gui.Values.Gear.Changed:Connect(function()
 		mult = 1
 		if gui.Values.RPM.Value > 5000 then
 			shift = 0.2
@@ -77,56 +87,66 @@ function soundClient.new()
 	end
 
 	-- /// MAIN LOOP (smooth, lag-free)
-	task.spawn(function()
-		while task.wait() and gui and gui.Parent do
-			mult = math.max(0, mult - 0.1)
-			local _RPM = gui.Values.RPM.Value
 
-			if gui.Values.Throttle.Value <= _Tune.IdleThrottle / 100 then
-				throt = math.max(0.3, throt - 0.2)
-				trmmult = math.max(0, trmmult - 0.05)
-				trmon = 1
-			else
-				throt = math.min(1, throt + 0.1)
-				trmmult = 1
-				trmon = 0
-			end
+	local FRAME_TIME = 1 / 60
+	local nextFireTime = 0
 
-			shift = math.min(1, shift + 0.2)
+	connections[#connections + 1] = RunService.Heartbeat:Connect(function()
+		local currentTime = os.clock()
+		if currentTime < nextFireTime then
+			return
+		end
+		nextFireTime = currentTime + FRAME_TIME
 
-			if
-				gui.Values.RPM.Value > _Tune.Redline - _Tune.RevBounce / 4
-				and gui.Values.Throttle.Value > _Tune.IdleThrottle / 100
-			then
-				redline = 0.5
-			else
-				redline = 1
-			end
+		mult = math.max(0, mult - 0.1)
+		local _RPM = gui.Values.RPM.Value
 
-			if not gui.IsOn.Value then
-				on = math.max(on - 0.015, 0)
-			else
-				on = 1
-			end
+		if gui.Values.Throttle.Value <= _Tune.IdleThrottle / 100 then
+			throt = math.max(0.3, throt - 0.2)
+			trmmult = math.max(0, trmmult - 0.05)
+			trmon = 1
+		else
+			throt = math.min(1, throt + 0.1)
+			trmmult = 1
+			trmon = 0
+		end
 
-			local Volume = (2 * throt * shift * redline) + (trm * trmon * trmmult * (1 - throt) * math.sin(tick() * 50))
+		shift = math.min(1, shift + 0.2)
 
-			local Pitch = math.max(
-				((rev.SetPitch.Value + rev.SetRev.Value * _RPM / _Tune.Redline) * on ^ 2)
-					+ (det * mult * math.sin(80 * tick())),
-				rev.SetPitch.Value
-			)
+		if
+			gui.Values.RPM.Value > _Tune.Redline - _Tune.RevBounce / 4
+			and gui.Values.Throttle.Value > _Tune.IdleThrottle / 100
+		then
+			redline = 0.5
+		else
+			redline = 1
+		end
 
-			-- /// FINAL FIX — never sends invalid SoundId, never spams, never lags
-			if FE then
-				handler:FireServer("updateSound", "Rev", revSoundId, Pitch, Volume)
-			else
-				if soundObj then
-					soundObj.Volume = Volume
-					soundObj.Pitch = Pitch
-				end
+		if not gui.IsOn.Value then
+			on = math.max(on - 0.015, 0)
+		else
+			on = 1
+		end
+
+		local Volume = (2 * throt * shift * redline) + (trm * trmon * trmmult * (1 - throt) * math.sin(tick() * 50))
+
+		local Pitch = math.max(
+			((rev.SetPitch.Value + rev.SetRev.Value * _RPM / _Tune.Redline) * on ^ 2)
+				+ (det * mult * math.sin(80 * tick())),
+			rev.SetPitch.Value
+		)
+
+		-- /// FINAL FIX — never sends invalid SoundId, never spams, never lags
+		if FE then
+			handler:FireServer("updateSound", "Rev", revSoundId, Pitch, Volume)
+		else
+			if soundObj then
+				soundObj.Volume = Volume
+				soundObj.Pitch = Pitch
 			end
 		end
 	end)
+
+	connections[#connections + 1] = gui.Destroying:Connect(clearConnections)
 end
 return soundClient
