@@ -12,42 +12,46 @@ local WeldServer = require(ReplicatedStorage.Shared.Cars.MiscModules.WeldServer)
 
 local serverInit = {}
 
-function serverInit.init()
-	Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
-		InitCarServer.new(CarModel)
-		HitSystemServer.new(CarModel)
-		DriverSeatServer.new(CarModel)
-		SoundServer.new(CarModel)
+local function createCar(CarModel: Model)
+	InitCarServer.new(CarModel)
+	HitSystemServer.new(CarModel)
+	DriverSeatServer.new(CarModel)
+	SoundServer.new(CarModel)
 
-		CarRagdallServer.new(CarModel)
-		WeldServer.new(CarModel)
-		LightsServer.new(CarModel)
-		LightEnablerServer.new(CarModel)
-		task.wait(5)
+	CarRagdallServer.new(CarModel)
+	WeldServer.new(CarModel)
+	LightsServer.new(CarModel)
+	LightEnablerServer.new(CarModel)
+	task.wait(5)
 
-		for _, obj in CarModel:GetDescendants() do
-			if
-				(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
-				and obj.Parent.Name ~= "Wheels"
-				and obj.Name ~= "#Weight"
-				and obj.Name ~= "FRONT"
-			then
-				obj.CollisionGroup = "Car"
-				obj.CanCollide = true
-				obj:SetNetworkOwner(nil)
-			end
+	for _, obj in CarModel:GetDescendants() do
+		if
+			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
+			and obj.Parent.Name ~= "Wheels"
+			and obj.Name ~= "#Weight"
+			and obj.Name ~= "FRONT"
+		then
+			obj.CollisionGroup = "Car"
+			obj.CanCollide = true
 		end
-	end)
+	end
+end
 
-	Players.PlayerAdded:Connect(function(player: Player)
-		player.CharacterAdded:Connect(function(character: Model)
-			for _, part in character:GetDescendants() do
-				if part:IsA("UnionOperation") or part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Part") then
-					part.CollisionGroup = "Player"
-				end
-			end
-		end)
-	end)
+local function CharacterAdded(character: Model)
+	for _, part in character:GetDescendants() do
+		if part:IsA("UnionOperation") or part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Part") then
+			part.CollisionGroup = "Player"
+		end
+	end
+end
+
+local function PlayerAdded(player: Player)
+	player.CharacterAdded:Connect(CharacterAdded)
+end
+
+function serverInit.init()
+	Workspace.CivCars.ChildAdded:Connect(createCar)
+	Players.PlayerAdded:Connect(PlayerAdded)
 end
 
 return serverInit

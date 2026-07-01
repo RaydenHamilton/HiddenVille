@@ -7,6 +7,21 @@ function serverLights.new(Car)
 		NewValue.on.Value = not NewValue.on.Value
 	end
 
+	local function changeValue(Name, NewValue)
+		local model = Car.Body:FindFirstChild(Name)
+
+		if not model then
+			return
+		end
+
+		local value = model:FindFirstChild("on")
+
+		if not value then
+			return
+		end
+		value.Value = NewValue
+	end
+
 	local function ToggleHazards()
 		Car.Body.Hazards.on.Value = not Car.Body.Hazards.on.Value
 		if Car.Body.Left.on.Value == true then
@@ -18,7 +33,7 @@ function serverLights.new(Car)
 	end
 
 	local function SetBrakes(NewValue)
-		Car.Body.Brakes.on.Value = NewValue
+		changeValue("Brakes", NewValue)
 	end
 
 	local function ToggleBlinker(NewValue)
@@ -26,7 +41,7 @@ function serverLights.new(Car)
 	end
 
 	local function SetReverse(NewValue)
-		Car.Body.Reverse.on.Value = NewValue
+		changeValue("Reverse", NewValue)
 	end
 
 	-- local function SetHorn()

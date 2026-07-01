@@ -3,16 +3,29 @@ local IgnitionClient = {}
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
-function IgnitionClient.new(model)
-	local seat = model:WaitForChild("DriveSeat") :: Seat
+local connect: RBXScriptConnection
+local character: Model
+local humanoid: Humanoid
 
-	local function seated(name)
-		if name ~= "Occupant" or seat.Occupant == nil then
+function IgnitionClient.init()
+	print("start")
+	local function seated()
+		local seat = humanoid.SeatPart
+
+		repeat
+			seat = humanoid.SeatPart
+			task.wait()
+		until seat
+
+		-- Loop through the array to find the match
+		print(seat)
+
+		if seat.Occupant == nil then
 			return
 		end
 
-		local gui = player.PlayerGui:WaitForChild("A-Chassis Interface")
-		local car = model
+		local gui = player.PlayerGui:WaitForChild("A-Chassis Interface", 9)
+		local car = seat.Parent
 
 		gui:WaitForChild("Start1")
 		gui:WaitForChild("Start2")
@@ -23,6 +36,7 @@ function IgnitionClient.new(model)
 					v:Stop()
 					task.wait()
 					v:Destroy()
+					print(v.Name)
 				end
 			end
 		end
@@ -70,7 +84,19 @@ function IgnitionClient.new(model)
 		s2:Stop()
 	end
 
-	seat.Changed:Connect(seated)
+	local function CharacterAdded(char)
+		if connect then
+			connect:Disconnect()
+		end
+		character = char
+		humanoid = character:WaitForChild("Humanoid") :: Humanoid
+		connect = humanoid:GetPropertyChangedSignal("Sit"):Connect(seated)
+	end
+
+	if player.Character then
+		CharacterAdded(player.Character)
+	end
+	player.CharacterAdded:Connect(CharacterAdded)
 end
 
 return IgnitionClient

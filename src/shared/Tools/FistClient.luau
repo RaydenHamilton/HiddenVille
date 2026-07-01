@@ -289,23 +289,38 @@ function FistClient.new(Tool)
 	end
 
 	local function CreateGuiButtons()
-		if not Player or not Player:FindFirstChild("PlayerGui") then
-			warn("Player or PlayerGui not found")
+		local touchGui = Player.PlayerGui:FindFirstChild("TouchGui") or Player.PlayerGui:WaitForChild("TouchGui", 5)
+
+		if not touchGui then
+			warn(" TouchGui not found in PlayerGui (mobile buttons not attached).")
 			return
 		end
 
-		if Player.PlayerGui:FindFirstChild("MobilePunchGui") then
+		local buttonFrame = touchGui:FindFirstChild("TouchControlFrame")
+			or touchGui:WaitForChild("TouchControlFrame", 5)
+
+		if not buttonFrame then
+			warn(" TouchControlFrame not found in TouchGui (mobile buttons not attached).")
 			return
 		end
 
-		local gui = Tool:WaitForChild("MobilePunchGui"):Clone()
-		gui.Parent = Player:WaitForChild("PlayerGui")
+		local FistGui = buttonFrame:FindFirstChild("FistGui") or touchGui:WaitForChild("FistGui", 5)
 
-		local mobileButtons = gui:FindFirstChild("MobileButtons")
-		if mobileButtons then
-			mobileButtons.Stomp.Activated:Connect(Stomp)
-			mobileButtons.Push.Activated:Connect(Push)
-			mobileButtons.Weave.Activated:Connect(Dodge)
+		if not FistGui then
+			warn(" Fist not found in TouchGui (mobile buttons not attached).")
+			return
+		end
+
+		if FistGui then
+			FistGui.Stomp.Visible = true
+			FistGui.Push.Visible = true
+		else
+			warn("MobileButtons not found in MobilePunchGui")
+		end
+
+		if FistGui then
+			FistGui.Stomp.Activated:Connect(Stomp)
+			FistGui.Push.Activated:Connect(Push)
 		else
 			warn("MobileButtons not found in MobilePunchGui")
 		end
@@ -316,9 +331,34 @@ function FistClient.new(Tool)
 			warn("Player or PlayerGui not found")
 			return
 		end
-		local mobileButtons = Player.PlayerGui:FindFirstChild("MobilePunchGui")
-		if mobileButtons then
-			mobileButtons:Destroy()
+
+		local touchGui = Player.PlayerGui:FindFirstChild("TouchGui") or Player.PlayerGui:WaitForChild("TouchGui", 5)
+
+		if not touchGui then
+			warn(" TouchGui not found in PlayerGui (mobile buttons not attached).")
+			return
+		end
+
+		local buttonFrame = touchGui:FindFirstChild("TouchControlFrame")
+			or touchGui:WaitForChild("TouchControlFrame", 5)
+
+		if not buttonFrame then
+			warn(" TouchControlFrame not found in TouchGui (mobile buttons not attached).")
+			return
+		end
+
+		local FistGui = buttonFrame:FindFirstChild("FistGui") or touchGui:WaitForChild("FistGui", 5)
+
+		if not FistGui then
+			warn(" Fist not found in TouchGui (mobile buttons not attached).")
+			return
+		end
+
+		if FistGui then
+			FistGui.Stomp.Visible = false
+			FistGui.Push.Visible = false
+		else
+			warn("MobileButtons not found in MobilePunchGui")
 		end
 	end
 

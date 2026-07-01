@@ -74,14 +74,17 @@ HitSystem.new = function(car: Model)
 						end
 
 						local sound = math.random(1, 2)
+						
 						if sound == 1 then
-							if driveSeat:FindFirstChild("Sound") then
-								driveSeat:WaitForChild("Sound"):Clone().Parent = cp
-								cp.Sound:Play()
+							print(driveSeat:FindFirstChild("Sound1"))
+							if driveSeat:FindFirstChild("Sound1") then
+								driveSeat:WaitForChild("Sound1"):Clone().Parent = cp
+								cp.Sound1:Play()
 							end
 						else
-							if driveSeat:FindFirstChild("Sound") then
-								driveSeat:WaitForChild("Sound"):Clone().Parent = cp
+							print(driveSeat:FindFirstChild("Sound2"))
+							if driveSeat:FindFirstChild("Sound2") then
+								driveSeat:WaitForChild("Sound2"):Clone().Parent = cp
 								cp.Sound2:Play()
 							end
 						end
