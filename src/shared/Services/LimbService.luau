@@ -50,10 +50,6 @@ function LimbService.serverInit(): ()
 	end
 end
 
-function LimbService.clientInit(): ()
-	--(Players.LocalPlayer :: Player).CharacterAdded:Connect(injectControls)
-end
-
 --[[ METHODS ]]--
 function LimbService.setTarget(character: Model, limb: keyof<typeof(controllers)>, target: BasePart)
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
