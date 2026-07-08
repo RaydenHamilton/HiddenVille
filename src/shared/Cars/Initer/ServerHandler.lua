@@ -25,7 +25,10 @@ local function createCar(CarModel: Model)
 	task.wait(1)
 
 	for _, obj in CarModel:GetDescendants() do
-		if
+		if obj.Parent.Name == "Windows" then
+			obj.CanCollide = false
+			obj.CollisionGroup = "Car"
+		elseif
 			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
 			and obj.Parent.Name ~= "Wheels"
 			and obj.Name ~= "#Weight"
@@ -33,6 +36,11 @@ local function createCar(CarModel: Model)
 		then
 			obj.CollisionGroup = "Car"
 			obj.CanCollide = true
+		elseif
+			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
+			and obj.Parent.Name == "Wheels"
+		then
+			obj.CollisionGroup = "Wheel"
 		end
 	end
 end

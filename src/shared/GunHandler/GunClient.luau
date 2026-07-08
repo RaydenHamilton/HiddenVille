@@ -15,6 +15,7 @@ local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local ProjectileHandler = require(script.Parent.ProjectileHandler)
 
 function ClientGunHandler.new(tool: Tool)
 	local self = setmetatable({}, ClientGun)
@@ -27,7 +28,6 @@ function ClientGunHandler.new(tool: Tool)
 	self.Setting = tool:WaitForChild("Setting")
 
 	--// Modules
-	self.ProjectileHandler = require(Modules.ProjectileHandler)
 	self.AudioHandler = require(Modules.AudioHandler)
 	self.SmokeTrail = require(Modules.SmokeTrail)
 	self.DamageModule = require(Modules.DamageModule)
@@ -386,9 +386,6 @@ function ClientGun:IsAimingAtPlayerFromGunToMouse()
 	local Direction = (targetPosition - muzzlePosition).Unit
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
-	for i, v in pairs(CollectionService:GetTagged("Glass")) do
-		table.insert(raycastParams.FilterDescendantsInstances, v)
-	end
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), Direction * 1000, raycastParams)
 	if raycastResult and raycastResult.Instance then
@@ -494,13 +491,11 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
-	for i, v in pairs(CollectionService:GetTagged("Glass")) do
-		table.insert(raycastParams.FilterDescendantsInstances, v)
-	end
-
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local raycastResult = Workspace:Raycast(InputRay.Origin, InputRay.Direction * 1000, raycastParams)
+
+
 	if raycastResult and raycastResult.Instance then
 		local hitPart = raycastResult.Instance
 		local model = hitPart:FindFirstAncestorOfClass("Model")
@@ -553,27 +548,34 @@ end
 
 function ClientGun:CastRay(StartPos, Direction, Length)
 	local ignore = { self.Camera, self.Tool, self.Character }
-	for i, v in pairs(CollectionService:GetTagged("Glass")) do
-		table.insert(ignore, v)
-	end
 
-	local Hit, EndPos = Workspace:FindPartOnRayWithIgnoreList(Ray.new(StartPos, Direction * Length), ignore)
-	if Hit then
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = ignore
+	params.FilterType = Enum.RaycastFilterType.Exclude
+
+	local result = Workspace:Raycast(StartPos, Direction * Length, params)
+
+	if result and result.Instance then
 		local FirePointObject = self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode)
 		if FirePointObject ~= nil then
 			local TipCFrame = FirePointObject.WorldCFrame
 			local TipPos = TipCFrame.Position
 			local TipDir = TipCFrame.LookVector
 			local AmountToCheatBack = math.abs((self.HumanoidRootPart.Position - TipPos):Dot(TipDir)) + 1
-			local GunRay = Ray.new(TipPos - TipDir.Unit * AmountToCheatBack, TipDir.Unit * AmountToCheatBack)
 
-			local HitPart, HitPoint = Workspace:FindPartOnRayWithIgnoreList(GunRay, ignore, false, true)
-			if HitPart and math.abs((TipPos - HitPoint).Magnitude) > 0 then
-				return self:CastRay(EndPos + (Direction * 0.01), Direction, Length - (StartPos - EndPos).Magnitude)
+			local gunResult =
+				Workspace:Raycast(TipPos - TipDir.Unit * AmountToCheatBack, TipDir.Unit * AmountToCheatBack, params)
+
+			if gunResult and gunResult.Instance and math.abs((TipPos - gunResult.Position).Magnitude) > 0 then
+				return self:CastRay(
+					result.Position + (Direction * 0.01),
+					Direction,
+					Length - (StartPos - result.Position).Magnitude
+				)
 			end
 		end
 	end
-	return EndPos
+	return result and result.Position or nil
 end
 
 function ClientGun:Get3DPosition(CurrentPosOnScreen)
@@ -1119,7 +1121,7 @@ function ClientGun:Fire(ShootingHandle, ShootingVMHandle, FireClientDirections, 
 	if self:IsAimingAtPlayerFromGunToMouse() then
 		self:MarkHit(self.CurrentModule, false)
 	end
-	self.ProjectileHandler:SimulateProjectile(
+	ProjectileHandler:SimulateProjectile(
 		self.Tool,
 		ShootingHandle,
 		(self.Camera.Focus.p - self.Camera.CoordinateFrame.p).Magnitude <= 1 and ShootingVMHandle or nil,
@@ -1710,6 +1712,10 @@ function ClientGun:OnFiring()
 				for ii = 1, (self.CurrentModule.ShotgunEnabled and self.CurrentModule.BulletPerShot or 1) do
 					local Position = self:Get3DPosition(self.GunGUI.Crosshair.AbsolutePosition)
 					local Spread = 0 -- Spread removed
+
+					if not Position then -- this is not a good fix but it works
+						continue
+					end
 					local cframe = CFrame.new(
 						self.VMHandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode).WorldPosition,
 						Position

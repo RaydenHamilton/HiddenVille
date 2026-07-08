@@ -18,8 +18,6 @@ function SimulteBulletModule.init()
 
 	local KickPlayer = true
 
-	-- Blood splatter related variables
-	local splatids = { "" } -- Update this list with valid decal IDs
 	local CivCars = Workspace:WaitForChild("CivCars")
 
 	local function getSeatedCarModel(character)
@@ -48,74 +46,6 @@ function SimulteBulletModule.init()
 			cur = cur.Parent
 		end
 		return nil
-	end
-
-	-- Function to spawn blood splatters with a random chance
-	local function spawnBloodSplat(position, normal)
-		-- Define the spawn chance (e.g., 50%)
-		local spawnChance = 0.5
-
-		-- Generate a random number between 0 and 1
-		if math.random() <= spawnChance then
-			-- Only spawn the blood splat if the random number is less than or equal to spawnChance
-			local splatPart = Instance.new("Part")
-			splatPart.Size = Vector3.new(7, 7)
-			splatPart.Transparency = 1
-			splatPart.CanCollide = false
-			splatPart.Material = "SmoothPlastic"
-			splatPart.CanTouch = false
-			splatPart.CanQuery = false
-			splatPart.Anchored = true
-
-			local decal = Instance.new("Decal", splatPart)
-			decal.Texture = "rbxassetid://" .. splatids[math.random(1, #splatids)] -- Random decal ID
-			decal.Color3 = Color3.fromRGB(110, 0, 0)
-			decal.Transparency = 0
-
-			-- Align the part to the hit surface
-			splatPart.CFrame = CFrame.new(position, position + normal)
-
-			-- Add the blood splat to the workspace
-			splatPart.Parent = workspace
-
-			-- Clean up after 10 seconds
-			Debris:AddItem(splatPart, 8)
-		end
-	end
-
-	-- Function to spawn blood in multiple directions from the hit position
-	local function spawnBloodInAllDirections(hitPart, hitPosition)
-		-- Define the directions to cast rays (backward, forward, left, right, up, down)
-		local directions = {
-			Vector3.new(-1, 0, 0), -- Left
-			Vector3.new(1, 0, 0), -- Right
-			Vector3.new(0, -1, 0), -- Down
-			Vector3.new(0, 1, 0), -- Up
-			Vector3.new(0, 0, -1), -- Backward
-			Vector3.new(0, 0, 1), -- Forward
-		}
-
-		-- Raycast parameters
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = { hitPart.Parent }
-		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-		raycastParams.IgnoreWater = true
-
-		-- Cast rays in each direction
-		for _, direction in ipairs(directions) do
-			local rayOrigin = hitPosition
-			local rayDirection = direction * 4 -- Raycast 4 studs in the given direction
-
-			-- Perform the raycast
-			local result = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-
-			if result then
-				-- Spawn blood splat at the position where the ray hits
-				local hitPosition = result.Position
-				local hitNormal = result.Normal
-				spawnBloodSplat(hitPosition, hitNormal)
-			end
-		end
 	end
 
 	local function CompareTables(arr1, arr2)
@@ -305,7 +235,6 @@ function SimulteBulletModule.init()
 
 		local TweenService = game:GetService("TweenService")
 
-		local BloodStains = game.ReplicatedStorage.BloodStains
 		local validBodyParts = {
 			"Head",
 			"UpperTorso",
@@ -356,9 +285,6 @@ function SimulteBulletModule.init()
 					HighLighter:Destroy()
 				end)
 			end
-			if TargetHumanoid then
-				spawnBloodInAllDirections(Hit, Hit.Position, Hit.CFrame.LookVector)
-			end
 			if TargetHumanoid.Health <= 0 then
 				-- Check if the hit part is a valid body part
 				if table.find(validBodyParts, Hit.Name) then
@@ -372,15 +298,6 @@ function SimulteBulletModule.init()
 					local currentCount = Hit:GetAttribute("DecalCount")
 					-- Only proceed if the decal count is less than 3
 					if currentCount < 1 then
-						for _, decal in pairs(BloodStains:GetChildren()) do
-							if decal:IsA("Decal") then
-								local bloodDecal = decal:Clone()
-								bloodDecal.Parent = Hit -- Parent the decal to the body part that was hit
-
-								-- Increment the decal count
-								Hit:SetAttribute("DecalCount", currentCount + 1)
-							end
-						end
 
 						-- Apply velocity to the hit body part based on bullet impact direction
 						local bodyVelocity = Instance.new("BodyVelocity")
@@ -583,14 +500,6 @@ function SimulteBulletModule.init()
 			return false
 		end
 
-		if
-			not Player.character:FindFirstChild("HumanoidRootPart")
-			or Player.character.HumanoidRootPart:FindFirstChild("Shield")
-		then
-			warn("in_safezone")
-			return false
-		end
-
 		if not allowShot(Player) then
 			warn("rate_limited")
 			return false
@@ -620,6 +529,14 @@ function SimulteBulletModule.init()
 				warn("player_in_safezone")
 				return false
 			end
+		end
+
+		if
+			not Player.character:FindFirstChild("HumanoidRootPart")
+			or Player.character.HumanoidRootPart:FindFirstChild("Shield")
+		then
+			warn("in_safezone")
+			return false
 		end
 
 		local claimedPos = ClientHit.Position

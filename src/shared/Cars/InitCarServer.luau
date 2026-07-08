@@ -580,6 +580,23 @@ initCar.new = function(car: Model)
 
 	--[[Driver Handling]]
 
+	local function getPlayersInCar()
+		local players = {}
+
+		for _, player in ipairs(game.Players:GetPlayers()) do
+			local character = player.Character
+			local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+
+			if humanoid and humanoid.Sit and humanoid.SeatPart then
+				if humanoid.SeatPart:IsDescendantOf(car) then
+					table.insert(players, player)
+				end
+			end
+		end
+
+		return players
+	end
+
 	--Driver Sit
 	local function ChildAdded(child)
 		if
@@ -637,6 +654,55 @@ initCar.new = function(car: Model)
 	connections[#connections + 1] = driveSeat.ChildRemoved:connect(ChildRemoved)
 
 	--[END]]
+
+	local carDestroyed = false
+	local carOnFire = false
+
+	local function destroyCar()
+		if carDestroyed then
+			return
+		end
+		carDestroyed = true
+		carOnFire = true
+
+		if car.Body and car.Body.FRONT then
+			if car.Body.FRONT:FindFirstChild("Smoke") then
+				car.Body.FRONT.Smoke.Enabled = true
+			end
+			if car.Body.FRONT:FindFirstChild("Fire") then
+				car.Body.FRONT.Fire.Enabled = true
+			end
+		end
+
+		task.wait(15)
+
+		task.spawn(function()
+			while car and car.Parent do
+				if carOnFire then
+					for _, player in ipairs(getPlayersInCar()) do
+						local humanoid = player.Character and player.Character:FindFirstChildWhichIsA("Humanoid")
+						if humanoid and humanoid.Health > 0 then
+							humanoid:TakeDamage(20)
+						end
+					end
+				end
+				task.wait(0.5)
+			end
+		end)
+
+		task.delay(15, function()
+			if car and car.Parent then
+				car:Destroy()
+			end
+		end)
+	end
+
+	local carHealth = car:WaitForChild("Health")
+	carHealth:GetPropertyChangedSignal("Value"):Connect(function()
+		if not carDestroyed and carHealth.Value <= 0 then
+			destroyCar()
+		end
+	end)
 end
 
 initCar.init = function()
