@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local initCar = {}
 
@@ -66,11 +67,9 @@ local function UnAnchor(a)
 end
 
 initCar.new = function(car: Model)
-	--[[START]]
-
+	local connections = {}
 	--[[Weld functions]]
-
-	local PGS_ON = workspace:PGSIsEnabled()
+	local PGS_ON = Workspace:PGSIsEnabled()
 
 	--[[Initialize]]
 	local module = car:WaitForChild("A-Chassis Tune")
@@ -78,14 +77,13 @@ initCar.new = function(car: Model)
 	local _Tune = require(module)
 	local wheels = car:WaitForChild("Wheels")
 	local body = car:WaitForChild("Body")
-	local plugins = car:FindFirstChild("Plugins", true)
 	local driveSeat = car:WaitForChild("DriveSeat")
 
 	task.wait(_Tune.LoadDelay)
 
 	--Weight Scaling
 	local weightScaling = _Tune.WeightScaling
-	if not workspace:PGSIsEnabled() then
+	if not Workspace:PGSIsEnabled() then
 		weightScaling = _Tune.LegacyScaling
 	end
 
@@ -93,10 +91,6 @@ initCar.new = function(car: Model)
 
 	--Remove Existing Mass
 	DReduce(car)
-
-	--[[Wheel Configuration]]
-
-	--Store Reference Orientation Function
 
 	--PGS/Legacy
 	local fDensity = _Tune.FWheelDensity
@@ -458,7 +452,7 @@ initCar.new = function(car: Model)
 			local SeatClone = module:FindFirstChild("Sit"):Clone()
 			SeatClone.Parent = seat
 
-			SeatClone.Triggered:Connect(function(player)
+			connections[#connections + 1] = SeatClone.Triggered:Connect(function(player)
 				if seat:FindFirstChild("Locked") then
 					game:GetService("ReplicatedStorage")
 						:FindFirstChild("Notify")
@@ -491,7 +485,7 @@ initCar.new = function(car: Model)
 				seat:Sit(humanoid)
 			end)
 
-			seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+			connections[#connections + 1] = seat:GetPropertyChangedSignal("Occupant"):Connect(function()
 				local occupant = seat.Occupant
 
 				if occupant == nil then
@@ -517,22 +511,7 @@ initCar.new = function(car: Model)
 		end
 	end
 
-	local interface = car:FindFirstChild("A-Chassis Interface", true)
-	interface.Car.Value = car
-	for _, v in pairs(plugins:GetChildren()) do
-		for _, a in pairs(v:GetChildren()) do
-			if a:IsA("RemoteEvent") or a:IsA("RemoteFunction") then
-				a.Parent = car
-				for _, b in pairs(a:GetChildren()) do
-					if b:IsA("Script") then
-						b.Disabled = false
-					end
-				end
-			end
-		end
-		v.Parent = car:FindFirstChild("A-Chassis Interface", true)
-	end
-	plugins:Destroy()
+	local interface = ReplicatedStorage.CarAssets:FindFirstChild("A-Chassis Interface")
 
 	--[[Remove Character Weight]]
 	--Get Seats
@@ -573,12 +552,12 @@ initCar.new = function(car: Model)
 	--Apply Seat Handler
 	for _, v in pairs(Seats) do
 		--Sit Handler
-		v.Seat.ChildAdded:connect(function(child)
+		connections[#connections + 1] = v.Seat.ChildAdded:connect(function(child)
 			if
 				child.Name == "SeatWeld"
 				and child:IsA("Weld")
 				and child.Part1 ~= nil
-				and child.Part1.Parent ~= workspace
+				and child.Part1.Parent ~= Workspace
 				and not child.Part1.Parent:IsDescendantOf(car)
 			then
 				v.Parts = {}
@@ -587,7 +566,7 @@ initCar.new = function(car: Model)
 		end)
 
 		--Leave Handler
-		v.Seat.ChildRemoved:connect(function(child)
+		connections[#connections + 1] = v.Seat.ChildRemoved:connect(function(child)
 			if child.Name == "SeatWeld" and child:IsA("Weld") then
 				for _, part in pairs(v.Parts) do
 					if part[1] ~= nil and part[2] ~= nil and part[1]:IsDescendantOf(Workspace) then
@@ -602,24 +581,23 @@ initCar.new = function(car: Model)
 	--[[Driver Handling]]
 
 	--Driver Sit
-
-	local wheelNames = { "FR", "RL", "RR", "FL" }
-	driveSeat.ChildAdded:connect(function(child)
+	local function ChildAdded(child)
 		if
 			child.Name == "SeatWeld"
 			and child:IsA("Weld")
 			and Players:GetPlayerFromCharacter(child.Part1.Parent) ~= nil
 		then
+			print("car")
 			--Distribute Client Interface
 			local p = Players:GetPlayerFromCharacter(child.Part1.Parent)
 			driveSeat:SetNetworkOwner(p)
 			local g = interface:Clone()
+			g.Car.Value = car
 			g.Parent = p.PlayerGui
 		end
-	end)
+	end
 
-	--Driver Leave
-	driveSeat.ChildRemoved:connect(function(child)
+	local function ChildRemoved(child)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			--Remove Flip Force
 			if driveSeat:FindFirstChild("Flip") ~= nil then
@@ -642,10 +620,32 @@ initCar.new = function(car: Model)
 					end
 				end
 			end
+
+			local p = Players:GetPlayerFromCharacter(child.Part1.Parent)
+
+			if child.Name == "SeatWeld" and child:IsA("Weld") then
+				for _, playerui in p.PlayerGui:GetChildren() do
+					if playerui.Name == "A-Chassis Interface" then
+						playerui:Destroy()
+					end
+				end
+			end
 		end
-	end)
+	end
+
+	connections[#connections + 1] = driveSeat.ChildAdded:connect(ChildAdded)
+	connections[#connections + 1] = driveSeat.ChildRemoved:connect(ChildRemoved)
 
 	--[END]]
+end
+
+initCar.init = function()
+	local plugins = ReplicatedStorage.CarAssets:FindFirstChild("Plugins")
+
+	for _, v in pairs(plugins:GetChildren()) do
+		v.Parent = ReplicatedStorage.CarAssets:FindFirstChild("A-Chassis Interface")
+	end
+	plugins:Destroy()
 end
 
 return initCar

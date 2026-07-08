@@ -84,17 +84,11 @@ function DriveModule.new()
 			connection:Disconnect()
 		end
 	end
-	local function removeGui(child)
+	local function removeGui()
 		_PBrake = true
 		task.wait()
+		print("no more gui")
 		clearConnections()
-		if child.Name == "SeatWeld" and child:IsA("Weld") then
-			for _, playerui in playerGui:GetChildren() do
-				if playerui.Name == "A-Chassis Interface" then
-					playerui:Destroy()
-				end
-			end
-		end
 	end
 
 	--[[Controls]]
@@ -182,6 +176,7 @@ function DriveModule.new()
 				or ((not _MSteer) and input.KeyCode == _CTRL["PBrake"])
 			then
 				if input.UserInputState == Enum.UserInputState.Begin then
+					print("change")
 					_PBrake = not _PBrake
 				elseif input.UserInputState == Enum.UserInputState.End then
 					if car.DriveSeat.Velocity.Magnitude > 5 then
@@ -931,7 +926,6 @@ function DriveModule.new()
 
 	local elapsed = 0
 
-	_PBrake = false
 	local function Runtime(dt)
 		--Steering
 		Steering()
@@ -977,8 +971,7 @@ function DriveModule.new()
 
 	--[[Run]]
 
-	--Runtime Loops
-
+	_PBrake = false
 	connections[#connections + 1] = car.DriveSeat.ChildRemoved:connect(removeGui)
 	connections[#connections + 1] = UserInputService.InputBegan:connect(DealWithInput)
 	connections[#connections + 1] = UserInputService.InputChanged:connect(DealWithInput)

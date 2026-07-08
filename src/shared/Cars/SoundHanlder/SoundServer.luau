@@ -4,8 +4,8 @@ local serverSounds = {}
 local Sounds = {}
 local F = {}
 
-F.newSound = function(name, par, id, pitch, volume, loop)
-	local sn = Sounds[name]
+F.newSound = function(player, name, par, id, pitch, volume, loop)
+	local sn = Sounds[player]
 	if sn then
 		sn.SoundId = id
 		sn.Pitch = pitch
@@ -20,11 +20,11 @@ F.newSound = function(name, par, id, pitch, volume, loop)
 	sn.Pitch = pitch
 	sn.Volume = volume
 	sn.Looped = loop
-	Sounds[name] = sn
+	Sounds[player] = sn
 end
 
-F.updateSound = function(sound, id, pit, vol)
-	local sn = Sounds[sound]
+F.updateSound = function(player, sound, id, pit, vol)
+	local sn = Sounds[player]
 	if sn then
 		if id ~= sn.SoundId then
 			sn.SoundId = id
@@ -38,33 +38,33 @@ F.updateSound = function(sound, id, pit, vol)
 	end
 end
 
-F.playSound = function(sound)
-	local sn = Sounds[sound]
+F.playSound = function(player)
+	local sn = Sounds[player]
 	if sn then
 		sn:Play()
 	end
 end
 
-F.pauseSound = function(sound)
-	local sn = Sounds[sound]
+F.pauseSound = function(player)
+	local sn = Sounds[player]
 	if sn then
 		sn:Pause()
 	end
 end
 
-F.stopSound = function(sound)
-	local sn = Sounds[sound]
+F.stopSound = function(player)
+	local sn = Sounds[player]
 	if sn then
 		sn:Stop()
 	end
 end
 
-F.removeSound = function(sound)
-	local sn = Sounds[sound]
+F.removeSound = function(player)
+	local sn = Sounds[player]
 	if sn then
 		sn:Stop()
 		sn:Destroy()
-		Sounds[sound] = nil
+		Sounds[player] = nil
 	end
 end
 
@@ -78,10 +78,10 @@ function serverSounds.new(car)
 end
 
 function serverSounds.init()
-	ReplicatedStorage.Remotes.CarSounds.OnServerEvent:Connect(function(_, Fnc, ...)
+	ReplicatedStorage.Remotes.CarSounds.OnServerEvent:Connect(function(player, Fnc, ...)
 		local func = F[Fnc]
 		if func then
-			func(...)
+			func(player, ...)
 		end
 	end)
 end

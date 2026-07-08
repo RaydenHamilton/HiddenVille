@@ -17,7 +17,6 @@ function clientInit.init()
 
 	Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(a0: Instance)
 		if a0.Name == "A-Chassis Interface" then
-			print("ui")
 			GaugesClient.new()
 			SoundClient.new()
 			CameraClient.new()

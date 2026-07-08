@@ -179,6 +179,7 @@ function GaugesModule.new()
 		elseif gearText == -1 then
 			gearText = "Gear: R"
 		end
+		print(gearText)
 		frame.Gear.Text = gearText
 	end
 
@@ -293,6 +294,7 @@ function GaugesModule.new()
 	end
 
 	local function PBrake()
+
 		frame.PBrake.Visible = gui.Values.PBrake.Value
 	end
 
@@ -372,6 +374,7 @@ function GaugesModule.new()
 	task.wait(0.1)
 	Gear()
 	PBrake()
+	print("start")
 end
 
 return GaugesModule

@@ -31,7 +31,12 @@ function carRagdall.new(carModel)
 	local function touched(basePart)
 		local character = basePart:FindFirstAncestorOfClass("Model")
 		local player = Players:GetPlayerFromCharacter(character)
-		if front.AssemblyLinearVelocity.Magnitude < 20 or not player or table.find(hitplayers, player) then
+		if
+			front.AssemblyLinearVelocity.Magnitude < 20
+			or not player
+			or table.find(hitplayers, player)
+			or character:WaitForChild("Humanoid").Sit
+		then
 			return
 		end
 

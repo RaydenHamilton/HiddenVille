@@ -22,7 +22,7 @@ local function createCar(CarModel: Model)
 	WeldServer.new(CarModel)
 	LightsServer.new(CarModel)
 	LightEnablerServer.new(CarModel)
-	task.wait(5)
+	task.wait(1)
 
 	for _, obj in CarModel:GetDescendants() do
 		if

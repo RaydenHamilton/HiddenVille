@@ -13,13 +13,10 @@ function SimulteBulletModule.init()
 	local PlayAudio = Remotes.PlayAudio
 	local VisualizeHitEffect = Remotes.VisualizeHitEffect
 	local VisualizeBullet = Remotes.VisualizeBullet
-	local ShatterGlass = Remotes.ShatterGlass
 	local InflictTarget = Remotes.InflictTarget
-	local RegenTime = 180
 	_G.TempBannedPlayers = {}
 
 	local KickPlayer = true
-	local PhysicEffect = true
 
 	-- Blood splatter related variables
 	local splatids = { "" } -- Update this list with valid decal IDs
@@ -419,6 +416,7 @@ function SimulteBulletModule.init()
 				end
 
 				creator.Value = Player
+
 				if TargetHumanoid.Health > 0 then
 					if ClientModule.CriticalDamageEnabled then
 						local CriticalChanceRandom = Random.new():NextInteger(0, 100)
@@ -579,8 +577,17 @@ function SimulteBulletModule.init()
 			warn("bad_tool")
 			return false
 		end
+
 		if not Player.Character or Tool.Parent ~= Player.Character then
 			warn("tool_not_equipped")
+			return false
+		end
+
+		if
+			not Player.character:FindFirstChild("HumanoidRootPart")
+			or Player.character.HumanoidRootPart:FindFirstChild("Shield")
+		then
+			warn("in_safezone")
 			return false
 		end
 
@@ -605,6 +612,14 @@ function SimulteBulletModule.init()
 		if typeof(ClientHit) ~= "Instance" or not ClientHit:IsA("BasePart") then
 			warn("bad_hit")
 			return false
+		end
+
+		if _TargetTorso then
+			local root = _TargetTorso.Parent:FindFirstChild("HumanoidRootPart")
+			if root and root:FindFirstChild("Shield") then
+				warn("player_in_safezone")
+				return false
+			end
 		end
 
 		local claimedPos = ClientHit.Position

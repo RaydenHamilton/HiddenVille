@@ -8,12 +8,6 @@ local soundClient = {}
 
 local connections: { RBXScriptConnection } = {}
 
-local function clearConnections()
-	for _, connection in connections do
-		connection:Disconnect()
-	end
-end
-
 function soundClient.new()
 	local gui = player.PlayerGui:WaitForChild("A-Chassis Interface") :: PlayerGui
 
@@ -37,6 +31,13 @@ function soundClient.new()
 
 	local rev = gui:FindFirstChild("Rev")
 	local seat = car:FindFirstChild("DriveSeat")
+
+	local function clearConnections()
+		handler:FireServer("removeSound")
+		for _, connection in connections do
+			connection:Disconnect()
+		end
+	end
 
 	if not rev or not seat then
 		warn("no rev or no seat")
@@ -63,6 +64,7 @@ function soundClient.new()
 	for _, child in ipairs(seat:GetChildren()) do
 		if gui:FindFirstChild(child.Name) and child:IsA("Sound") then
 			child:Stop()
+			print(child.Name)
 			child:Destroy()
 		end
 	end
@@ -88,7 +90,7 @@ function soundClient.new()
 
 	-- /// MAIN LOOP (smooth, lag-free)
 
-	local FRAME_TIME = 1 / 60
+	local FRAME_TIME = 1 / 30
 	local nextFireTime = 0
 
 	connections[#connections + 1] = RunService.Heartbeat:Connect(function()
