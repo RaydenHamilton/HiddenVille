@@ -11,9 +11,9 @@ local clientInit = {}
 
 function clientInit.init()
 	Workspace.CivCars.ChildAdded:Connect(function(CarModel: Model)
-		local seat = CarModel:WaitForChild("DriveSeat") :: Part
-		task.wait(5)
-		seat.Anchored = true
+		-- local seat = CarModel:WaitForChild("DriveSeat") :: Part
+		-- task.wait(5)
+		-- seat.Anchored = true
 	end)
 
 	Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(a0: Instance)

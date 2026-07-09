@@ -60,6 +60,7 @@ function ClientGunHandler.new(tool: Tool)
 	self.MarkerEvent = self.Tool:WaitForChild("MarkerEvent")
 	self.ChangeMagAndAmmo = self.Tool:WaitForChild("ChangeMagAndAmmo")
 	self.FlingDeadBody = self.Tool:WaitForChild("FlingDeadBody")
+	self.lastRed = tick()
 
 	--// Assets
 	self.BindToStepName = "UpdateGun_" .. HttpService:GenerateGUID()
@@ -335,13 +336,33 @@ function ClientGun:LoadAnims()
 	self.CurrentShotgunPumpinAnimationSpeed = self.CurrentModule.ShotgunPumpinSpeed
 end
 
-function ClientGun:SetCrosshairColor(color)
+function ClientGun:SetCrosshairColor(color: Color3)
 	if self.GunGUI and self.GunGUI:FindFirstChild("Crosshair") then
 		local CrossFrame = self.GunGUI.Crosshair:FindFirstChild("Main")
-		if CrossFrame then
+
+		if CrossFrame and self.lastColor ~= color then
 			local Center = CrossFrame:FindFirstChild("Center") :: ImageButton
+
 			if Center then
-				Center.ImageColor3 = color
+				if tick() - self.lastRed < 0.25 and color ~= Color3.new(1, 0, 0) then
+					return
+				end
+
+				self.lastRed = tick()
+
+				self.lastColor = color
+				local tweenInfo = TweenInfo.new(
+					0.15, -- Duration (seconds)
+					Enum.EasingStyle.Sine, -- Easing style
+					Enum.EasingDirection.Out -- Easing direction
+				)
+
+				local goal = {
+					ImageColor3 = color,
+				}
+
+				self.tween = TweenService:Create(Center, tweenInfo, goal)
+				self.tween:Play()
 			end
 		end
 	end
@@ -385,7 +406,10 @@ function ClientGun:IsAimingAtPlayerFromGunToMouse()
 	local targetPosition = result.Position
 	local Direction = (targetPosition - muzzlePosition).Unit
 	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character }
+	raycastParams.FilterDescendantsInstances = { self.Tool, self.Character, Workspace.Camera }
+	for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
+		table.insert(raycastParams.FilterDescendantsInstances, v)
+	end
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	local raycastResult = Workspace:Raycast(self:getMuzzleOrigin(), Direction * 1000, raycastParams)
 	if raycastResult and raycastResult.Instance then
@@ -411,7 +435,7 @@ function ClientGun:IsAimingAtPlayer()
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
-	for i, v in pairs(CollectionService:GetTagged("Glass")) do
+	for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
 		table.insert(raycastParams.FilterDescendantsInstances, v)
 	end
 
@@ -491,10 +515,14 @@ function ClientGun:CheckAndFlingDeadBody(fireDirection)
 	local InputRay = self.Camera:ScreenPointToRay(crosshairPos.X, crosshairPos.Y)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+
+	for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
+		table.insert(raycastParams.FilterDescendantsInstances, v)
+	end
+
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local raycastResult = Workspace:Raycast(InputRay.Origin, InputRay.Direction * 1000, raycastParams)
-
 
 	if raycastResult and raycastResult.Instance then
 		local hitPart = raycastResult.Instance
@@ -547,13 +575,13 @@ function ClientGun:PopulateHumanoids(mdl)
 end
 
 function ClientGun:CastRay(StartPos, Direction, Length)
-	local ignore = { self.Camera, self.Tool, self.Character }
-
-	local params = RaycastParams.new()
-	params.FilterDescendantsInstances = ignore
-	params.FilterType = Enum.RaycastFilterType.Exclude
-
-	local result = Workspace:Raycast(StartPos, Direction * Length, params)
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = { self.Camera, self.Tool, self.Character }
+	for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
+		table.insert(raycastParams.FilterDescendantsInstances, v)
+	end
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	local result = Workspace:Raycast(StartPos, Direction * Length, raycastParams)
 
 	if result and result.Instance then
 		local FirePointObject = self.HandleToFire:FindFirstChild("GunFirePoint" .. self.CurrentFireMode)
@@ -563,8 +591,11 @@ function ClientGun:CastRay(StartPos, Direction, Length)
 			local TipDir = TipCFrame.LookVector
 			local AmountToCheatBack = math.abs((self.HumanoidRootPart.Position - TipPos):Dot(TipDir)) + 1
 
-			local gunResult =
-				Workspace:Raycast(TipPos - TipDir.Unit * AmountToCheatBack, TipDir.Unit * AmountToCheatBack, params)
+			local gunResult = Workspace:Raycast(
+				TipPos - TipDir.Unit * AmountToCheatBack,
+				TipDir.Unit * AmountToCheatBack,
+				raycastParams
+			)
 
 			if gunResult and gunResult.Instance and math.abs((TipPos - gunResult.Position).Magnitude) > 0 then
 				return self:CastRay(

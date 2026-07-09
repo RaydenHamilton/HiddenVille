@@ -1,6 +1,7 @@
 local SimulteBulletModule = {}
 
 function SimulteBulletModule.init()
+	local CollectionService = game:GetService("CollectionService")
 	local Debris = game:GetService("Debris")
 	local Workspace = game:GetService("Workspace")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,7 +34,6 @@ function SimulteBulletModule.init()
 
 		local seat = humanoid.SeatPart
 		if not seat or not (seat:IsA("Seat") or seat:IsA("VehicleSeat")) then
-			warn("seat")
 			return nil
 		end
 
@@ -235,7 +235,6 @@ function SimulteBulletModule.init()
 
 		local TweenService = game:GetService("TweenService")
 
-		local BloodStains = game.ReplicatedStorage.BloodStains
 		local validBodyParts = {
 			"Head",
 			"UpperTorso",
@@ -254,6 +253,7 @@ function SimulteBulletModule.init()
 			"RightFoot",
 		}
 
+		print("hit")
 		if Hit then
 			if not table.find(validBodyParts, Hit.Name) then
 				local Attachment = Hit:FindFirstAncestorOfClass("Attachment")
@@ -265,9 +265,10 @@ function SimulteBulletModule.init()
 			if table.find(validBodyParts, Hit.Name) then
 				local HighLighter = Instance.new("Highlight")
 				HighLighter.Parent = Hit
-				HighLighter.FillTransparency = 0.5 -- Make it fully visible
-				HighLighter.OutlineTransparency = 1 -- Make the outline fully visible
-				HighLighter.DepthMode = "Occluded" -- Make the outline fully visible
+				HighLighter.FillColor = Color3.new(1, 0, 0)
+				HighLighter.FillTransparency = 0.4 -- Make it fully visible
+				HighLighter.OutlineTransparency = 0.6 -- Make the outline fully visible
+				HighLighter.DepthMode = "AlwaysOnTop" -- Make the outline fully visible
 
 				-- Create tween info
 				local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
@@ -286,7 +287,6 @@ function SimulteBulletModule.init()
 					HighLighter:Destroy()
 				end)
 			end
-
 
 			if TargetHumanoid.Health <= 0 then
 				-- Check if the hit part is a valid body part
@@ -490,6 +490,7 @@ function SimulteBulletModule.init()
 
 	InflictTarget.OnServerInvoke = function(Player, Type, ...)
 		local Tool, ClientModule, _TargetHumanoid, _TargetTorso, ClientHit, Misc, _HitDist = ...
+		print("fire")
 
 		-- Basic tool sanity (prevents invoking with a random Tool instance)
 		if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then
@@ -548,26 +549,29 @@ function SimulteBulletModule.init()
 			return false, "out_of_range"
 		end
 
-		local params = RaycastParams.new()
-		params.FilterType = Enum.RaycastFilterType.Exclude
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
-		local ignore = { Player.Character, Tool }
+		raycastParams.FilterDescendantsInstances = { Player.Character, Tool }
 
 		for _, character: Player in Workspace:GetChildren() do
 			if character:FindFirstChild("Humanoid") then
-				table.insert(ignore, character:FindFirstChild("HumanoidRootPart"))
+				table.insert(raycastParams.FilterDescendantsInstances, character:FindFirstChild("HumanoidRootPart"))
 			end
+		end
+
+		for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
+			table.insert(raycastParams.FilterDescendantsInstances, v)
 		end
 
 		local seatedCar = getSeatedCarModel(Player.Character)
 		if seatedCar then
-			table.insert(ignore, seatedCar)
+			table.insert(raycastParams.FilterDescendantsInstances, seatedCar)
 		end
 
-		params.FilterDescendantsInstances = ignore
-		params.IgnoreWater = true
+		raycastParams.IgnoreWater = true
 
-		local result = Workspace:Raycast(origin, delta, params)
+		local result = Workspace:Raycast(origin, delta, raycastParams)
 
 		if not result or not result.Instance then
 			warn("no_raycast_hit")
@@ -582,8 +586,8 @@ function SimulteBulletModule.init()
 		end
 
 		local targetHumanoid = targetModel:FindFirstChildOfClass("Humanoid")
-		if not targetHumanoid or targetHumanoid.Health <= 0 then
-			warn("not_humanoid")
+		if not targetHumanoid then
+			warn(hitPart.Name, "not_humanoid")
 			return false
 		end
 
