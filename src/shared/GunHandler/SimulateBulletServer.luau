@@ -235,6 +235,7 @@ function SimulteBulletModule.init()
 
 		local TweenService = game:GetService("TweenService")
 
+		local BloodStains = game.ReplicatedStorage.BloodStains
 		local validBodyParts = {
 			"Head",
 			"UpperTorso",
@@ -285,6 +286,8 @@ function SimulteBulletModule.init()
 					HighLighter:Destroy()
 				end)
 			end
+
+
 			if TargetHumanoid.Health <= 0 then
 				-- Check if the hit part is a valid body part
 				if table.find(validBodyParts, Hit.Name) then
@@ -298,7 +301,6 @@ function SimulteBulletModule.init()
 					local currentCount = Hit:GetAttribute("DecalCount")
 					-- Only proceed if the decal count is less than 3
 					if currentCount < 1 then
-
 						-- Apply velocity to the hit body part based on bullet impact direction
 						local bodyVelocity = Instance.new("BodyVelocity")
 						bodyVelocity.Velocity = Vector3.new(0, 5, 0)

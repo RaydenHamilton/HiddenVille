@@ -2,6 +2,7 @@
 local ProjectileHandler = {}
 
 local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +12,7 @@ local Player = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local Modules = ReplicatedStorage:WaitForChild("Modules")
+local Events = ReplicatedStorage:WaitForChild("Events")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local ParticleFramework = require(Modules.ParticleFramework)
@@ -36,7 +38,7 @@ Beam.TextureSpeed = 0
 Beam.LightEmission = 0
 Beam.LightInfluence = 1
 Beam.Transparency = NumberSequence.new(0)
-type IgnoreList = { Instance }
+type IgnoreList = {Instance}
 
 local function GetSeatedVehicleModel(character: Model?): Model?
 	if not character then
@@ -120,50 +122,27 @@ local function GetMaterialFolder(rootFolder: Instance?, materialEnum: any)
 	return folder or custom
 end
 
-local function FadeAndDestroyBeamDecal(
-	beamClone: Beam?,
-	a0: Attachment?,
-	a1: Attachment?,
-	hole: Attachment?,
-	visibleTime: number,
-	fadeTime: number
-)
+local function FadeAndDestroyBeamDecal(beamClone: Beam?, a0: Attachment?, a1: Attachment?, hole: Attachment?, visibleTime: number, fadeTime: number)
 	Thread:Delay(visibleTime, function()
 		if not beamClone or not hole then
-			if a0 then
-				a0:Destroy()
-			end
-			if a1 then
-				a1:Destroy()
-			end
-			if beamClone then
-				beamClone:Destroy()
-			end
-			if hole then
-				hole:Destroy()
-			end
+			if a0 then a0:Destroy() end
+			if a1 then a1:Destroy() end
+			if beamClone then beamClone:Destroy() end
+			if hole then hole:Destroy() end
 			return
 		end
 
 		if visibleTime <= 0 then
-			if a0 then
-				a0:Destroy()
-			end
-			if a1 then
-				a1:Destroy()
-			end
+			if a0 then a0:Destroy() end
+			if a1 then a1:Destroy() end
 			beamClone:Destroy()
 			hole:Destroy()
 			return
 		end
 
 		if fadeTime <= 0 then
-			if a0 then
-				a0:Destroy()
-			end
-			if a1 then
-				a1:Destroy()
-			end
+			if a0 then a0:Destroy() end
+			if a1 then a1:Destroy() end
 			beamClone:Destroy()
 			hole:Destroy()
 			return
@@ -181,18 +160,10 @@ local function FadeAndDestroyBeamDecal(
 			Thread:Wait()
 		end
 
-		if a0 then
-			a0:Destroy()
-		end
-		if a1 then
-			a1:Destroy()
-		end
-		if beamClone then
-			beamClone:Destroy()
-		end
-		if hole then
-			hole:Destroy()
-		end
+		if a0 then a0:Destroy() end
+		if a1 then a1:Destroy() end
+		if beamClone then beamClone:Destroy() end
+		if hole then hole:Destroy() end
 	end)
 end
 
@@ -217,56 +188,16 @@ local function MakeImpactFX(Hit, Position, Normal, Material, ParentToPart, Clien
 	local SurfaceCF = CFrame.new(Position, Position + Normal)
 
 	local HitEffectEnabled = ClientModule.HitEffectEnabled
-	local HitSoundIDs = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitSoundIDs,
-		ClientModule.HitSoundIDs
-	)
-	local HitSoundPitchMin = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitSoundPitchMin,
-		ClientModule.HitSoundPitchMin
-	)
-	local HitSoundPitchMax = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitSoundPitchMax,
-		ClientModule.HitSoundPitchMax
-	)
-	local HitSoundVolume = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitSoundVolume,
-		ClientModule.HitSoundVolume
-	)
-	local CustomHitEffect = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.CustomHitEffect,
-		ClientModule.CustomHitEffect
-	)
+	local HitSoundIDs = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitSoundIDs, ClientModule.HitSoundIDs)
+	local HitSoundPitchMin = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitSoundPitchMin, ClientModule.HitSoundPitchMin)
+	local HitSoundPitchMax = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitSoundPitchMax, ClientModule.HitSoundPitchMax)
+	local HitSoundVolume = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitSoundVolume, ClientModule.HitSoundVolume)
+	local CustomHitEffect = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.CustomHitEffect, ClientModule.CustomHitEffect)
 
 	local BulletHoleEnabled = ClientModule.BulletHoleEnabled
-	local BulletHoleSize = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.BulletHoleSize,
-		ClientModule.BulletHoleSize
-	)
-	local BulletHoleTexture = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.BulletHoleTexture,
-		ClientModule.BulletHoleTexture
-	)
-	local PartColor = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.PartColor,
-		ClientModule.PartColor
-	)
+	local BulletHoleSize = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletHoleSize, ClientModule.BulletHoleSize)
+	local BulletHoleTexture = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletHoleTexture, ClientModule.BulletHoleTexture)
+	local PartColor = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.PartColor, ClientModule.PartColor)
 	local BulletHoleVisibleTime = ClientModule.BulletHoleVisibleTime
 	local BulletHoleFadeTime = ClientModule.BulletHoleFadeTime
 
@@ -315,12 +246,7 @@ local function MakeImpactFX(Hit, Position, Normal, Material, ParentToPart, Clien
 				if track and track:IsA("Sound") then
 					soundObj = track:Clone()
 					local pitch = track:FindFirstChild("Pitch")
-					if
-						pitch
-						and pitch:IsA("Folder")
-						and pitch:FindFirstChild("Min")
-						and pitch:FindFirstChild("Max")
-					then
+					if pitch and pitch:IsA("Folder") and pitch:FindFirstChild("Min") and pitch:FindFirstChild("Max") then
 						soundObj.PlaybackSpeed = Random.new():NextNumber(pitch.Min.Value, pitch.Max.Value)
 					else
 						soundObj.PlaybackSpeed = Random.new():NextNumber(HitSoundPitchMin, HitSoundPitchMax)
@@ -403,13 +329,8 @@ local function MakeImpactFX(Hit, Position, Normal, Material, ParentToPart, Clien
 						if decal and decal:IsA("ValueBase") then
 							beamClone.Texture = "rbxassetid://" .. tostring(decal.Value)
 							local decalPartColorFlag = decal:FindFirstChild("PartColor")
-							if
-								decalPartColorFlag
-								and decalPartColorFlag:IsA("BoolValue")
-								and decalPartColorFlag.Value
-							then
-								local hitPartColor = (Hit and Hit:IsA("BasePart")) and Hit.Color
-									or Color3.fromRGB(255, 255, 255)
+							if decalPartColorFlag and decalPartColorFlag:IsA("BoolValue") and decalPartColorFlag.Value then
+								local hitPartColor = (Hit and Hit:IsA("BasePart")) and Hit.Color or Color3.fromRGB(255, 255, 255)
 								if Hit and Hit:IsA("Terrain") then
 									hitPartColor = Workspace.Terrain:GetMaterialColor(Material or Enum.Material.Sand)
 								end
@@ -426,8 +347,7 @@ local function MakeImpactFX(Hit, Position, Normal, Material, ParentToPart, Clien
 						beamClone.Texture = "rbxassetid://" .. tostring(chosenTex)
 					end
 					if PartColor then
-						local hitPartColor = (Hit and Hit:IsA("BasePart")) and Hit.Color
-							or Color3.fromRGB(255, 255, 255)
+						local hitPartColor = (Hit and Hit:IsA("BasePart")) and Hit.Color or Color3.fromRGB(255, 255, 255)
 						if Hit and Hit:IsA("Terrain") then
 							hitPartColor = Workspace.Terrain:GetMaterialColor(Material or Enum.Material.Sand)
 						end
@@ -444,9 +364,7 @@ local function MakeImpactFX(Hit, Position, Normal, Material, ParentToPart, Clien
 				a0.Parent = Hit
 				a1.Parent = Hit
 				a0.WorldCFrame = hole.WorldCFrame * CFrame.new(scale / 2, -0.01, 0) * CFrame.Angles(math.rad(90), 0, 0)
-				a1.WorldCFrame = hole.WorldCFrame
-					* CFrame.new(-scale / 2, -0.01, 0)
-					* CFrame.Angles(math.rad(90), math.rad(180), 0)
+				a1.WorldCFrame = hole.WorldCFrame * CFrame.new(-scale / 2, -0.01, 0) * CFrame.Angles(math.rad(90), math.rad(180), 0)
 
 				beamClone.Parent = Workspace.Terrain
 				FadeAndDestroyBeamDecal(beamClone, a0, a1, hole, BulletHoleVisibleTime, BulletHoleFadeTime)
@@ -470,56 +388,16 @@ local function MakeBloodFX(Hit, Position, Normal, Material, ParentToPart, Client
 	local SurfaceCF = CFrame.new(Position, Position + Normal)
 
 	local BloodEnabled = ClientModule.BloodEnabled
-	local HitCharSndIDs = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitCharSndIDs,
-		ClientModule.HitCharSndIDs
-	)
-	local HitCharSndPitchMin = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitCharSndPitchMin,
-		ClientModule.HitCharSndPitchMin
-	)
-	local HitCharSndPitchMax = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitCharSndPitchMax,
-		ClientModule.HitCharSndPitchMax
-	)
-	local HitCharSndVolume = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.HitCharSndVolume,
-		ClientModule.HitCharSndVolume
-	)
+	local HitCharSndIDs = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitCharSndIDs, ClientModule.HitCharSndIDs)
+	local HitCharSndPitchMin = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitCharSndPitchMin, ClientModule.HitCharSndPitchMin)
+	local HitCharSndPitchMax = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitCharSndPitchMax, ClientModule.HitCharSndPitchMax)
+	local HitCharSndVolume = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HitCharSndVolume, ClientModule.HitCharSndVolume)
 
 	local BloodWoundEnabled = ClientModule.BloodWoundEnabled
-	local BloodWoundTexture = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.BloodWoundTexture,
-		ClientModule.BloodWoundTexture
-	)
-	local BloodWoundSize = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.BloodWoundSize,
-		ClientModule.BloodWoundSize
-	)
-	local BloodWoundTextureColor = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.BloodWoundTextureColor,
-		ClientModule.BloodWoundTextureColor
-	)
-	local BloodWoundPartColor = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.BloodWoundPartColor,
-		ClientModule.BloodWoundPartColor
-	)
+	local BloodWoundTexture = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BloodWoundTexture, ClientModule.BloodWoundTexture)
+	local BloodWoundSize = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BloodWoundSize, ClientModule.BloodWoundSize)
+	local BloodWoundTextureColor = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BloodWoundTextureColor, ClientModule.BloodWoundTextureColor)
+	local BloodWoundPartColor = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BloodWoundPartColor, ClientModule.BloodWoundPartColor)
 	local BloodWoundVisibleTime = ClientModule.BloodWoundVisibleTime
 	local BloodWoundFadeTime = ClientModule.BloodWoundFadeTime
 
@@ -619,12 +497,8 @@ local function MakeBloodFX(Hit, Position, Normal, Material, ParentToPart, Client
 
 			a0.Parent = Hit
 			a1.Parent = Hit
-			a0.WorldCFrame = hole.WorldCFrame
-				* CFrame.new(BloodWoundSize / 2, -0.01, 0)
-				* CFrame.Angles(math.rad(90), 0, 0)
-			a1.WorldCFrame = hole.WorldCFrame
-				* CFrame.new(-BloodWoundSize / 2, -0.01, 0)
-				* CFrame.Angles(math.rad(90), math.rad(180), 0)
+			a0.WorldCFrame = hole.WorldCFrame * CFrame.new(BloodWoundSize / 2, -0.01, 0) * CFrame.Angles(math.rad(90), 0, 0)
+			a1.WorldCFrame = hole.WorldCFrame * CFrame.new(-BloodWoundSize / 2, -0.01, 0) * CFrame.Angles(math.rad(90), math.rad(180), 0)
 
 			beamClone.Parent = Workspace.Terrain
 			FadeAndDestroyBeamDecal(beamClone, a0, a1, hole, BloodWoundVisibleTime, BloodWoundFadeTime)
@@ -653,29 +527,25 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 
 	local showEffects = ShouldShowEffects(Position)
 
-	if
-		not AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Miscs.ChargeLevel,
-			ClientModule.ChargeAlterTable.ExplosiveEnabled,
-			ClientModule.ExplosiveEnabled
-		)
-	then
+	if not AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosiveEnabled, ClientModule.ExplosiveEnabled) then
 		local parentModel = Hit:FindFirstAncestorOfClass("Model")
 		if parentModel and parentModel.Name == "Windows" then
+			-- FIX: your raycastParams was unused; also use unit direction to avoid over-scaling.
+			local raycastParams = RaycastParams.new()
+			raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+			local blacklist: {Instance} = { Hit }
+			if Tool then table.insert(blacklist, Tool) end
+			if Tool and Tool.Parent then table.insert(blacklist, Tool.Parent) end
+
+			local myVehicle = GetSeatedVehicleModel((Tool and Tool.Parent) :: any)
+			if myVehicle then
+				table.insert(blacklist, myVehicle)
+			end
+
+			raycastParams.FilterDescendantsInstances = blacklist
+
 			if nextResult then
-				OnRayHit(
-					nextOrigin,
-					Direction,
-					nextResult.Instance,
-					nextResult.Position,
-					nextResult.Normal,
-					nextResult.Material,
-					Tool,
-					ClientModule,
-					Miscs,
-					Replicate
-				)
+				OnRayHit(nextOrigin, Direction, nextResult.Instance, nextResult.Position, nextResult.Normal, nextResult.Material, Tool, ClientModule, Miscs, Replicate)
 			end
 			return
 		end
@@ -685,13 +555,12 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 			local body = Hit:FindFirstAncestor("Body")
 			if body then
 				local car = body:FindFirstAncestorWhichIsA("Model")
-
 				local myVehicle = GetSeatedVehicleModel((Tool and Tool.Parent) :: any)
 				if myVehicle and car and car == myVehicle then
 					return
 				end
 				local carHealth = car and car:FindFirstChild("Health")
-				local damageRemote = ReplicatedStorage.Remotes:FindFirstChild("CarDamageRemote")
+				local damageRemote = ReplicatedStorage:FindFirstChild("CarDamageRemote")
 				if car and carHealth and damageRemote and damageRemote:IsA("RemoteEvent") then
 					if Tool and Tool:IsA("Tool") then
 						local settingsModule = Tool:FindFirstChild("Setting") and Tool.Setting:FindFirstChild("1")
@@ -706,24 +575,25 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 			end
 		end
 
+		if Hit.Name == "_glass" then
+			if Replicate then
+				ShatterGlass:FireServer(Hit, Position, Direction)
+			end
+			return
+		end
+
 		local distance = (Position - Origin).Magnitude
 		local target = Hit:FindFirstAncestorOfClass("Model")
 		local targetHumanoid = target and target:FindFirstChildOfClass("Humanoid")
 		local targetTorso = target and (target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head"))
 
 		if targetHumanoid and targetTorso then
+			if showEffects then
+				MakeBloodFX(Hit, Position, Normal, Material, true, ClientModule, Miscs, Replicate)
+			end
 			if Replicate then
 				Thread:Spawn(function()
-					InflictTarget:InvokeServer(
-						"Gun",
-						Tool,
-						ClientModule,
-						targetHumanoid,
-						targetTorso,
-						Hit,
-						Miscs,
-						distance
-					)
+					InflictTarget:InvokeServer("Gun", Tool, ClientModule, targetHumanoid, targetTorso, Hit, Miscs, distance)
 				end)
 
 				if Tool and Tool:FindFirstChild("GunClient") and Tool.GunClient:FindFirstChild("MarkerEvent") then
@@ -734,10 +604,7 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 				if Tool and Tool:FindFirstChild("GunClient") and Tool.GunClient:FindFirstChild("VestEvent") then
 					local vestHealth = Hit.Parent and Hit.Parent:FindFirstChild("VestHealth")
 					if vestHealth and vestHealth.Value >= 1 then
-						Tool.GunClient.VestEvent:Fire(
-							ClientModule,
-							Hit.Name == "UpperTorso" and ClientModule.HeadshotEnabled
-						)
+						Tool.GunClient.VestEvent:Fire(ClientModule, Hit.Name == "UpperTorso" and ClientModule.HeadshotEnabled)
 					end
 					local targetVest = targetHumanoid.Parent and targetHumanoid.Parent:FindFirstChild("VestHealth")
 					if targetVest and targetVest.Value == 0 then
@@ -748,8 +615,7 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 						if targetHumanoid.Parent:FindFirstChild("_Vest") then
 							local part = targetHumanoid.Parent:FindFirstChild("UpperTorso")
 							if part then
-								local vestRemote = ReplicatedStorage:FindFirstChild("Remotes")
-									and ReplicatedStorage.Remotes:FindFirstChild("Vest")
+								local vestRemote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Vest")
 								if vestRemote and vestRemote:IsA("RemoteEvent") then
 									vestRemote:FireServer(part)
 								end
@@ -758,6 +624,10 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 					end
 				end
 			end
+		else
+			if showEffects then
+				MakeImpactFX(Hit, Position, Normal, Material, true, ClientModule, Miscs, Replicate)
+			end
 		end
 
 		return
@@ -765,12 +635,7 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 
 	-- Explosive
 	if ClientModule.ExplosionSoundEnabled then
-		local soundTable = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Miscs.ChargeLevel,
-			ClientModule.ChargeAlterTable.ExplosionSoundIDs,
-			ClientModule.ExplosionSoundIDs
-		)
+		local soundTable = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionSoundIDs, ClientModule.ExplosionSoundIDs)
 		local chosen = SafeRandomFromArray(soundTable)
 		if chosen then
 			local att = Instance.new("Attachment")
@@ -780,25 +645,10 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 			local sound = Instance.new("Sound")
 			sound.SoundId = "rbxassetid://" .. tostring(chosen)
 			sound.PlaybackSpeed = Random.new():NextNumber(
-				AddressTableValue(
-					ClientModule.ChargedShotAdvanceEnabled,
-					Miscs.ChargeLevel,
-					ClientModule.ChargeAlterTable.ExplosionSoundPitchMin,
-					ClientModule.ExplosionSoundPitchMin
-				),
-				AddressTableValue(
-					ClientModule.ChargedShotAdvanceEnabled,
-					Miscs.ChargeLevel,
-					ClientModule.ChargeAlterTable.ExplosionSoundPitchMax,
-					ClientModule.ExplosionSoundPitchMax
-				)
+				AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionSoundPitchMin, ClientModule.ExplosionSoundPitchMin),
+				AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionSoundPitchMax, ClientModule.ExplosionSoundPitchMax)
 			)
-			sound.Volume = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.ExplosionSoundVolume,
-				ClientModule.ExplosionSoundVolume
-			)
+			sound.Volume = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionSoundVolume, ClientModule.ExplosionSoundVolume)
 			sound.Parent = att
 			sound:Play()
 			Debris:AddItem(att, 10)
@@ -806,12 +656,7 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 	end
 
 	local explosion = Instance.new("Explosion")
-	explosion.BlastRadius = AddressTableValue(
-		ClientModule.ChargedShotAdvanceEnabled,
-		Miscs.ChargeLevel,
-		ClientModule.ChargeAlterTable.ExplosionRadius,
-		ClientModule.ExplosionRadius
-	)
+	explosion.BlastRadius = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionRadius, ClientModule.ExplosionRadius)
 	explosion.BlastPressure = 0
 	explosion.ExplosionType = Enum.ExplosionType.NoCraters
 	explosion.Position = Position
@@ -863,23 +708,11 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 
 			if targetHumanoid and targetTorso and not hitHumanoids[targetHumanoid] then
 				if ClientModule.ExplosionKnockback then
-					local multipler = AddressTableValue(
-						ClientModule.ChargedShotAdvanceEnabled,
-						Miscs.ChargeLevel,
-						ClientModule.ChargeAlterTable.ExplosionKnockbackMultiplierOnTarget,
-						ClientModule.ExplosionKnockbackMultiplierOnTarget
-					)
+					local multipler = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionKnockbackMultiplierOnTarget, ClientModule.ExplosionKnockbackMultiplierOnTarget)
 					local velocityMod = (targetTorso.Position - explosion.Position).Unit
-						* AddressTableValue(
-							ClientModule.ChargedShotAdvanceEnabled,
-							Miscs.ChargeLevel,
-							ClientModule.ChargeAlterTable.ExplosionKnockbackPower,
-							ClientModule.ExplosionKnockbackPower
-						)
+						* AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionKnockbackPower, ClientModule.ExplosionKnockbackPower)
 
-					local airVelocity = targetTorso.Velocity
-						- Vector3.new(0, targetTorso.Velocity.Y, 0)
-						+ Vector3.new(velocityMod.X, 0, velocityMod.Z)
+					local airVelocity = targetTorso.Velocity - Vector3.new(0, targetTorso.Velocity.Y, 0) + Vector3.new(velocityMod.X, 0, velocityMod.Z)
 
 					if DamageModule.CanDamage(target, Tool.Parent, ClientModule.FriendlyFire) then
 						local torsoFly = Instance.new("BodyVelocity")
@@ -890,12 +723,7 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 						Debris:AddItem(torsoFly, 0.25)
 					else
 						if targetHumanoid.Parent and targetHumanoid.Parent.Name == Player.Name then
-							multipler = AddressTableValue(
-								ClientModule.ChargedShotAdvanceEnabled,
-								Miscs.ChargeLevel,
-								ClientModule.ChargeAlterTable.ExplosionKnockbackMultiplierOnPlayer,
-								ClientModule.ExplosionKnockbackMultiplierOnPlayer
-							)
+							multipler = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosionKnockbackMultiplierOnPlayer, ClientModule.ExplosionKnockbackMultiplierOnPlayer)
 							local torsoFly = Instance.new("BodyVelocity")
 							torsoFly.MaxForce = Vector3.new(math.huge, 0, math.huge)
 							torsoFly.Velocity = airVelocity
@@ -907,16 +735,7 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 				end
 
 				Thread:Spawn(function()
-					InflictTarget:InvokeServer(
-						"Gun",
-						Tool,
-						ClientModule,
-						targetHumanoid,
-						targetTorso,
-						Hit,
-						Miscs,
-						hitDist
-					)
+					InflictTarget:InvokeServer("Gun", Tool, ClientModule, targetHumanoid, targetTorso, Hit, Miscs, hitDist)
 				end)
 
 				if Tool and Tool:FindFirstChild("GunClient") and Tool.GunClient:FindFirstChild("MarkerEvent") then
@@ -931,33 +750,14 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 	end)
 end
 
-local function OnRayBounced(
-	Origin,
-	Direction,
-	Hit,
-	Position,
-	Normal,
-	Material,
-	Tool,
-	ClientModule,
-	Miscs,
-	NoExplosion,
-	Replicate
-)
+local function OnRayBounced(Origin, Direction, Hit, Position, Normal, Material, Tool, ClientModule, Miscs, NoExplosion, Replicate)
 	if not Hit or not Hit.Parent then
 		return
 	end
 
 	local showEffects = ShouldShowEffects(Position)
 
-	if
-		not AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Miscs.ChargeLevel,
-			ClientModule.ChargeAlterTable.ExplosiveEnabled,
-			ClientModule.ExplosiveEnabled
-		)
-	then
+	if not AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ExplosiveEnabled, ClientModule.ExplosiveEnabled) then
 		if Hit.Name == "_glass" then
 			if Replicate then
 				ShatterGlass:FireServer(Hit, Position, Direction)
@@ -976,16 +776,7 @@ local function OnRayBounced(
 			end
 			if Replicate then
 				Thread:Spawn(function()
-					InflictTarget:InvokeServer(
-						"Gun",
-						Tool,
-						ClientModule,
-						targetHumanoid,
-						targetTorso,
-						Hit,
-						Miscs,
-						distance
-					)
+					InflictTarget:InvokeServer("Gun", Tool, ClientModule, targetHumanoid, targetTorso, Hit, Miscs, distance)
 				end)
 				if Tool and Tool:FindFirstChild("GunClient") and Tool.GunClient:FindFirstChild("MarkerEvent") then
 					Tool.GunClient.MarkerEvent:Fire(ClientModule, Hit.Name == "Head" and ClientModule.HeadshotEnabled)
@@ -1019,16 +810,7 @@ local function OnRayBounced(
 			end
 			if Replicate then
 				Thread:Spawn(function()
-					InflictTarget:InvokeServer(
-						"Gun",
-						Tool,
-						ClientModule,
-						targetHumanoid,
-						targetTorso,
-						Hit,
-						Miscs,
-						distance
-					)
+					InflictTarget:InvokeServer("Gun", Tool, ClientModule, targetHumanoid, targetTorso, Hit, Miscs, distance)
 				end)
 				if Tool and Tool:FindFirstChild("GunClient") and Tool.GunClient:FindFirstChild("MarkerEvent") then
 					Tool.GunClient.MarkerEvent:Fire(ClientModule, Hit.Name == "Head" and ClientModule.HeadshotEnabled)
@@ -1097,7 +879,7 @@ local function OnRayExited(Origin, Direction, Hit, Position, Normal, Material, T
 	local target = Hit:FindFirstAncestorOfClass("Model")
 	local targetHumanoid = target and target:FindFirstChildOfClass("Humanoid")
 	local targetTorso = target and (target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head"))
-
+ 
 	if targetHumanoid and targetTorso then
 		MakeBloodFX(Hit, Position, Normal, Material, true, ClientModule, Miscs, Replicate)
 	else
@@ -1121,35 +903,13 @@ function ProjectileHandler:VisualizeHitEffect(Type, Hit, Position, Normal, Mater
 	end
 end
 
-function ProjectileHandler:SimulateProjectile(
-	Tool,
-	Handle,
-	VMHandle,
-	ClientModule,
-	CLDirections,
-	SVDirections,
-	FirePointObject,
-	MuzzlePointObject,
-	Miscs,
-	Replicate
-)
+function ProjectileHandler:SimulateProjectile(Tool, Handle, VMHandle, ClientModule, CLDirections, SVDirections, FirePointObject, MuzzlePointObject, Miscs, Replicate)
 	if not (ClientModule and Tool and Handle) then
 		return
 	end
 
 	if Replicate then
-		VisualizeBullet:FireServer(
-			Tool,
-			Handle,
-			nil,
-			ClientModule,
-			nil,
-			SVDirections,
-			FirePointObject,
-			MuzzlePointObject,
-			Miscs,
-			nil
-		)
+		VisualizeBullet:FireServer(Tool, Handle, nil, ClientModule, nil, SVDirections, FirePointObject, MuzzlePointObject, Miscs, nil)
 	end
 
 	local muzzleObject = MuzzlePointObject
@@ -1185,24 +945,9 @@ function ProjectileHandler:SimulateProjectile(
 
 	if ClientModule.MuzzleLightEnabled and muzzleObject then
 		local light = Instance.new("PointLight")
-		light.Brightness = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Miscs.ChargeLevel,
-			ClientModule.ChargeAlterTable.LightBrightness,
-			ClientModule.LightBrightness
-		)
-		light.Color = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Miscs.ChargeLevel,
-			ClientModule.ChargeAlterTable.LightColor,
-			ClientModule.LightColor
-		)
-		light.Range = AddressTableValue(
-			ClientModule.ChargedShotAdvanceEnabled,
-			Miscs.ChargeLevel,
-			ClientModule.ChargeAlterTable.LightRange,
-			ClientModule.LightRange
-		)
+		light.Brightness = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.LightBrightness, ClientModule.LightBrightness)
+		light.Color = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.LightColor, ClientModule.LightColor)
+		light.Range = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.LightRange, ClientModule.LightRange)
 		light.Shadows = ClientModule.LightShadows
 		light.Enabled = true
 		light.Parent = muzzleObject
@@ -1229,10 +974,6 @@ function ProjectileHandler:SimulateProjectile(
 		local ignoreList = { Camera, Tool, Tool.Parent }
 		AppendSeatedVehicleToIgnore(ignoreList, Tool.Parent)
 
-		local raycastparams = RaycastParams.new()
-		raycastparams.FilterDescendantsInstances = ignoreList
-		raycastparams.FilterType = Enum.RaycastFilterType.Exclude
-
 		-- FIX: guard HumanoidRootPart usage
 		local humanoidRootPart = Tool.Parent and Tool.Parent:FindFirstChild("HumanoidRootPart")
 		if humanoidRootPart and humanoidRootPart:IsA("BasePart") then
@@ -1241,195 +982,51 @@ function ProjectileHandler:SimulateProjectile(
 			local tipDir = tipCFrame.LookVector
 			local amountToCheatBack = math.abs((humanoidRootPart.Position - tipPos):Dot(tipDir)) + 1
 
-			local result = Workspace:Raycast(
-				tipPos - tipDir.Unit * amountToCheatBack,
-				tipDir.Unit * amountToCheatBack,
-				raycastparams
-			)
-			if result and result.Instance and math.abs((tipPos - result.Position).Magnitude) > 0 then
-				origin = result.Position - tipDir.Unit * 0.1
+			local gunRay = Ray.new(tipPos - tipDir.Unit * amountToCheatBack, tipDir.Unit * amountToCheatBack)
+			local hitPart, hitPoint = Workspace:FindPartOnRayWithIgnoreList(gunRay, ignoreList, false, true)
+			if hitPart and math.abs((tipPos - hitPoint).Magnitude) > 0 then
+				origin = hitPoint - tipDir.Unit * 0.1
 			end
 		end
 
-		local vel = dir
-			* AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletSpeed,
-				ClientModule.BulletSpeed
-			)
+		local vel = dir * AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletSpeed, ClientModule.BulletSpeed)
 
 		ParticleFramework.new({
 			position = origin,
 			velocity = vel,
-			acceleration = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletAcceleration,
-				ClientModule.BulletAcceleration
-			),
-			visible = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.VisibleBullet,
-				ClientModule.VisibleBullet
-			),
-			motionblur = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.MotionBlur,
-				ClientModule.MotionBlur
-			),
-			size = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletSize,
-				ClientModule.BulletSize
-			),
-			bloom = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletBloom,
-				ClientModule.BulletBloom
-			),
-			brightness = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletBrightness,
-				ClientModule.BulletBrightness
-			),
-			windspeed = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.WindSpeed,
-				ClientModule.WindSpeed
-			),
-			windresistance = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.WindResistance,
-				ClientModule.WindResistance
-			),
-			life = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletLifetime,
-				ClientModule.BulletLifetime
-			),
+			acceleration = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletAcceleration, ClientModule.BulletAcceleration),
+			visible = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.VisibleBullet, ClientModule.VisibleBullet),
+			motionblur = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.MotionBlur, ClientModule.MotionBlur),
+			size = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletSize, ClientModule.BulletSize),
+			bloom = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletBloom, ClientModule.BulletBloom),
+			brightness = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletBrightness, ClientModule.BulletBrightness),
+			windspeed = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.WindSpeed, ClientModule.WindSpeed),
+			windresistance = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.WindResistance, ClientModule.WindResistance),
+			life = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletLifetime, ClientModule.BulletLifetime),
 			visualorigin = origin,
 			visualdirection = dir,
 			penetrationtype = ClientModule.PenetrationType,
-			penetrationdepth = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.PenetrationDepth,
-				ClientModule.PenetrationDepth
-			),
-			penetrationamount = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.PenetrationAmount,
-				ClientModule.PenetrationAmount
-			),
-			ricochetamount = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.RicochetAmount,
-				ClientModule.RicochetAmount
-			),
-			bounceelasticity = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BounceElasticity,
-				ClientModule.BounceElasticity
-			),
-			frictionconstant = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.FrictionConstant,
-				ClientModule.FrictionConstant
-			),
-			noexplosionwhilebouncing = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.NoExplosionWhileBouncing,
-				ClientModule.NoExplosionWhileBouncing
-			),
-			stopbouncingonhithumanoid = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.StopBouncingOnHitHumanoid,
-				ClientModule.StopBouncingOnHitHumanoid
-			),
-			superricochet = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.SuperRicochet,
-				ClientModule.SuperRicochet
-			),
-			bullettype = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.BulletType,
-				ClientModule.BulletType
-			),
-			projectiletype = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.ProjectileType,
-				ClientModule.ProjectileType
-			),
+			penetrationdepth = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.PenetrationDepth, ClientModule.PenetrationDepth),
+			penetrationamount = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.PenetrationAmount, ClientModule.PenetrationAmount),
+			ricochetamount = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.RicochetAmount, ClientModule.RicochetAmount),
+			bounceelasticity = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BounceElasticity, ClientModule.BounceElasticity),
+			frictionconstant = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.FrictionConstant, ClientModule.FrictionConstant),
+			noexplosionwhilebouncing = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.NoExplosionWhileBouncing, ClientModule.NoExplosionWhileBouncing),
+			stopbouncingonhithumanoid = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.StopBouncingOnHitHumanoid, ClientModule.StopBouncingOnHitHumanoid),
+			superricochet = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.SuperRicochet, ClientModule.SuperRicochet),
+			bullettype = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.BulletType, ClientModule.BulletType),
+			projectiletype = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.ProjectileType, ClientModule.ProjectileType),
 			canspinpart = ClientModule.CanSpinPart,
-			spinx = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.SpinX,
-				ClientModule.SpinX
-			),
-			spiny = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.SpinY,
-				ClientModule.SpinY
-			),
-			spinz = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.SpinZ,
-				ClientModule.SpinZ
-			),
-			homing = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.Homing,
-				ClientModule.Homing
-			),
-			homingdistance = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.HomingDistance,
-				ClientModule.HomingDistance
-			),
-			turnratepersecond = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.TurnRatePerSecond,
-				ClientModule.TurnRatePerSecond
-			),
-			homethroughwall = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.HomeThroughWall,
-				ClientModule.HomeThroughWall
-			),
+			spinx = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.SpinX, ClientModule.SpinX),
+			spiny = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.SpinY, ClientModule.SpinY),
+			spinz = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.SpinZ, ClientModule.SpinZ),
+			homing = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.Homing, ClientModule.Homing),
+			homingdistance = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HomingDistance, ClientModule.HomingDistance),
+			turnratepersecond = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.TurnRatePerSecond, ClientModule.TurnRatePerSecond),
+			homethroughwall = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.HomeThroughWall, ClientModule.HomeThroughWall),
 			lockononhovering = ClientModule.LockOnOnHovering,
 			lockedentity = Miscs.LockedEntity,
-			toucheventontimeout = AddressTableValue(
-				ClientModule.ChargedShotAdvanceEnabled,
-				Miscs.ChargeLevel,
-				ClientModule.ChargeAlterTable.TouchEventOnTimeout,
-				ClientModule.TouchEventOnTimeout
-			),
+			toucheventontimeout = AddressTableValue(ClientModule.ChargedShotAdvanceEnabled, Miscs.ChargeLevel, ClientModule.ChargeAlterTable.TouchEventOnTimeout, ClientModule.TouchEventOnTimeout),
 			hitscan = ClientModule.HitscanMode,
 			character = Tool.Parent,
 			friendlyfire = ClientModule.FriendlyFire,
@@ -1444,18 +1041,7 @@ function ProjectileHandler:SimulateProjectile(
 			end,
 
 			onexit = function(self, exitpart, exitpos, exitnorm, exitmaterial)
-				OnRayExited(
-					origin,
-					dir,
-					exitpart,
-					exitpos,
-					exitnorm,
-					exitmaterial,
-					Tool,
-					ClientModule,
-					Miscs,
-					Replicate
-				)
+				OnRayExited(origin, dir, exitpart, exitpos, exitnorm, exitmaterial, Tool, ClientModule, Miscs, Replicate)
 			end,
 
 			onbounce = function(self, part, pos, norm, material, noexplosion)
@@ -1493,8 +1079,7 @@ function ProjectileHandler:SimulateProjectile(
 						local sound = Instance.new("Sound")
 						sound.SoundId = "rbxassetid://" .. tostring(whizId)
 						sound.Volume = ClientModule.WhizSoundVolume
-						sound.PlaybackSpeed =
-							Random.new():NextNumber(ClientModule.WhizSoundPitchMin, ClientModule.WhizSoundPitchMax)
+						sound.PlaybackSpeed = Random.new():NextNumber(ClientModule.WhizSoundPitchMin, ClientModule.WhizSoundPitchMax)
 						sound.Parent = SoundService
 						sound:Play()
 						Debris:AddItem(sound, sound.TimeLength / math.max(sound.PlaybackSpeed, 0.01))
