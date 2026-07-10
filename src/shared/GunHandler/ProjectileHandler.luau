@@ -3,7 +3,6 @@ local ProjectileHandler = {}
 
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
-local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,7 +12,6 @@ local Player = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Events = ReplicatedStorage:WaitForChild("Events")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local ParticleFramework = require(Modules.ParticleFramework)
@@ -666,38 +664,6 @@ local function OnRayHit(Origin, Direction, Hit, Position, Normal, Material, Tool
 	then
 		local parentModel = Hit:FindFirstAncestorOfClass("Model")
 		if parentModel and parentModel.Name == "Windows" then
-			-- FIX: your raycastParams was unused; also use unit direction to avoid over-scaling.
-			-- local raycastParams = RaycastParams.new()
-			-- raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-			-- local blacklist: { Instance } = { Hit }
-			-- if Tool then
-			-- 	table.insert(blacklist, Tool)
-			-- end
-			-- if Tool and Tool.Parent then
-			-- 	table.insert(blacklist, Tool.Parent)
-			-- end
-
-			-- local myVehicle = GetSeatedVehicleModel((Tool and Tool.Parent) :: any)
-			-- if myVehicle then
-			-- 	table.insert(blacklist, myVehicle)
-			-- end
-
-			-- raycastParams.FilterDescendantsInstances = blacklist
-
-			-- if nextResult then
-			-- 	OnRayHit(
-			-- 		nextOrigin,
-			-- 		Direction,
-			-- 		nextResult.Instance,
-			-- 		nextResult.Position,
-			-- 		nextResult.Normal,
-			-- 		nextResult.Material,
-			-- 		Tool,
-			-- 		ClientModule,
-			-- 		Miscs,
-			-- 		Replicate
-			-- 	)
-			-- end
 			return
 		end
 
@@ -1252,13 +1218,15 @@ function ProjectileHandler:SimulateProjectile(
 			end
 		end
 
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = { Camera, Tool, Tool.Parent }
-		AppendSeatedVehicleToIgnore(raycastParams.FilterDescendantsInstances, Tool.Parent)
+		local filterList = { Camera, Tool, Tool.parent }
 
+		AppendSeatedVehicleToIgnore(filterList, Tool.Parent)
 		for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
-			table.insert(raycastParams.FilterDescendantsInstances, v)
+			table.insert(filterList, v)
 		end
+
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterDescendantsInstances = filterList
 		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 		-- FIX: guard HumanoidRootPart usage

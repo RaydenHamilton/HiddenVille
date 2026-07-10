@@ -64,7 +64,6 @@ function soundClient.new()
 	for _, child in ipairs(seat:GetChildren()) do
 		if gui:FindFirstChild(child.Name) and child:IsA("Sound") then
 			child:Stop()
-			print(child.Name)
 			child:Destroy()
 		end
 	end

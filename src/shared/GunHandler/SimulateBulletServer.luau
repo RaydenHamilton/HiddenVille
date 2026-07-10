@@ -253,7 +253,6 @@ function SimulteBulletModule.init()
 			"RightFoot",
 		}
 
-		print("hit")
 		if Hit then
 			if not table.find(validBodyParts, Hit.Name) then
 				local Attachment = Hit:FindFirstAncestorOfClass("Attachment")
@@ -490,7 +489,6 @@ function SimulteBulletModule.init()
 
 	InflictTarget.OnServerInvoke = function(Player, Type, ...)
 		local Tool, ClientModule, _TargetHumanoid, _TargetTorso, ClientHit, Misc, _HitDist = ...
-		print("fire")
 
 		-- Basic tool sanity (prevents invoking with a random Tool instance)
 		if typeof(Tool) ~= "Instance" or not Tool:IsA("Tool") then
@@ -549,25 +547,29 @@ function SimulteBulletModule.init()
 			return false, "out_of_range"
 		end
 
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-
-		raycastParams.FilterDescendantsInstances = { Player.Character, Tool }
-
+		local filterList = { Tool, Player.Character }
 		for _, character: Player in Workspace:GetChildren() do
 			if character:FindFirstChild("Humanoid") then
-				table.insert(raycastParams.FilterDescendantsInstances, character:FindFirstChild("HumanoidRootPart"))
+				table.insert(filterList, character:FindFirstChild("HumanoidRootPart"))
 			end
 		end
 
-		for i, v in pairs(CollectionService:GetTagged("NoShoot")) do
-			table.insert(raycastParams.FilterDescendantsInstances, v)
+		for _, v in pairs(CollectionService:GetTagged("NoShoot")) do
+			table.insert(filterList, v)
 		end
 
 		local seatedCar = getSeatedCarModel(Player.Character)
 		if seatedCar then
-			table.insert(raycastParams.FilterDescendantsInstances, seatedCar)
+			table.insert(filterList, seatedCar)
 		end
+
+		for _, v in pairs(CollectionService:GetTagged("NoShoot")) do
+			table.insert(filterList, v)
+		end
+
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterDescendantsInstances = filterList
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 		raycastParams.IgnoreWater = true
 

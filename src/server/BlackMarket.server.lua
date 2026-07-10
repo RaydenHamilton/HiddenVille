@@ -65,10 +65,8 @@ Prompt.Triggered:Connect(function(Player)
 	end
 end)
 
-for _, part in pairs(DuffelBag:GetDescendants()) do
-	if part:IsA("MeshPart") or part:IsA("Part") then
-		part.CanTouch = false
-	end
+for _, part in pairs(DuffelBag:QueryDescendants("BasePart")) do
+	part.CanTouch = false
 end
 
 DuffelBag.CanTouch = false
@@ -88,10 +86,8 @@ gunPrompt.Triggered:Connect(function(Player)
 	end
 end)
 
-for _, part in pairs(Gun:GetDescendants()) do
-	if part:IsA("MeshPart") or part:IsA("Part") then
-		part.CanTouch = false
-	end
+for _, part in pairs(Gun:QueryDescendants("BasePart")) do
+	part.CanTouch = false
 end
 
 local BlankPrompt = BlackMarket.Blank.Handle.BuyGun
@@ -132,10 +128,8 @@ BlankPrompt.Triggered:Connect(function(Player)
 end)
 
 -- Disable physical touching on display model
-for _, part in pairs(Blank:GetDescendants()) do
-	if part:IsA("MeshPart") or part:IsA("Part") then
-		part.CanTouch = false
-	end
+for _, part in pairs(Blank:QueryDescendants("BasePart")) do
+	part.CanTouch = false
 end
 
 local MoneyGamepassID = 1030750804

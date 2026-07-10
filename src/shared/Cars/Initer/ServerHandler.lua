@@ -24,7 +24,7 @@ local function createCar(CarModel: Model)
 	LightEnablerServer.new(CarModel)
 	task.wait(1)
 
-	for _, obj in CarModel:GetDescendants() do
+	for _, obj in CarModel:QueryDescendants("BasePart") do
 		if obj.Name == "#Weight" then
 			obj:AddTag("NoShoot")
 			warn("noshoot added ")
@@ -34,27 +34,18 @@ local function createCar(CarModel: Model)
 			obj.CanCollide = false
 			(obj :: BasePart).CanQuery = false
 			obj.CollisionGroup = "Car"
-		elseif
-			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
-			and not obj:FindFirstAncestor("Wheels")
-			and obj.Name ~= "FRONT"
-		then
+		elseif not obj:FindFirstAncestor("Wheels") and obj.Name ~= "FRONT" then
 			obj.CollisionGroup = "Car"
 			obj.CanCollide = true
-		elseif
-			(obj:IsA("UnionOperation") or obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part"))
-			and obj:FindFirstAncestor("Wheels")
-		then
+		elseif obj:FindFirstAncestor("Wheels") then
 			obj.CollisionGroup = "Wheel"
 		end
 	end
 end
 
 local function CharacterAdded(character: Model)
-	for _, part in character:GetDescendants() do
-		if part:IsA("UnionOperation") or part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("Part") then
-			part.CollisionGroup = "Player"
-		end
+	for _, part in character:QueryDescendants("BasePart") do
+		part.CollisionGroup = "Player"
 	end
 end
 

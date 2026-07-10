@@ -73,10 +73,8 @@ for _, item in Workspace.BuyableItems.Normal:GetChildren() do
 	end)
 
 	-- Disable touch triggers so preview gun doesn't cause lag
-	for _, part in ipairs(Gun:GetDescendants()) do
-		if part:IsA("Part") or part:IsA("MeshPart") then
-			part.CanTouch = false
-		end
+	for _, part in ipairs(Gun:QueryDescendants("BasePart")) do
+		part.CanTouch = false
 	end
 
 	-- Safe GUI update
@@ -136,10 +134,8 @@ for _, item in Workspace.BuyableItems.GamePass:GetChildren() do
 	end)
 
 	-- Prevent touch on display parts
-	for _, part in ipairs(Gun:GetDescendants()) do
-		if part:IsA("Part") or part:IsA("MeshPart") then
-			part.CanTouch = false
-		end
+	for _, part in ipairs(Gun:QueryDescendants("BasePart")) do
+		part.CanTouch = false
 	end
 
 	-- GUI safe update

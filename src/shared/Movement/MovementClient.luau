@@ -39,7 +39,7 @@ function movement.new()
 	staminaValue.Parent = Character
 
 	local MaxStamina = 100
-	local StaminaDepletionRate = 4.5
+	local StaminaDepletionRate = 3.5
 	local StaminaRegenRate = 6.5
 	local canRegenStamina = true
 

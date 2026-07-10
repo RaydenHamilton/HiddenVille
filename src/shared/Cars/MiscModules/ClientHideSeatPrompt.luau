@@ -6,8 +6,8 @@ local humanoid: Humanoid
 local disabledSeats = {}
 
 local function disabledPrompt(car)
-	for _, seat in car:GetDescendants() do
-		if seat:FindFirstChild("Sit") and (seat:IsA("Seat") or seat:IsA("VehicleSeat")) then
+	for _, seat in car:QueryDescendants("Seat,VehicleSeat") do
+		if seat:FindFirstChild("Sit") then
 			seat:FindFirstChild("Sit").Enabled = false
 			table.insert(disabledSeats, seat)
 		end

@@ -87,7 +87,6 @@ function DriveModule.new()
 	local function removeGui()
 		_PBrake = true
 		task.wait()
-		print("no more gui")
 		clearConnections()
 	end
 
@@ -176,7 +175,6 @@ function DriveModule.new()
 				or ((not _MSteer) and input.KeyCode == _CTRL["PBrake"])
 			then
 				if input.UserInputState == Enum.UserInputState.Begin then
-					print("change")
 					_PBrake = not _PBrake
 				elseif input.UserInputState == Enum.UserInputState.End then
 					if car.DriveSeat.Velocity.Magnitude > 5 then

@@ -3,14 +3,12 @@ function phoneClient.init()
 	local Players = game:GetService("Players")
 	local Player = Players.LocalPlayer
 	local phoneGui = Player:WaitForChild("PlayerGui"):WaitForChild("majicPhoneGUI")
-	for _, button in phoneGui:getDescendants() do
-		if button.Name == "homeButton" then
-			button.MouseButton1Click:Connect(function()
-				button.Parent.Visible = false
-				button.Parent.Parent.Visible = false
-				button.Parent.Parent.Parent.clickSound:Play()
-			end)
-		end
+	for _, button in phoneGui:QueryDescendants("#homeButton") do
+		button.MouseButton1Click:Connect(function()
+			button.Parent.Visible = false
+			button.Parent.Parent.Visible = false
+			button.Parent.Parent.Parent.clickSound:Play()
+		end)
 	end
 
 	--// Cash app

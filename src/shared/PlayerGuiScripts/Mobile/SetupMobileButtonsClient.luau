@@ -66,10 +66,8 @@ local function SetupMobileButtons()
 	local button = buttonFrame:WaitForChild("JumpButton") :: GuiButton
 
 	local offset = button.Position
-	for i, v in buttonFrame:GetDescendants() do
-		if v:IsA("GuiButton") then
-			v.Position = UDim2.new(v.Position.X.Scale, offset.X.Offset, v.Position.Y.Scale, offset.Y.Offset)
-		end
+	for i, v in buttonFrame:QueryDescendants("GuiButton") do
+		v.Position = UDim2.new(v.Position.X.Scale, offset.X.Offset, v.Position.Y.Scale, offset.Y.Offset)
 	end
 
 	mobileButtonsHooked = true

@@ -4,12 +4,8 @@ local Workspace = game:GetService("Workspace")
 local DoorServer = {}
 
 function DoorServer.init()
-	for _, door in pairs(Workspace.Map:GetDescendants()) do
-		if
-			door.Name == "Door"
-			and door:FindFirstChild("Doorframe")
-			and door:FindFirstChild("Base"):FindFirstChild("ProximityPrompt")
-		then
+	for _, door in pairs(Workspace.Map:QueryDescendants("#Door")) do
+		if door:FindFirstChild("Doorframe") and door:FindFirstChild("Base"):FindFirstChild("ProximityPrompt") then
 			local hinge = door:FindFirstChild("Doorframe"):WaitForChild("Hinge")
 			local prompt = door:FindFirstChild("Base"):FindFirstChild("ProximityPrompt")
 
@@ -82,10 +78,9 @@ function DoorServer.init()
 			end
 		end
 	end
-	for _, slidingDoor in pairs(Workspace.Map:GetDescendants()) do
+	for _, slidingDoor in pairs(Workspace.Map:QueryDescendants("#Door")) do
 		if
-			slidingDoor.Name == "Door"
-			and slidingDoor:FindFirstChild("DoorLeft")
+			slidingDoor:FindFirstChild("DoorLeft")
 			and slidingDoor:FindFirstChild("DoorRight")
 			and slidingDoor:FindFirstChild("Mode")
 			and slidingDoor:FindFirstChild("Open")
@@ -137,8 +132,8 @@ function DoorServer.init()
 		end
 	end
 
-	for _, sound in Workspace.Map:GetDescendants() do
-		if sound:IsA("Sound") and sound.Parent.Name == "Base" then
+	for _, sound in Workspace.Map:QueryDescendants("Sound") do
+		if sound.Parent.Name == "Base" then
 			sound.Parent.ProximityPrompt.Triggered:Connect(function()
 				sound:Play()
 			end)

@@ -9,9 +9,8 @@ local OFF_GOAL = { Transparency = 1 }
 local allLights = { "Right", "Reverse", "Left", "Brakes", "Headlight", "DRL" }
 
 function lightsModule.new(carModel: Model)
-	for _, lightModel in carModel:GetDescendants() do
-		if table.find(allLights, lightModel.Name) and lightModel:IsA("Model") then
-
+	for _, lightModel in carModel:QueryDescendants("Model") do
+		if table.find(allLights, lightModel.Name) then
 			lightModel.on.Changed:Connect(function()
 				local lights = lightModel.G1:GetChildren()
 				local isOn = lightModel.on.Value

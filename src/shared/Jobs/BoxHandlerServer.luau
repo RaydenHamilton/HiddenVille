@@ -15,74 +15,26 @@ local BoxAnimation = ReplicatedStorage:FindFirstChild("BoxAnimation")
 local ToggleBackpackUI = ReplicatedStorage.Remotes:WaitForChild("ToggleBackpackUI")
 local notification = ReplicatedStorage.Remotes:FindFirstChild("Notification")
 
-local ProximityDistance = 150
 local GamepassID = 1331110346
 
-local PlayerConnections = {}
 local PlayerAnimations = {}
 
 local function Randomize(min, max)
 	return math.random(min, max)
 end
 
-local function IsInRange(player)
-	local character = player.Character or player.CharacterAdded:Wait()
-	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-	if not rootPart then
-		return false
-	end
-
-	local grabDistance = (rootPart.Position - Main:FindFirstChild("GrabBox").Position).Magnitude
-	local placeDistance = (rootPart.Position - Main:FindFirstChild("PlaceBox").Position).Magnitude
-
-	return grabDistance <= ProximityDistance or placeDistance <= ProximityDistance
-end
-
-local function AttachBoxToHand(player)
-	local character = player.Character
-	if not character or character:FindFirstChild("Box") then
-		return
-	end
-
-	local humanoid = character:FindFirstChild("Humanoid")
-	if not humanoid then
-		return
-	end
-
-	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
-	if not rightHand then
-		return
-	end
-
-	local backpack = player:FindFirstChildOfClass("Backpack")
-	if backpack then
-		local existingTool = backpack:FindFirstChild("Box")
-		if not existingTool then
-			local toolClone = Box:Clone()
-			toolClone.Parent = backpack
-
-			if BoxAnimation then
-				if not PlayerAnimations[player.Name] then
-					local animTrack = humanoid:LoadAnimation(BoxAnimation)
-					animTrack.Priority = Enum.AnimationPriority.Action
-					PlayerAnimations[player.Name] = animTrack
-				end
-
-				local animTrack = PlayerAnimations[player.Name]
-				animTrack:Play()
-
-				humanoid:EquipTool(toolClone)
-			end
-		end
-	end
-
-	ToggleBackpackUI:FireClient(player, false)
-end
-
 local function RemoveBoxFromHand(player)
 	local character = player.Character
 	if not character then
 		return
+	end
+
+	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+	if humanoidRootPart then
+		local shield: BasePart = humanoidRootPart:FindFirstChild("Shield")
+		if shield then
+			shield:Destroy()
+		end
 	end
 
 	local box = character:FindFirstChild("Box")
@@ -108,6 +60,68 @@ local function RemoveBoxFromHand(player)
 	ToggleBackpackUI:FireClient(player, true)
 end
 
+local function AttachBoxToHand(player)
+	local character = player.Character
+	if not character or character:FindFirstChild("Box") then
+		return
+	end
+
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	if not rightHand then
+		return
+	end
+
+	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+	if not humanoidRootPart then
+		return
+	end
+
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	if not backpack then
+		return
+	end
+
+	local shield = ReplicatedStorage.Shield:Clone()
+	shield.Parent = humanoidRootPart
+
+	local existingTool = backpack:FindFirstChild("Box")
+	if not existingTool then
+		local toolClone = Box:Clone()
+		toolClone.Parent = backpack
+
+		task.spawn(function()
+			while task.wait(1) and toolClone and toolClone.Parent do
+				local root: Part = character:FindFirstChild("HumanoidRootPart")
+				if root then
+					if (root.Position - PlaceBoxPrompt.Parent.Position).Magnitude > 70 then
+						RemoveBoxFromHand(player)
+					end
+				end
+			end
+		end)
+
+		if BoxAnimation then
+			if not PlayerAnimations[player.Name] then
+				local animTrack = humanoid:LoadAnimation(BoxAnimation)
+				animTrack.Priority = Enum.AnimationPriority.Action
+				PlayerAnimations[player.Name] = animTrack
+			end
+
+			local animTrack = PlayerAnimations[player.Name]
+			animTrack:Play()
+
+			humanoid:EquipTool(toolClone)
+		end
+	end
+
+	ToggleBackpackUI:FireClient(player, false)
+end
+
 local boxJobServer = {}
 
 function boxJobServer.init()
@@ -117,9 +131,6 @@ function boxJobServer.init()
 			return
 		end
 
-		if PlayerConnections[player.Name] then
-			return
-		end
 		local box = player.Character:FindFirstChild("Box")
 		if box then
 			return
@@ -128,14 +139,6 @@ function boxJobServer.init()
 		AttachBoxToHand(player)
 
 		GrabBoxPrompt.GrabSound:Play()
-
-		PlayerConnections[player.Name] = RunService.Heartbeat:Connect(function()
-			if not IsInRange(player) then
-				RemoveBoxFromHand(player)
-				PlayerConnections[player.Name]:Disconnect()
-				PlayerConnections[player.Name] = nil
-			end
-		end)
 	end)
 
 	PlaceBoxPrompt.Triggered:Connect(function(player)
@@ -147,11 +150,6 @@ function boxJobServer.init()
 		local box = character:FindFirstChild("Box")
 		if not box then
 			return
-		end
-
-		if PlayerConnections[player.Name] then
-			PlayerConnections[player.Name]:Disconnect()
-			PlayerConnections[player.Name] = nil
 		end
 
 		local leaderstats = player:FindFirstChild("leaderstats")
@@ -181,13 +179,6 @@ function boxJobServer.init()
 
 		PlaceBoxPrompt.PlaceSound:Play()
 		RemoveBoxFromHand(player)
-	end)
-
-	Players.PlayerRemoving:Connect(function(player)
-		if PlayerConnections[player.Name] then
-			PlayerConnections[player.Name]:Disconnect()
-			PlayerConnections[player.Name] = nil
-		end
 	end)
 end
 

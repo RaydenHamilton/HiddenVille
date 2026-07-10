@@ -33,7 +33,6 @@ local function seated()
 				v:Stop()
 				task.wait()
 				v:Destroy()
-				print(v.Name)
 			end
 		end
 	end

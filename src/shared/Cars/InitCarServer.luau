@@ -604,7 +604,6 @@ initCar.new = function(car: Model)
 			and child:IsA("Weld")
 			and Players:GetPlayerFromCharacter(child.Part1.Parent) ~= nil
 		then
-			print("car")
 			--Distribute Client Interface
 			local p = Players:GetPlayerFromCharacter(child.Part1.Parent)
 			driveSeat:SetNetworkOwner(p)
@@ -665,16 +664,21 @@ initCar.new = function(car: Model)
 		carDestroyed = true
 		carOnFire = true
 
+		local soundTime
 		if car.Body and car.Body.FRONT then
 			if car.Body.FRONT:FindFirstChild("Smoke") then
 				car.Body.FRONT.Smoke.Enabled = true
 			end
 			if car.Body.FRONT:FindFirstChild("Fire") then
 				car.Body.FRONT.Fire.Enabled = true
+
+				local explosionSound = Instance.new("Sound")
+				explosionSound.SoundId = "rbxassetid://158853971"
+				explosionSound.Parent = car.Body.FRONT
+				explosionSound:Play()
+				soundTime = explosionSound.TimeLength
 			end
 		end
-
-		task.wait(15)
 
 		task.spawn(function()
 			while car and car.Parent do
@@ -690,7 +694,7 @@ initCar.new = function(car: Model)
 			end
 		end)
 
-		task.delay(15, function()
+		task.delay(13, function()
 			if car and car.Parent then
 				car:Destroy()
 			end

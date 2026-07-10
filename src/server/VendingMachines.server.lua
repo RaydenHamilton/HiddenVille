@@ -4,8 +4,8 @@ local Workspace = game:GetService("Workspace")
 local Main = Workspace.Map.VendingMachines
 local ToolsFolder = ServerStorage:FindFirstChild("Tools")
 
-for _, prompt in ipairs(Main:GetDescendants()) do
-	if prompt:IsA("ProximityPrompt") and prompt.Name == "VendingMachine" then
+for _, prompt in ipairs(Main:QueryDescendants("ProximityPrompt")) do
+	if prompt.Name == "VendingMachine" then
 		prompt.Triggered:Connect(function(player)
 			local drink = ToolsFolder:FindFirstChild("Sprite")
 			if not drink then

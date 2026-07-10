@@ -17,8 +17,6 @@ local function canInit(theModule: ModuleScript)
 	return false
 end
 
-for _, module in ReplicatedStorage.Shared:GetDescendants() do
-	if module:IsA("ModuleScript") then
-		canInit(module)
-	end
+for _, module in ReplicatedStorage.Shared:QueryDescendants("ModuleScript") do
+	canInit(module)
 end

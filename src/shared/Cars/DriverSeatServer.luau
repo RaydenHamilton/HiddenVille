@@ -45,10 +45,8 @@ DriverSeat.new = function(carModel: Model)
 			root:PivotTo(DriveSeat.CFrame * CFrame.new(-5, 0, 0))
 			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Player"
 
-			for _, v in carModel:GetDescendants() do
-				if v:IsA("ProximityPrompt") then
-					v.Enabled = true
-				end
+			for _, v in carModel:QueryDescendants("ProximityPrompt") do
+				v.Enabled = true
 			end
 		end
 	end)
@@ -57,10 +55,8 @@ DriverSeat.new = function(carModel: Model)
 		local locked = Car.Locked.Value
 		DrivePrompt.Enabled = not locked
 
-		for _, obj in ipairs(Car:GetDescendants()) do
-			if obj:IsA("ProximityPrompt") then
-				obj.Enabled = not locked
-			end
+		for _, obj in ipairs(Car:QueryDescendants("ProximityPrompt")) do
+			obj.Enabled = not locked
 		end
 	end)
 end

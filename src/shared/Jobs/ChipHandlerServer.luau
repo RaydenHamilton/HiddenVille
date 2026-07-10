@@ -248,8 +248,8 @@ function chipSever.init()
 	end
 
 	-- Connect all cook prompts once
-	for _, trigger in ipairs(main:GetDescendants()) do
-		if trigger:IsA("ProximityPrompt") and trigger.Name == "CookPrompt" then
+	for _, trigger in ipairs(main:QueryDescendants("proximityprompt")) do
+		if trigger.Name == "CookPrompt" then
 			trigger.Triggered:Connect(function(plr)
 				onTriggered(trigger, plr)
 			end)

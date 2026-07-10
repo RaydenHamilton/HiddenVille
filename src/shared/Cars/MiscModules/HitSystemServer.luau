@@ -62,19 +62,17 @@ HitSystem.new = function(car: Model)
 							end
 						end)
 
-						for _, v in ipairs(cp:GetDescendants()) do
-							if v:IsA("ParticleEmitter") then
-								v.Enabled = true
-								v:Emit(15)
-								task.spawn(function()
-									task.wait(1.75)
-									v.Enabled = false
-								end)
-							end
+						for _, v in ipairs(cp:QueryDescendants("ParticleEmitter")) do
+							v.Enabled = true
+							v:Emit(15)
+							task.spawn(function()
+								task.wait(1.75)
+								v.Enabled = false
+							end)
 						end
 
 						local sound = math.random(1, 2)
-						
+
 						if sound == 1 then
 							print(driveSeat:FindFirstChild("Sound1"))
 							if driveSeat:FindFirstChild("Sound1") then
