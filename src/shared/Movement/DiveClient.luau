@@ -135,17 +135,6 @@ function dive.init()
 			dive()
 		end
 	end)
-	local mobileButtons = Player:WaitForChild("PlayerGui"):WaitForChild("TouchGui", 5)
-	if mobileButtons then
-		local button = mobileButtons:WaitForChild("TouchControlFrame"):WaitForChild("DiveButton")
-
-		button.Activated:Connect(function()
-			if not canRoll then
-				return
-			end
-			dive()
-		end)
-	end
 
 	local function characterAdded()
 		-- RemoteEvent for breaking shield
@@ -168,9 +157,10 @@ function dive.init()
 		rollDuration = 0.8
 		justJumped = false
 
-		mobileButtons = Player:WaitForChild("PlayerGui"):WaitForChild("TouchGui", 5)
+		local mobileButtons = Player:WaitForChild("PlayerGui"):WaitForChild("TouchGui", 5)
 		if mobileButtons then
-			local button = mobileButtons:WaitForChild("TouchControlFrame"):WaitForChild("DiveButton")
+			local frame = mobileButtons:WaitForChild("TouchControlFrame")
+			local button = frame:WaitForChild("DiveButton")
 
 			button.Activated:Connect(function()
 				if not canRoll then
@@ -178,9 +168,14 @@ function dive.init()
 				end
 				dive()
 			end)
+		else
+			warn("no mobile buttons")
 		end
 	end
 
 	Player.CharacterAdded:Connect(characterAdded)
+	if Player.Character then
+		characterAdded()
+	end
 end
 return dive

@@ -30,13 +30,13 @@ local function createCar(CarModel: Model)
 			warn("noshoot added ")
 			continue
 		end
-		if obj.Parent.Name == "Windows" then
-			obj.CanCollide = false
-			(obj :: BasePart).CanQuery = false
-			obj.CollisionGroup = "Car"
-		elseif not obj:FindFirstAncestor("Wheels") and obj.Name ~= "FRONT" then
+		if not obj:FindFirstAncestor("Wheels") and obj.Name ~= "FRONT" then
 			obj.CollisionGroup = "Car"
 			obj.CanCollide = true
+			if obj.Parent.Name == "Windows" then
+				obj.CanCollide = false
+				(obj :: BasePart).CanQuery = false
+			end
 		elseif obj:FindFirstAncestor("Wheels") then
 			obj.CollisionGroup = "Wheel"
 		end

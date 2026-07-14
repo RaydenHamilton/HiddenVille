@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local setupClient = ReplicatedStorage:WaitForChild("Remotes").SetupGun
 local gunHandler = ReplicatedStorage.Shared.GunHandler
+local ChainServer = require(ReplicatedStorage.Shared.Accessories.ChainServer)
 local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
 local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
 local Food = require(ReplicatedStorage.Shared.Foods.Food)
@@ -30,10 +31,6 @@ local function setup(child: Tool, character)
 
 	if child:FindFirstChild("Setting") and child:FindFirstChild("ChangeMagAndAmmo") then
 		setupClient:FireClient(player, child, "Gun")
-	end
-
-	if hasTag("Bag") then
-		setupClient:FireClient(player, child, "Bag")
 	end
 
 	if not SetUpTable[child] and hasTag("M&Ms") then
@@ -74,6 +71,10 @@ local function setup(child: Tool, character)
 	if not SetUpTable[child] and hasTag("Fist") then
 		Fist.new(child)
 		setupClient:FireClient(player, child, "Fist")
+	end
+
+	if not SetUpTable[child] and hasTag("Accessorie") then
+		setupClient:FireClient(player, child, "Accessorie")
 	end
 
 	------------END---------------

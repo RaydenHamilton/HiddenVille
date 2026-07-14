@@ -5,8 +5,10 @@ DriverSeat.new = function(carModel: Model)
 	local DrivePrompt = DriveSeat:WaitForChild("Sit")
 	local Car = DriveSeat.Parent
 	local Owner = Car:WaitForChild("Owner")
+	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local CurrentOccupant
+	local notification = ReplicatedStorage.Remotes.Notification
 
 	DrivePrompt.Triggered:Connect(function(Player)
 		local Character = Player.Character or Player.CharacterAdded:Wait() :: Model
@@ -20,20 +22,23 @@ DriverSeat.new = function(carModel: Model)
 
 		local locked = DriveSeat:FindFirstChild("Locked")
 		if locked and locked:IsA("BoolValue") and locked.Value == true then
-			ReplicatedStorage:FindFirstChild("Notify"):FireClient(Player, "Vehicle is locked.", 2)
+			notification:FireClient(Player, "Success", "Vehicle is locked.")
 			return
 		end
 
 		if Shiftlock and Shiftlock.Value == true then
-			ReplicatedStorage:FindFirstChild("Notify"):FireClient(Player, "Can't enter vehicle while in shiftlock.", 2)
+			notification:FireClient(Player, "Error", "Can't enter vehicle while in shiftlock.")
 			return
 		end
 
-		if string.lower(Owner.Value) == string.lower(Player.Name) and not Humanoid.Sit then
+		if string.lower(Owner.Value) == string.lower(Player.Name) or locked.Value == false and not Humanoid.Sit then
+			if string.lower(Owner.Value) ~= string.lower(Player.Name) then
+				notification:FireClient(Players[Owner.Value], "Error", `{Player.Name} took your car`)
+			end
 			DriveSeat:Sit(Humanoid)
 			DrivePrompt.Enabled = false
 			CurrentOccupant = Player
-			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Car"
+			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Wheel"
 		end
 	end)
 
@@ -51,14 +56,14 @@ DriverSeat.new = function(carModel: Model)
 		end
 	end)
 
-	Car:WaitForChild("Locked").Changed:Connect(function()
-		local locked = Car.Locked.Value
-		DrivePrompt.Enabled = not locked
+	-- Car:WaitForChild("Locked").Changed:Connect(function()
+	-- 	local locked = Car.Locked.Value
+	-- 	DrivePrompt.Enabled = not locked
 
-		for _, obj in ipairs(Car:QueryDescendants("ProximityPrompt")) do
-			obj.Enabled = not locked
-		end
-	end)
+	-- 	for _, obj in ipairs(Car:QueryDescendants("ProximityPrompt")) do
+	-- 		obj.Enabled = not locked
+	-- 	end
+	-- end)
 end
 
 return DriverSeat

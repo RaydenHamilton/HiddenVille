@@ -43,31 +43,20 @@ local function SetupMobileButtons()
 
 	MobileGui.Enabled = false
 
-	-- Movement
-	local RunGui = MobileGui:FindFirstChild("SprintButton")
-	local CrouchGui = MobileGui:FindFirstChild("CrouchButton")
-	local DiveGui = MobileGui:FindFirstChild("DiveButton")
-	-- Gun
-	local GunGui = MobileGui:FindFirstChild("GunGui")
-	-- Fist
-	local FistGui = MobileGui:FindFirstChild("FistGui")
+	local jumpButton = buttonFrame:WaitForChild("JumpButton") :: GuiButton
+	local offset = jumpButton.Position
 
-	if not (RunGui and CrouchGui and DiveGui) then
-		warn("[Movement] SprintButton or CrouchButton missing inside MobileGui.")
-		return
-	end
+	for _, object in MobileGui:GetChildren() do
+		object:Clone().Parent = buttonFrame
+		if object:IsA("Folder") then
+			for _, button in object:GetChildren() do
+				button.Position =
+					UDim2.new(button.Position.X.Scale, offset.X.Offset, button.Position.Y.Scale, offset.Y.Offset)
+			end
+			continue
+		end
 
-	RunGui:Clone().Parent = buttonFrame
-	CrouchGui:Clone().Parent = buttonFrame
-	DiveGui:Clone().Parent = buttonFrame
-	GunGui:Clone().Parent = buttonFrame
-	FistGui:Clone().Parent = buttonFrame
-
-	local button = buttonFrame:WaitForChild("JumpButton") :: GuiButton
-
-	local offset = button.Position
-	for i, v in buttonFrame:QueryDescendants("GuiButton") do
-		v.Position = UDim2.new(v.Position.X.Scale, offset.X.Offset, v.Position.Y.Scale, offset.Y.Offset)
+		object.Position = UDim2.new(object.Position.X.Scale, offset.X.Offset, object.Position.Y.Scale, offset.Y.Offset)
 	end
 
 	mobileButtonsHooked = true

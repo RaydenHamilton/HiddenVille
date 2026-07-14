@@ -136,6 +136,7 @@ local function unlock(player)
 end
 
 local function despawnCarTimer(car: Model)
+	local lockSequence = 0
 	local driveSeat = car:FindFirstChild("DriveSeat") :: Seat
 
 	local gui = driveSeat:FindFirstChildOfClass("BillboardGui")
@@ -198,18 +199,24 @@ local function despawnCarTimer(car: Model)
 	gui.Adornee = attachment
 
 	local function startTimer()
+		lockSequence += 1
+		local currentLock = lockSequence
 		if driveSeat.Occupant or lockedValue.Value then
-			stopTimer()
+			if gui.Enabled == true then
+				stopTimer()
+			end
 			return
 		end
 
 		for i = 120, 0, -1 do
-			if not driveSeat.Occupant and not lockedValue.Value then
+			if not driveSeat.Occupant and not lockedValue.Value and currentLock == lockSequence then
 				gui.Enabled = true
 				textLabel.Text = `Despawning in {i}s`
 				task.wait(1)
 			else
-				stopTimer()
+				if gui.Enabled == true then
+					stopTimer()
+				end
 				return
 			end
 		end

@@ -10,9 +10,6 @@ function phoneClient.init()
 			button.Parent.Parent.Parent.clickSound:Play()
 		end)
 	end
-
-	--// Cash app
-
 	--// Balance display
 	local leaderstats = Player:WaitForChild("leaderstats")
 	local moneyValue = leaderstats:WaitForChild("Money")

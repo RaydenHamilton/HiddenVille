@@ -15,7 +15,7 @@ function DoorServer.init()
 			local goalClose = {}
 			goalClose.CFrame = hinge.CFrame * CFrame.Angles(0, 0, 0)
 
-			local tweenInfo = TweenInfo.new(0.5)
+			local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
 			local tweenOpen = TweenService:Create(hinge, tweenInfo, goalOpen)
 			local tweenClose = TweenService:Create(hinge, tweenInfo, goalClose)
 
@@ -159,102 +159,6 @@ function DoorServer.init()
 		end
 	end
 
-	local ServerStorage = game:GetService("ServerStorage")
-
-	local INVALID_CAR_TYPES = {
-		["PDCar"] = true,
-		["Scooter"] = true,
-		["PDCar2"] = true,
-	}
-	for _, garageDoor in Workspace.Map.Interactions:GetChildren() do
-		local door = garageDoor:FindFirstChild("Garage")
-		if garageDoor.Name == "Motor" and door then
-			door.Triggered:Connect(function(player)
-				local character = player.Character
-				if not character then
-					return
-				end
-
-				local humanoid = character:FindFirstChild("Humanoid")
-				if not humanoid then
-					return
-				end
-
-				local playerGui = player:FindFirstChild("PlayerGui")
-				if not playerGui then
-					return
-				end
-
-				local civCars = workspace:FindFirstChild("CivCars")
-				if not civCars then
-					return
-				end
-
-				local playerCar = civCars:FindFirstChild(player.Name .. "'s Car")
-				if not playerCar then
-					return
-				end
-
-				local seat = playerCar:FindFirstChildOfClass("VehicleSeat")
-				if not seat or seat.Occupant ~= humanoid then
-					return
-				end
-
-				local carType = playerCar:FindFirstChild("CarType")
-				if not carType or INVALID_CAR_TYPES[carType.Value] then
-					return
-				end
-
-				local existingGarageUI = playerGui:FindFirstChild("GarageUI")
-				if existingGarageUI then
-					existingGarageUI:Destroy()
-				end
-
-				local garageTemplate = ServerStorage:FindFirstChild("GarageUI")
-				if not garageTemplate then
-					warn("GarageUI template not found in ServerStorage.")
-					return
-				end
-
-				local newGarageUI = garageTemplate:Clone()
-				newGarageUI.Parent = playerGui
-				newGarageUI.Enabled = true
-				if newGarageUI:FindFirstChild("CarCustomization") then
-					newGarageUI.CarCustomization.Enabled = true
-				end
-
-				local objValue = newGarageUI:FindFirstChild("Object")
-				if objValue then
-					objValue.Value = door
-				end
-
-				local function closeGarage()
-					if newGarageUI and newGarageUI.Parent then
-						newGarageUI.Enabled = false
-						newGarageUI:Destroy()
-					end
-				end
-
-				-- hook common close button names (X / Close / Exit / CloseButton)
-				local closeNames = { "CloseButton", "X", "Close", "Exit" }
-				for _, name in ipairs(closeNames) do
-					local btn = newGarageUI:FindFirstChild(name, true)
-					if btn and (btn:IsA("TextButton") or btn:IsA("ImageButton")) then
-						btn.MouseButton1Click:Connect(closeGarage)
-					elseif btn and btn.MouseButton1Click then
-						btn.MouseButton1Click:Connect(closeGarage)
-					end
-				end
-
-				-- also close if they leave the seat
-				seat:GetPropertyChangedSignal("Occupant"):Connect(function()
-					if seat.Occupant ~= humanoid then
-						closeGarage()
-					end
-				end)
-			end)
-		end
-	end
 end
 
 return DoorServer
