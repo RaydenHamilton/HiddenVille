@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
 local CarControl = {}
 
 local carEvent = ReplicatedStorage.Remotes.CarControl :: RemoteEvent
@@ -16,12 +15,14 @@ local function stopCar(bool, door)
 	if bool then
 		local moter = door.Value.Value
 		car.PrimaryPart = car.Body["#Weight"]
-		car:PivotTo(moter.CFrame)
+		local newCframe: CFrame = moter.CFrame
+		-- newCframe.Position.Y = car.PrimaryPart.Position.Y
+		car:PivotTo(newCframe)
+		humanoid.JumpPower = 0
 	else
+		humanoid.JumpPower = 50
 		car.PrimaryPart = driveSeat
 	end
-
-	task.wait(0.1)
 
 	for _, wheel: BasePart in driveSeat.Parent.Wheels:GetChildren() do
 		wheel.Anchored = bool

@@ -14,39 +14,45 @@ local doorEntered = {}
 
 local function openGarage(player, driveSeat, enterPart)
 	local moter = enterPart.Value.Value
-	local door = moter:FindFirstChild("Garage")
 	local character = player.Character
 	if not character then
+		warn("no character")
 		return
 	end
 
 	local humanoid = character:FindFirstChild("Humanoid")
 	if not humanoid then
+		warn("no humanoid")
 		return
 	end
 
 	local playerGui = player:FindFirstChild("PlayerGui")
 	if not playerGui then
+		warn("no player gui")
 		return
 	end
 
-	local civCars = workspace:FindFirstChild("CivCars")
+	local civCars = Workspace:FindFirstChild("CivCars")
 	if not civCars then
+		warn("no civ car")
 		return
 	end
 
 	local playerCar = civCars:FindFirstChild(player.Name .. "'s Car")
 	if not playerCar then
+		warn("no player car")
 		return
 	end
 
 	local seat = playerCar:FindFirstChildOfClass("VehicleSeat")
 	if not seat or seat.Occupant ~= humanoid then
+		warn("no Seat")
 		return
 	end
 
 	local carType = playerCar:FindFirstChild("CarType")
 	if not carType or INVALID_CAR_TYPES[carType.Value] then
+		warn("wrong type")
 		return
 	end
 
@@ -70,7 +76,7 @@ local function openGarage(player, driveSeat, enterPart)
 
 	local objValue = newGarageUI:FindFirstChild("Object")
 	if objValue then
-		objValue.Value = door
+		objValue.Value = moter
 	end
 
 	local function closeGarage()
@@ -141,7 +147,7 @@ local function enter(part: BasePart, door: Part)
 end
 
 function GarageAnimation.init()
-	for _, door: BasePart in Workspace.Garage:GetChildren() do
+	for _, door: Part in Workspace.Garage:GetChildren() do
 		door.Touched:Connect(function(part: BasePart)
 			enter(part, door)
 		end)
