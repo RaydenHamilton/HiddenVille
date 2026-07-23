@@ -68,9 +68,7 @@ end
 local initCar = {}
 
 function initCar.new(car)
-	local seat = car.DriveSeat
-
-	seat.Disabled = true -- Prevents entering the car before initialization
+	car.DriveSeat.Disabled = true -- Prevents entering the car before initialization
 
 	local Wheels = {}
 	local Drive = Wheels
@@ -237,15 +235,15 @@ function initCar.new(car)
 				for _, a in SuspensionGeometry:GetDescendants() do
 					if a.Name == "Weld" then
 						if a:IsA("BasePart") then
-							MakeWeld(a, seat)
+							MakeWeld(a, car.DriveSeat)
 						elseif a:IsA("Model") then
-							ModelWeld(a, seat)
+							ModelWeld(a, car.DriveSeat)
 						end
 					end
 				end
 				MakeWeld(SuspensionGeometry.Hub, base)
 				if SuspensionGeometry:FindFirstChild("SpringTop") then
-					MakeWeld(SuspensionGeometry.SpringTop, seat)
+					MakeWeld(SuspensionGeometry.SpringTop, car.DriveSeat)
 				end
 
 				local susparts = SuspensionGeometry:GetDescendants()
@@ -395,7 +393,7 @@ function initCar.new(car)
 					sp.MinLength = Tune.RSusLength - Tune.RCompressLim
 				end
 
-				MakeWeld(seat, sa)
+				MakeWeld(car.DriveSeat, sa)
 				MakeWeld(sb, base)
 			end
 		else
@@ -403,7 +401,7 @@ function initCar.new(car)
 			if SuspensionGeometry then
 				SuspensionGeometry:ClearAllChildren()
 			end
-			MakeWeld(seat, base)
+			MakeWeld(car.DriveSeat, base)
 		end
 
 		--Lock Rear Steering Axle
@@ -417,7 +415,7 @@ function initCar.new(car)
 
 		--Weld Miscelaneous Parts
 		if v:FindFirstChild("SuspensionFixed") ~= nil then
-			ModelWeld(v.SuspensionFixed, seat)
+			ModelWeld(v.SuspensionFixed, car.DriveSeat)
 		end
 		if v:FindFirstChild("WheelFixed") ~= nil then
 			ModelWeld(v.WheelFixed, axle)
@@ -601,7 +599,7 @@ function initCar.new(car)
 		local tdensity = (Tune.Weight * Units.Mass_kg - mass) / (weightB.Size.X * weightB.Size.Y * weightB.Size.Z) --fixed by denkodin
 		weightB.CustomPhysicalProperties = PhysicalProperties.new(math.clamp(tdensity, 0.01, 100), 0, 0, 0, 0)
 		--Real life mass in pounds, converted to kg minus existing roblox mass converted to kg, divided by volume of the weight brick in cubic meters, divided by the density of water
-		weightB.CFrame = (seat.CFrame - seat.Position + center) * CFrame.new(0, Tune.CGHeight, 0)
+		weightB.CFrame = (car.DriveSeat.CFrame - car.DriveSeat.Position + center) * CFrame.new(0, Tune.CGHeight, 0)
 		weightB.Parent = car.Body
 
 		--Density Cap
@@ -653,7 +651,7 @@ function initCar.new(car)
 	if Tune.FlipType == "New" then
 		local flipAttach = Instance.new("Attachment")
 		flipAttach.Axis = Vector3.new(0, 1, 0)
-		flipAttach.Parent = seat
+		flipAttach.Parent = car.DriveSeat
 
 		flipG = Instance.new("AlignOrientation")
 		flipG.Name = "Flip"
@@ -663,14 +661,14 @@ function initCar.new(car)
 		flipG.Enabled = false
 		flipG.Mode = Enum.OrientationAlignmentMode.OneAttachment
 		flipG.PrimaryAxis = Vector3.new(0, 1, 0)
-		flipG.Parent = seat
+		flipG.Parent = car.DriveSeat
 	elseif Tune.FlipType == "Old" then
 		flipG = Instance.new("BodyGyro")
 		flipG.Name = "Flip"
 		flipG.D = 0
 		flipG.MaxTorque = Vector3.new(0, 0, 0)
 		flipG.P = 0
-		flipG.Parent = seat
+		flipG.Parent = car.DriveSeat
 	end
 
 	--[[Finalize Chassis]]
@@ -679,7 +677,7 @@ function initCar.new(car)
 	--Misc Weld
 	--Weld Body
 	task.wait()
-	ModelWeld(car.Body, seat)
+	ModelWeld(car.Body, car.DriveSeat)
 
 	--Unanchor
 	task.wait()
@@ -727,7 +725,7 @@ function initCar.new(car)
 		end
 	end
 
-	--Apply Seat Handler
+	--Apply car.DriveSeat Handler
 	for _, data in Seats do
 		local seatObject = data.Seat :: Seat
 		local parts = data.Parts
@@ -746,8 +744,8 @@ function initCar.new(car)
 	end
 
 	--[[Destroying Cleanup]]
-	seat.AncestryChanged:Connect(function()
-		if seat.Parent then
+	car.DriveSeat.AncestryChanged:Connect(function()
+		if car.DriveSeat.Parent then
 			return
 		end
 		task.wait(10) -- Delay for clients to finish up
@@ -759,14 +757,14 @@ function initCar.new(car)
 	--[[Driver Handling]]
 
 	-- Driver Sit
-	seat.ChildAdded:Connect(function(child: Instance)
+	car.DriveSeat.ChildAdded:Connect(function(child: Instance)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			local player = Players:GetPlayerFromCharacter(child.Part1.Parent)
 			if not player then
 				return
 			end
 
-			seat:SetNetworkOwner(player)
+			car.DriveSeat:SetNetworkOwner(player)
 
 			local clone = interface:Clone()
 			clone.Parent = player.PlayerGui
@@ -774,19 +772,19 @@ function initCar.new(car)
 	end)
 
 	--Driver Leave
-	seat.ChildRemoved:Connect(function(child: Instance)
+	car.DriveSeat.ChildRemoved:Connect(function(child: Instance)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			-- Safety check in case vehicle destroying
-			if not seat.Parent then
+			if not car.DriveSeat.Parent then
 				return
 			end
 
 			-- Remove Flip Force
-			if seat:FindFirstChild("Flip") then
+			if car.DriveSeat:FindFirstChild("Flip") then
 				if Tune.FlipType == "New" then
-					seat.Flip.Enabled = false
+					car.DriveSeat.Flip.Enabled = false
 				else
-					seat.Flip.MaxTorque = Vector3.new()
+					car.DriveSeat.Flip.MaxTorque = Vector3.new()
 				end
 			end
 
@@ -836,7 +834,7 @@ function initCar.new(car)
 
 	--Allow entering the car now that everything is initialized
 	task.wait(1)
-	seat.Disabled = false
+	car.DriveSeat.Disabled = false
 end
 
 --[END]]

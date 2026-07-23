@@ -29,7 +29,11 @@ function driveClient.new()
 	local values = gui.Values
 
 	local Units = require(ReplicatedStorage.Shared.Cars.MiscModules.Units)
-	local _Tune = require(car["A-Chassis Tune"])
+
+	local TuneBase = require(script.Parent.TuneBase)
+	local CustomTune = require(car:FindFirstChildOfClass("ModuleScript"))
+
+	local _Tune = setmetatable(CustomTune, { __index = TuneBase })
 	local VirtualInput = ReplicatedStorage.Remotes:FindFirstChild("VirtualInput")
 
 	if _Tune.Mobile then
@@ -193,7 +197,7 @@ function driveClient.new()
 
 	local _SteerL = false
 	local _SteerR = false
-	local _PBrake = car["A-Chassis Tune"]["A-Chassis Interface"].Values.PBrake.Value
+	local _PBrake = gui.Values.PBrake.Value
 
 	local _TCSTracker = {}
 	local _TCS = _Tune.TCSEnabled
@@ -352,7 +356,7 @@ function driveClient.new()
 			end
 
 			-- Save PBrake state
-			car["A-Chassis Tune"]["A-Chassis Interface"].Values.PBrake.Value = _PBrake
+			gui.Values.PBrake.Value = _PBrake
 
 			-- Remove Wheel Force
 			for _, data in Wheels do
@@ -383,7 +387,7 @@ function driveClient.new()
 			end
 
 			-- Tell server to remove
-			car["A-Chassis Tune"].Shutdown:FireServer()
+			ReplicatedStorage.Remotes.Shutdown:FireServer()
 		end
 	end)
 

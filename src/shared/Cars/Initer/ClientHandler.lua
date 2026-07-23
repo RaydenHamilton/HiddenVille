@@ -11,11 +11,11 @@ local clientInit = {}
 function clientInit.init()
 	Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(a0: Instance)
 		if a0.Name == "A-Chassis Interface" then
-			GaugesClient.new()
-			SoundClient.new()
-			CameraClient.new()
 			Drive.new()
-			LightClient.new(a0)
+			-- GaugesClient.new()
+			-- SoundClient.new()
+			-- CameraClient.new()
+			-- LightClient.new(a0)
 		end
 	end)
 end

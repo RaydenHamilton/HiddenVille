@@ -76,7 +76,6 @@ function MiscWeld.new(car)
 				* CFrame.Angles(math.rad(13), 0, 0)
 		end
 	end)
-	ModelWeld(car, car.DriveSeat)
 end
 
 ---------------------------

@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local trove = require(ReplicatedStorage.Packages._Index["sleitnick_trove@1.8.0"].trove)
 local DriverSeatServer = require(ReplicatedStorage.Shared.Cars.DriverSeatServer)
 local Initialize = require(ReplicatedStorage.Shared.Cars.Initialize)
 local LightsServer = require(ReplicatedStorage.Shared.Cars.Lights.LightsServer)
@@ -12,12 +13,12 @@ local serverInit = {}
 
 local function createCar(CarModel: Model)
 	MiscWeld.new(CarModel)
-	Initialize.new(CarModel)
 	DriverSeatServer.new(CarModel)
-	SoundServer.new(CarModel)
+	Initialize.new(CarModel)
+	-- SoundServer.new(CarModel)
 
-	CarRagdallServer.new(CarModel)
-	LightsServer.new(CarModel)
+	-- CarRagdallServer.new(CarModel)
+	-- LightsServer.new(CarModel)
 	task.wait(1)
 	if true then
 		return
@@ -38,9 +39,9 @@ local function createCar(CarModel: Model)
 			end
 		elseif obj:FindFirstAncestor("Wheels") then
 			obj.CollisionGroup = "Wheel"
-			if obj.Parent.Name == "Wheels" then
-				obj.Anchored = true
-			end
+			-- if obj.Parent.Name == "Wheels" then
+			-- obj.Anchored = true
+			-- end
 		end
 	end
 end

@@ -27,52 +27,44 @@ Tune.FToe = 0
 Tune.RToe = 0
 
 --[[Weight and CG]]
-Tune.Weight = 1440 -- Total weight (in kilograms, under Earth's gravity, including wheel and suspension weight)
-Tune.WeightBSize =
-	{ -- Size of weight brick in milimeters. You can find how to convert studs to milimeters inside the Units module.
-		--[[Width]]
-		1900,
-		--[[Height]]
-		1303,
-		--[[Length]]
-		4545,
-	}
-Tune.WeightDist = 44 -- Weight distribution (0 - on rear wheels, 100 - on front wheels, can be <0 or >100)
-Tune.CGHeight = 0.12 -- Center of gravity height (studs relative to average of all wheels)
-Tune.WBVisible = false -- Makes the weight brick visible
-
-Tune.GravComp = 35 -- Desired gravitational force in Roblox units. (35 is the default. Set to 0 to use workspace.Gravity instead)
+Tune.Weight = 1440
+Tune.WeightBSize = {
+	1900,
+	1303,
+	4545,
+}
+Tune.WeightDist = 44
+Tune.CGHeight = 1.15 -- MAXED OUT: Pulls the gravity point way up, creating massive leverage for wild body tilts
+Tune.WBVisible = false
+Tune.GravComp = 0
 
 --Unsprung Weight
-Tune.FWheelWeight = 22 -- Front Wheel Weight in kg
-Tune.RWheelWeight = 23 -- Rear Wheel Weight in kg
-
-Tune.AxleSize = 1.5 -- Size of structural members (larger = MORE STABLE / carry more weight)
-Tune.AxleDensity = 0.1 -- Density of structural members
-Tune.CustomSuspensionDensity = 1 -- Density of suspension joints, only applies to custom suspension. (0 makes them massless)
+Tune.FWheelWeight = 22
+Tune.RWheelWeight = 23
+Tune.AxleSize = 1.5
+Tune.AxleDensity = 0.1
+Tune.CustomSuspensionDensity = 1
 
 --[[Suspension]]
-Tune.SuspensionEnabled = true -- Enables suspension, true or false
+Tune.SuspensionEnabled = true
 
 --Front Strut
-Tune.FSusStiffness = 10 -- Spring Force in kgf/mm. (To convert from Roblox stiffness, divide Roblox stiffness by 447.18324)
-Tune.FSusDamping = 3.9 -- Spring Damping in thousands of kg/s. (To convert from Roblox damping, divide Roblox damping by 45.6)
-Tune.FSwayBar = 3.2 -- Sway Bar Force in kgf/mm (more = less roll)
-
-Tune.FSusLength = 1.35 -- Base spring height (in studs)
-Tune.FPreCompress = 0.2 -- Adds to base spring height (in studs)
-Tune.FExtensionLim = 0.5 -- Max Extension Travel (in studs)
-Tune.FCompressLim = 0.3 -- Max Compression Travel (in studs)
+Tune.FSusStiffness = 4.5 -- PILLOW SOFT: Extremely soft springs that immediately squash under load
+Tune.FSusDamping = 0.6 -- JELLY EFFECT: Very low dampening makes the car chassis bounce and wobble repeatedly
+Tune.FSwayBar = 0.0 -- REMOVED: Zero roll resistance allows the body to tilt until it almost touches the ground
+Tune.FSusLength = 2.0 -- MONSTER TRUCK HEIGHT: Tall stance gives the car massive clearance to lean over
+Tune.FPreCompress = 0.3
+Tune.FExtensionLim = 1.2 -- DEEP TRAVEL: Allows the inside tires to drop far down during a heavy lean
+Tune.FCompressLim = 0.9 -- DEEP TRAVEL: Allows the outside tires to crunch all the way into the wheel wells
 
 --Rear Strut
-Tune.RSusStiffness = 11 -- Spring Force in kgf/mm. (To convert from Roblox stiffness, divide Roblox stiffness by 447.18324)
-Tune.RSusDamping = 4.4 -- Spring Damping in thousands of kg/s. (To convert from Roblox damping, divide Roblox damping by 45.6)
-Tune.RSwayBar = 1.1 -- Sway Bar Force in kgf/mm (more = less roll)
-
-Tune.RSusLength = 1.35 -- Base spring height (in studs)
-Tune.RPreCompress = 0.2 -- Adds to base spring height (in studs)
-Tune.RExtensionLim = 0.5 -- Max Extension Travel (in studs)
-Tune.RCompressLim = 0.3 -- Max Compression Travel (in studs)
+Tune.RSusStiffness = 5.0 -- PILLOW SOFT: Matches the front for floppy physics
+Tune.RSusDamping = 0.7 -- JELLY EFFECT: Adds playful rear-end bounce when accelerating or stopping
+Tune.RSwayBar = 0.0 -- REMOVED: Zero roll resistance
+Tune.RSusLength = 2.0 -- MONSTER TRUCK HEIGHT: Tall stance
+Tune.RPreCompress = 0.3
+Tune.RExtensionLim = 1.2 -- DEEP TRAVEL
+Tune.RCompressLim = 0.9 -- DEEP TRAVEL
 
 --Old Suspension Settings, applies if there is no SuspensionGeometry for the respective wheel
 Tune.FSusAngle = 80 -- Spring Angle (degrees from horizontal)
@@ -137,39 +129,40 @@ Tune.SteerInner = 39 -- Inner wheel steering (in degrees)
 Tune.SteerOuter = 36 -- Outer wheel steering (in degrees)
 
 -- Steer speed tuning
-Tune.SteerSpeed = 0.05 -- Steering increment per tick (in degrees)
-Tune.ReturnSpeed = 0.1 -- Steering increment per tick (in degrees)
+Tune.SteerSpeed = 0.12 -- Steering increment per tick (in degrees)
+Tune.ReturnSpeed = 0.18 -- Steering increment per tick (in degrees)
 Tune.ContlrSteerSpeed = 0 -- Controller version of steer speed (0 or less to be the same as SteerSpeed)
 Tune.ContlrReturnSpeed = 0 -- Controller version of return speed (0 or less to be the same as ReturnSpeed)
 Tune.MSteerUsesContlr = true -- Set to true if you want mouse steering to use controller settings.
 
 -- Steer Decay
-Tune.SteerDecay = 260 -- Speed of gradient cutoff (in km/h)
-Tune.SteerSpeedDecay = 260 -- Speed of gradient cutoff of steering speed (in km/h)
-Tune.MinSteer = 25 -- Minimum steering angle at max steer decay (in percent)
-Tune.MinSteerSpeed = 60 -- Minimum steering speed at max decay (in percent)
+Tune.SteerDecay = 400 -- INCREASED: Shuts off high-speed steering restrictions so you can always turn sharply
+Tune.SteerSpeedDecay = 400 -- INCREASED: Keeps your steering lightning-fast even at top speed
+Tune.MinSteer = 70 -- INCREASED: Allows the wheels to turn much further when driving fast (more extreme leans!)
+Tune.MinSteerSpeed = 90 -- INCREASED: Keeps the steering response snappy at high speeds
 Tune.MSteerExp = 1 -- Mouse steering exponential degree
 
 -- Counter-steer
-Tune.CSEnabled = true -- Enables or disables countersteering
-Tune.CSAmt = 100 -- Amount of countersteering at a full perpendicular slide (in percent)
-Tune.CSSteerThresh = 10 -- Threshold before countersteering activates (in percent)
-Tune.CSSpeedThresh = 10 -- Speed threshold before countersteering can activate (in km/h)
+Tune.CSEnabled = false -- DISABLED: Real-life drift assistance. Turning this off lets the car slide and slide wildly like an arcade game!
+Tune.CSAmt = 100
+Tune.CSSteerThresh = 10
+Tune.CSSpeedThresh = 10
 
 -- Four Wheel Steering
 Tune.FWSteer = "None" -- Static, Speed, Both, or None
-Tune.RSteerOuter = 2.2 -- Outer rear wheel steering angle (in degrees)
-Tune.RSteerInner = 1.6 -- Inner rear wheel steering angle (in degrees)
-Tune.RSteerSpeed = 80 -- Speed at which 4WS fully activates (Speed), deactivates (Static), or transition begins (Both) (km/h)
-Tune.RSteerDecay = 150 -- Speed of gradient cutoff (in km/h)
+Tune.RSteerOuter = 2.2
+Tune.RSteerInner = 1.6
+Tune.RSteerSpeed = 80
+Tune.RSteerDecay = 150
 
-Tune.RSteerD = 1000 -- Rear Steering Damping (old only)
-Tune.RSteerP = 50000 -- Rear Steering Aggressiveness (old only)
-Tune.RSteerMaxTorque = 20000 -- Rear Steering Force (old only)
+Tune.RSteerD = 1000
+Tune.RSteerP = 50000
+Tune.RSteerMaxTorque = 20000
 
 -- Steering aggressiveness
-Tune.SteerSmoothing = 3 -- The lower, the smoother the steering will arrive at max angle.
-Tune.PowerSteeringType = "Old" -- "New" uses AlignOrientation. This may cause problems.
+Tune.SteerSmoothing = 1 -- LOWERED: The lower this is, the faster and more "instant" the wheels snap to full turn
+Tune.PowerSteeringType = "Old"
+
 -- "Old" uses BodyGyro.
 Tune.SteerD = 1000 -- Steering Damping (old only)
 Tune.SteerP = 50000 -- Steering Aggressiveness (old only)
@@ -363,7 +356,7 @@ Tune.AutoShiftType = "DCT" --[[
 	[Types]
 		"Rev"		: Clutch engages fully once RPM reached			(AC6C V1)
 		"DCT"		: Clutch engages after a set time has passed	(AC6.81T)	]]
-Tune.AutoShiftVers = "New" --[[
+Tune.AutoShiftVers = "Old" --[[
 	[Versions]
 		"New"		: Shift from Reverse, Neutral, and Drive		(AC6.81T)
 		"Old"		: Auto shifts into R or D when stopped.			(AC6.52S2)	]]

@@ -11,10 +11,10 @@ DriverSeat.new = function(carModel: Model)
 	local notification = ReplicatedStorage.Remotes.Notification
 
 	local function lockWheels(bool)
-		local wheels = carModel:FindFirstChild("Wheels")
-		for _, wheel: BasePart in wheels:GetChildren() do
-			wheel.Anchored = bool
-		end
+		-- local wheels = carModel:FindFirstChild("Wheels")
+		-- for _, wheel: BasePart in wheels:GetChildren() do
+		-- 	wheel.Anchored = bool
+		-- end
 	end
 
 	local function enterCar(Player)
