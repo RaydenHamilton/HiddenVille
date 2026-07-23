@@ -6,3 +6,6 @@ for _, room in Workspace.TurfSystem:GetChildren() do
 		Sound:Play()
 	end
 end
+
+Workspace.Sounds["City Ambience 3 (SFX)"]:Play()
+Workspace.Sounds["Night Ambience 2 (SFX)"]:Play()

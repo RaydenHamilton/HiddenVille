@@ -10,7 +10,14 @@ DriverSeat.new = function(carModel: Model)
 	local CurrentOccupant
 	local notification = ReplicatedStorage.Remotes.Notification
 
-	DrivePrompt.Triggered:Connect(function(Player)
+	local function lockWheels(bool)
+		local wheels = carModel:FindFirstChild("Wheels")
+		for _, wheel: BasePart in wheels:GetChildren() do
+			wheel.Anchored = bool
+		end
+	end
+
+	local function enterCar(Player)
 		local Character = Player.Character or Player.CharacterAdded:Wait() :: Model
 
 		if Character:GetAttribute("Ragdoll") then
@@ -39,31 +46,35 @@ DriverSeat.new = function(carModel: Model)
 			DrivePrompt.Enabled = false
 			CurrentOccupant = Player
 			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Wheel"
+			lockWheels(false)
 		end
-	end)
+	end
 
-	DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(function()
+	local function exitCar()
 		if not DriveSeat.Occupant then
 			task.wait()
-
 			local root: Model = CurrentOccupant.Character or CurrentOccupant.CharacterAdded:Wait()
 			root:PivotTo(DriveSeat.CFrame * CFrame.new(-5, 0, 0))
+
 			CurrentOccupant.Character.HumanoidRootPart.CollisionGroup = "Player"
 
 			for _, v in carModel:QueryDescendants("ProximityPrompt") do
 				v.Enabled = true
 			end
+
+			repeat
+				task.wait()
+			until (DriveSeat :: BasePart).AssemblyLinearVelocity.Magnitude < 0.01
+
+			if not DriveSeat.Occupant then
+				lockWheels(true)
+			end
 		end
-	end)
+	end
 
-	-- Car:WaitForChild("Locked").Changed:Connect(function()
-	-- 	local locked = Car.Locked.Value
-	-- 	DrivePrompt.Enabled = not locked
+	DrivePrompt.Triggered:Connect(enterCar)
 
-	-- 	for _, obj in ipairs(Car:QueryDescendants("ProximityPrompt")) do
-	-- 		obj.Enabled = not locked
-	-- 	end
-	-- end)
+	DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(exitCar)
 end
 
 return DriverSeat

@@ -30,7 +30,7 @@ function DoorServer.init()
 			end)
 		end
 	end
-	function DoorOpen(door, state)
+	local function DoorOpen(door, state)
 		if state.Open == false and not state.StopAndReopen then
 			state.Open = true
 			state.StopAndReopen = true

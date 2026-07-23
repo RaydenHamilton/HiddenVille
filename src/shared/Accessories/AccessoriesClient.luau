@@ -12,25 +12,28 @@ function client.new(tool: Tool)
 	local event = ReplicatedStorage.Remotes:WaitForChild("AddAccessorie")
 	local protection = 50
 
-	local ready = false
-
 	local specialanim = humanoid:LoadAnimation(animations.wear)
-	local specialanim2 = humanoid:LoadAnimation(animations.takeoff)
 
 	tool.Activated:Connect(function()
-		local hum = character:FindFirstChild("Humanoid")
-		if hum and ready == false then
-			ready = true
+		local hum = character:FindFirstChild("Humanoid") :: Humanoid
+
+		local sound = Instance.new("Sound")
+		sound.SoundId = "rbxassetid://113495211930866"
+		sound.Parent = character
+		sound.Volume = 2
+		hum:UnequipTools()
+		if hum then
 			specialanim:Play()
 
-			task.wait(1)
-			event:FireServer("protect", { character, hum, protection })
-		elseif ready == true then
-			ready = false
-			specialanim2:Play()
 			task.wait(0.3)
-			event:FireServer("unprotect", { character, hum, protection})
+
+			sound:Play()
+			event:FireServer({ character, hum, protection }, tool)
 		end
+
+		task.delay(1, function()
+			sound:Destroy()
+		end)
 	end)
 end
 

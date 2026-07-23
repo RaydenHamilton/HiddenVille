@@ -1218,7 +1218,7 @@ function ProjectileHandler:SimulateProjectile(
 			end
 		end
 
-		local filterList = { Camera, Tool, Tool.parent }
+		local filterList = { Camera, Tool, Tool.Parent }
 
 		AppendSeatedVehicleToIgnore(filterList, Tool.Parent)
 		for i, v in pairs(CollectionService:GetTagged("NoShoot")) do

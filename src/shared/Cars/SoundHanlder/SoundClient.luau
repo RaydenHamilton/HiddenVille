@@ -93,6 +93,9 @@ function soundClient.new()
 	local nextFireTime = 0
 
 	connections[#connections + 1] = RunService.Heartbeat:Connect(function()
+		if not gui or gui:FindFirstChild("Values") then
+			return
+		end
 		local currentTime = os.clock()
 		if currentTime < nextFireTime then
 			return

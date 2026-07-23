@@ -1,15 +1,19 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local DriveModule = {}
+const Players = game:GetService("Players")
+const RunService = game:GetService("RunService")
+const UserInputService = game:GetService("UserInputService")
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+const player = Players.LocalPlayer
+const mouse = player:GetMouse()
+const playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+const connections: { RBXScriptConnection } = {}
+
+const DriveModule = {}
 
 function DriveModule.new()
 	local gui = playerGui:WaitForChild("A-Chassis Interface")
 
-	local connections: { RBXScriptConnection } = {}
 	--[[START]]
-
 	gui:WaitForChild("Car")
 	gui:WaitForChild("IsOn")
 	gui:WaitForChild("ControlsOpen")
@@ -17,15 +21,12 @@ function DriveModule.new()
 
 	--[[Dependencies]]
 
-	local player = game.Players.LocalPlayer
-	local mouse = player:GetMouse()
-	local UserInputService = game:GetService("UserInputService")
 	local car = gui.Car.Value
 	local module = car:WaitForChild("A-Chassis Tune") :: ModuleScript
 	if not module then
 		return
 	end
-	local _Tune = require(module)
+	const _Tune = require(module)
 
 	--[[Output Scaling Factor]]
 
@@ -77,39 +78,27 @@ function DriveModule.new()
 
 	local _InControls = false
 
-	--[[Shutdown]]
-
-	local function clearConnections()
-		for _, connection: RBXScriptConnection in connections do
-			connection:Disconnect()
-		end
-	end
-	local function removeGui()
-		_PBrake = true
-		task.wait()
-		clearConnections()
-	end
-
 	--[[Controls]]
 
 	local _CTRL = _Tune.Controls
 	local Controls = Instance.new("Folder")
 	Controls.Parent = gui
 	Controls.Name = "Controls"
+
 	for i, v in pairs(_CTRL) do
-		local a = Instance.new("StringValue")
-		a.Parent = Controls
-		a.Name = i
-		a.Value = v.Name
-		connections[#connections + 1] = a.Changed:connect(function()
+		local strVal = Instance.new("StringValue")
+		strVal.Parent = Controls
+		strVal.Name = i
+		strVal.Value = v.Name
+		connections[#connections + 1] = strVal.Changed:connect(function()
 			if i == "MouseThrottle" or i == "MouseBrake" then
-				if a.Value == "MouseButton1" or a.Value == "MouseButton2" then
-					_CTRL[i] = Enum.UserInputType[a.Value]
+				if strVal.Value == "MouseButton1" or strVal.Value == "MouseButton2" then
+					_CTRL[i] = Enum.UserInputType[strVal.Value]
 				else
-					_CTRL[i] = Enum.KeyCode[a.Value]
+					_CTRL[i] = Enum.KeyCode[strVal.Value]
 				end
 			else
-				_CTRL[i] = Enum.KeyCode[a.Value]
+				_CTRL[i] = Enum.KeyCode[strVal.Value]
 			end
 		end)
 	end
@@ -117,13 +106,13 @@ function DriveModule.new()
 	--Deadzone Adjust
 	local _PPH = _Tune.Peripherals
 	for i, v in pairs(_PPH) do
-		local a = Instance.new("IntValue")
-		a.Parent = Controls
-		a.Name = i
-		a.Value = v
-		connections[#connections + 1] = a.Changed:connect(function()
-			a.Value = math.min(100, math.max(0, a.Value))
-			_PPH[i] = a.Value
+		local intVal = Instance.new("IntValue")
+		intVal.Parent = Controls
+		intVal.Name = i
+		intVal.Value = v
+		connections[#connections + 1] = intVal.Changed:connect(function()
+			intVal.Value = math.min(100, math.max(0, intVal.Value))
+			_PPH[i] = intVal.Value
 		end)
 	end
 
@@ -793,6 +782,7 @@ function DriveModule.new()
 			then
 				--PBrake
 				v["#AV"].maxTorque = Vector3.new(math.abs(Ref.x), math.abs(Ref.y), math.abs(Ref.z)) * PBrakeForce
+				print(Vector3.new(math.abs(Ref.x), math.abs(Ref.y), math.abs(Ref.z)) * PBrakeForce)
 				v["#AV"].angularvelocity = Vector3.new()
 			else
 				--Apply Power
@@ -814,7 +804,8 @@ function DriveModule.new()
 					end
 					if driven then
 						local on = 1
-						if not gui.IsOn.Value then
+						local isOn = gui:FindFirstChild("IsOn")
+						if not isOn or not isOn.Value then
 							on = 0
 						end
 						local throt = _GThrot
@@ -932,6 +923,9 @@ function DriveModule.new()
 		RPM()
 
 		--Update External Values
+		if not gui or not gui:FindFirstChild("IsOn") then
+			return
+		end
 		_IsOn = gui.IsOn.Value
 		_InControls = gui.ControlsOpen.Value
 		gui.Values.Gear.Value = _CGear
@@ -967,10 +961,23 @@ function DriveModule.new()
 		end
 	end
 
-	--[[Run]]
+	--[[Shutdown]]
 
+	local function clearConnections()
+		for _, connection: RBXScriptConnection in connections do
+			connection:Disconnect()
+		end
+	end
+	local function removeGui()
+		_PBrake = true
+		task.wait()
+		clearConnections()
+		Engine()
+	end
+
+	--[[Run]]
 	_PBrake = false
-	connections[#connections + 1] = car.DriveSeat.ChildRemoved:connect(removeGui)
+	connections[#connections + 1] = car.DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(removeGui)
 	connections[#connections + 1] = UserInputService.InputBegan:connect(DealWithInput)
 	connections[#connections + 1] = UserInputService.InputChanged:connect(DealWithInput)
 	connections[#connections + 1] = UserInputService.InputEnded:connect(DealWithInput)
@@ -985,6 +992,9 @@ function DriveModule.new()
 	connections[#connections + 1] = Handbrake.InputBegan:Connect(TouchHandbrake)
 	connections[#connections + 1] = Handbrake.InputEnded:Connect(TouchHandbrake)
 	connections[#connections + 1] = RunService.Stepped:connect(Runtime)
+
+	task.wait(15)
+	removeGui()
 
 	--[[END]]
 end

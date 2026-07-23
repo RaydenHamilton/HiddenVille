@@ -168,8 +168,6 @@ function dive.init()
 				end
 				dive()
 			end)
-		else
-			warn("no mobile buttons")
 		end
 	end
 

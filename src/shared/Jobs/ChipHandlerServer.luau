@@ -80,10 +80,10 @@ function chipSever.init()
 			if takiToSell then
 				takiToSell:Destroy()
 				Prompt.Parent["money sound effect"]:Play()
-				ReplicatedStorage.Events.SOLDChips:FireClient(player, moneyEarned)
+				ReplicatedStorage.Remotes.SOLDChips:FireClient(player, moneyEarned)
 			end
 		else
-			ReplicatedStorage.Events.Availability:FireClient(player, "Equip Chips")
+			ReplicatedStorage.Remotes.Availability:FireClient(player, "Equip Chips")
 		end
 	end)
 
@@ -231,7 +231,7 @@ function chipSever.init()
 		end
 
 		if not addedIngredient then
-			ReplicatedStorage.Events.Availability:FireClient(plr)
+			ReplicatedStorage.Remotes.Availability:FireClient(plr)
 		end
 
 		-- Start cooking if ready

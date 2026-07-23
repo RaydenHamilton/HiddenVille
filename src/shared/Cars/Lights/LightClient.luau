@@ -7,6 +7,8 @@ function clientLights.new(ui)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local client = require(ReplicatedStorage.BlinkEvents.client)
 
+	client.lightsOn.Fire("ToggleLight")
+
 	InputService.InputEnded:Connect(function(Input)
 		if Input.KeyCode == Enum.KeyCode.F then
 			client.lightsOn.Fire("ToggleHorn")
@@ -26,7 +28,7 @@ function clientLights.new(ui)
 	ui.Values.Gear.Changed:connect(function()
 		if ui.Values.Gear.Value == -1 then
 			client.lightsOn.Fire("ToggleReverse1")
-		elseif ui.Values.Gear.Value ~= -1 then
+		else
 			client.lightsOn.Fire("ToggleReverse2")
 		end
 	end)

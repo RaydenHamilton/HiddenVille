@@ -77,7 +77,7 @@ initCar.new = function(car: Model)
 	local _Tune = require(module)
 	local wheels = car:WaitForChild("Wheels")
 	local body = car:WaitForChild("Body")
-	local driveSeat = car:WaitForChild("DriveSeat")
+	local driveSeat = car:WaitForChild("DriveSeat") :: Seat
 
 	task.wait(_Tune.LoadDelay)
 
@@ -489,7 +489,7 @@ initCar.new = function(car: Model)
 				local occupant = seat.Occupant
 
 				if occupant == nil then
-					for _, player in ipairs(game.Players:GetPlayers()) do
+					for _, player in ipairs(Players:GetPlayers()) do
 						local character = player.Character
 						if character and character:FindFirstChildWhichIsA("Humanoid") then
 							if removedTools[player.UserId] then
@@ -583,7 +583,7 @@ initCar.new = function(car: Model)
 	local function getPlayersInCar()
 		local players = {}
 
-		for _, player in ipairs(game.Players:GetPlayers()) do
+		for _, player in ipairs(Players:GetPlayers()) do
 			local character = player.Character
 			local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
 
@@ -621,17 +621,18 @@ initCar.new = function(car: Model)
 			end
 
 			--Remove Wheel Force
-			for _, v: BasePart in pairs(wheels:GetChildren()) do
-				if v:FindFirstChild("#AV") ~= nil then
-					if v["#AV"]:IsA("BodyAngularVelocity") then
-						if v["#AV"].AngularVelocity.Magnitude > 0 then
-							v["#AV"].AngularVelocity = Vector3.new()
-							v["#AV"].MaxTorque = Vector3.new()
+			for _, wheel: BasePart in pairs(wheels:GetChildren()) do
+				if wheel:FindFirstChild("#AV") ~= nil then
+					local AV = wheel:FindFirstChild("#AV")
+					if AV:IsA("BodyAngularVelocity") then
+						if AV.AngularVelocity.Magnitude > 0 then
+							AV.AngularVelocity = Vector3.new()
+							AV.MaxTorque = Vector3.new()
 						end
 					else
-						if v["#AV"].AngularVelocity > 0 then
-							v["#AV"].AngularVelocity = 0
-							v["#AV"].MotorMaxTorque = 0
+						if AV.AngularVelocity > 0 then
+							AV.AngularVelocity = 0
+							AV.MotorMaxTorque = 0
 						end
 					end
 				end
@@ -664,19 +665,17 @@ initCar.new = function(car: Model)
 		carDestroyed = true
 		carOnFire = true
 
-		local soundTime
-		if car.Body and car.Body.FRONT then
-			if car.Body.FRONT:FindFirstChild("Smoke") then
-				car.Body.FRONT.Smoke.Enabled = true
+		if body and body.FRONT then
+			if body.FRONT:FindFirstChild("Smoke") then
+				body.FRONT.Smoke.Enabled = true
 			end
-			if car.Body.FRONT:FindFirstChild("Fire") then
-				car.Body.FRONT.Fire.Enabled = true
+			if body.FRONT:FindFirstChild("Fire") then
+				body.FRONT.Fire.Enabled = true
 
 				local explosionSound = Instance.new("Sound")
 				explosionSound.SoundId = "rbxassetid://158853971"
-				explosionSound.Parent = car.Body.FRONT
+				explosionSound.Parent = body.FRONT
 				explosionSound:Play()
-				soundTime = explosionSound.TimeLength
 			end
 		end
 

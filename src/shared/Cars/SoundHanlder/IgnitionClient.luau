@@ -37,8 +37,8 @@ local function seated()
 		end
 	end
 
-	local s1 = gui.Start1
-	local s2 = gui.Start2
+	local s1 = gui.Start1:Clone()
+	local s2 = gui.Start2:Clone()
 
 	s1.Parent = car.DriveSeat
 	s2.Parent = car.DriveSeat

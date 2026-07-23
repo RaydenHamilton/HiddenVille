@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
-local ServerScriptService = game:GetService("ServerScriptService")
 
 local SpawnToolEvent = ReplicatedStorage.Remotes:WaitForChild("SpawnTool")
 local UpdateSpawns = ReplicatedStorage.Remotes:WaitForChild("UpdateSpawns")
@@ -15,7 +14,16 @@ local SpawnersFolder = ReplicatedStorage:FindFirstChild("Spawners")
 local ToolStorage = SpawnersFolder and SpawnersFolder:FindFirstChild("Gamepass Spawners")
 local CustomsStorage = SpawnersFolder and SpawnersFolder:FindFirstChild("Custom Spawners")
 
+local customSpawners = require(ReplicatedStorage.Settings.SpawnerSettings)
 local playerData = {}
+
+local db = true
+
+local warn = function(message)
+	if db then
+		warn(message)
+	end
+end
 
 local function initializePlayer(player)
 	playerData[player.UserId] = {
@@ -23,19 +31,6 @@ local function initializePlayer(player)
 		ownedSpawners = {},
 		spawnLimits = {},
 	}
-
-	local CustomSpawnerLimits = {
-		["WarInGlokk"] = {
-			["Golden Ak"] = 8,
-			["KrissVector"] = 10,
-			["ChainSaw"] = 200,
-			["GLOKK"] = 200,
-			["Admin Fist"] = 200,
-			["YOU GONE LOVE THIS"] = 200,
-		},
-	}
-
-	local customSpawners = require(ServerScriptService.Settings.SpawnerSettings)
 
 	local gamepassSpawners = {
 		[1607160181] = "Mac11",
@@ -65,8 +60,10 @@ local function initializePlayer(player)
 
 	if customSpawners[player.Name] then
 		playerData[player.UserId].ownedSpawners = customSpawners[player.Name]
+		warn(player.Name .. " Has Custom Spawners")
 	else
 		playerData[player.UserId].ownedSpawners = {}
+		warn(player.Name .. " Has NO Custom Spawners")
 	end
 
 	for gamepassId, spawnerName in pairs(gamepassSpawners) do
@@ -80,10 +77,7 @@ local function initializePlayer(player)
 	end
 
 	for _, spawner in pairs(playerData[player.UserId].ownedSpawners) do
-		local customLimit = CustomSpawnerLimits[player.Name] and CustomSpawnerLimits[player.Name][spawner]
-		local spawnLimit = customLimit or MAX_SPAWNS
-		playerData[player.UserId].spawnLimits[spawner] = spawnLimit
-		playerData[player.UserId].spawns[spawner] = playerData[player.UserId].spawns[spawner] or spawnLimit
+		playerData[player.UserId].spawns[spawner] = MAX_SPAWNS
 	end
 
 	task.wait(2)

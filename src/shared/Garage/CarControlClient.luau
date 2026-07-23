@@ -16,8 +16,8 @@ local function stopCar(bool, door)
 		local moter = door.Value.Value
 		car.PrimaryPart = car.Body["#Weight"]
 		local newCframe: CFrame = moter.CFrame
-		-- newCframe.Position.Y = car.PrimaryPart.Position.Y
-		car:PivotTo(newCframe)
+		local cframe = newCframe * CFrame.new(0, -newCframe.Position.Y + car.PrimaryPart.Position.Y, 0)
+		car:PivotTo(cframe)
 		humanoid.JumpPower = 0
 	else
 		humanoid.JumpPower = 50

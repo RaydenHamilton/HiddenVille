@@ -185,7 +185,6 @@ function FistClient.new(Tool)
 		local hitbox = Instance.new("Part")
 		hitbox.Size = Vector3.new(4, 5, 4)
 		hitbox.Transparency = 1
-		hitbox.Color = Color3.fromRGB(170, 0, 0)
 		hitbox.CanCollide = false
 		hitbox.Anchored = true
 
@@ -212,73 +211,6 @@ function FistClient.new(Tool)
 
 		task.wait(Cooldowns.Push)
 		canPush = true
-	end
-
-	local function Dodge()
-		if isDodging or debounce then
-			return
-		end
-
-		local staminaValue = Character:FindFirstChild("Stamina")
-		if not staminaValue or staminaValue.Value < 8 then
-			return
-		end
-
-		staminaValue.Value -= 8
-
-		debounce = true
-		isDodging = true
-
-		local cameraCFrame = CurrentCamera.CFrame
-		local forwardVector = Vector3.new(cameraCFrame.LookVector.X, 0, cameraCFrame.LookVector.Z).Unit
-		local rightVector = Vector3.new(cameraCFrame.RightVector.X, 0, cameraCFrame.RightVector.Z).Unit
-
-		local dodgeDirection = Vector3.zero
-		if isKeyDown.W then
-			dodgeDirection += forwardVector
-		end
-		if isKeyDown.S then
-			dodgeDirection -= forwardVector
-		end
-		if isKeyDown.A then
-			dodgeDirection -= rightVector
-		end
-		if isKeyDown.D then
-			dodgeDirection += rightVector
-		end
-
-		if dodgeDirection.Magnitude > 0 then
-			dodgeDirection = dodgeDirection.Unit
-		else
-			dodgeDirection = forwardVector
-		end
-
-		if dodgeDirection:Dot(forwardVector) > 0.5 then
-			Animations.dodges.front:Play()
-		elseif dodgeDirection:Dot(forwardVector) < -0.5 then
-			Animations.dodges.back:Play()
-		elseif dodgeDirection:Dot(rightVector) > 0.5 then
-			Animations.dodges.right:Play()
-		elseif dodgeDirection:Dot(rightVector) < -0.5 then
-			Animations.dodges.left:Play()
-		end
-
-		local bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.MaxForce = Vector3.new(40000, 0, 40000)
-		bodyVelocity.Velocity = dodgeDirection * 12
-		bodyVelocity.Parent = HumanoidRootPart
-
-		task.wait(Cooldowns.Dodge)
-		bodyVelocity:Destroy()
-
-		for _, anim in pairs(Animations.dodges) do
-			anim:Stop()
-		end
-
-		isDodging = false
-		debounce = false
-
-		task.wait(Cooldowns.Dodge)
 	end
 
 	local function updateDirection(humanoidRootPart)

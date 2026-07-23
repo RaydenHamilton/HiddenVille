@@ -10,7 +10,7 @@ local function canInit(theModule: ModuleScript)
 			end
 		end)
 		if not pass then
-			warn(pass, message)
+			warn(theModule, message)
 		end
 	end
 	return false

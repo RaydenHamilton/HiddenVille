@@ -2,27 +2,26 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local DriverSeatServer = require(ReplicatedStorage.Shared.Cars.DriverSeatServer)
-local InitCarServer = require(ReplicatedStorage.Shared.Cars.InitCarServer)
-local LightEnablerServer = require(ReplicatedStorage.Shared.Cars.Lights.LightEnablerServer)
+local Initialize = require(ReplicatedStorage.Shared.Cars.Initialize)
 local LightsServer = require(ReplicatedStorage.Shared.Cars.Lights.LightsServer)
-local CarRagdallServer = require(ReplicatedStorage.Shared.Cars.MiscModules.CarRagdallServer)
-local HitSystemServer = require(ReplicatedStorage.Shared.Cars.MiscModules.HitSystemServer)
+local CarRagdallServer = require(ReplicatedStorage.Shared.Cars.MiscModules.CarRagdollServer)
+local MiscWeld = require(ReplicatedStorage.Shared.Cars.MiscModules.MiscWeld)
 local SoundServer = require(ReplicatedStorage.Shared.Cars.SoundHanlder.SoundServer)
-local WeldServer = require(ReplicatedStorage.Shared.Cars.MiscModules.WeldServer)
 
 local serverInit = {}
 
 local function createCar(CarModel: Model)
-	InitCarServer.new(CarModel)
-	HitSystemServer.new(CarModel)
+	MiscWeld.new(CarModel)
+	Initialize.new(CarModel)
 	DriverSeatServer.new(CarModel)
 	SoundServer.new(CarModel)
 
 	CarRagdallServer.new(CarModel)
-	WeldServer.new(CarModel)
 	LightsServer.new(CarModel)
-	LightEnablerServer.new(CarModel)
 	task.wait(1)
+	if true then
+		return
+	end
 
 	for _, obj in CarModel:QueryDescendants("BasePart") do
 		if obj.Name == "#Weight" then
@@ -39,6 +38,9 @@ local function createCar(CarModel: Model)
 			end
 		elseif obj:FindFirstAncestor("Wheels") then
 			obj.CollisionGroup = "Wheel"
+			if obj.Parent.Name == "Wheels" then
+				obj.Anchored = true
+			end
 		end
 	end
 end

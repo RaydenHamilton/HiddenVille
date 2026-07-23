@@ -1,5 +1,3 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -23,8 +21,20 @@ local function Randomize(min, max)
 	return math.random(min, max)
 end
 
+local function changeColisionGroup(character: Model, group: string)
+	for _, part in character:GetChildren() do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = group
+		end
+	end
+end
+
 local function RemoveBoxFromHand(player)
 	local character = player.Character
+
+	character:SetAttribute("BoxJob", nil)
+
+	changeColisionGroup(character, "Player")
 	if not character then
 		return
 	end
@@ -136,6 +146,8 @@ function boxJobServer.init()
 			return
 		end
 
+		player.Character:SetAttribute("BoxJob", true)
+		changeColisionGroup(player.Character, "SafeZone")
 		AttachBoxToHand(player)
 
 		GrabBoxPrompt.GrabSound:Play()

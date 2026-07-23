@@ -5,7 +5,7 @@ local Workspace = game:GetService("Workspace")
 local HitSystem = {}
 
 local function crashEffect(driveSeat)
-	local front = driveSeat.Parent.Body.Front
+	local front = driveSeat.Parent.Body:WaitForChild("FRONT")
 	local cp = ReplicatedStorage.Crash:Clone()
 	cp.Parent = Workspace
 	cp.Position = front.Position
@@ -60,7 +60,12 @@ local lastChanged = {}
 
 local function getCrash(car)
 	local driveSeat = car:FindFirstChild("DriveSeat")
-	local value = driveSeat.Velocity.magnitude
+
+	if not driveSeat then
+		return
+	end
+
+	local value = driveSeat.AssemblyLinearVelocity.magnitude
 	if lastChanged[driveSeat] then
 		local change = value - lastChanged[driveSeat]
 		if change > 8 then
@@ -74,9 +79,23 @@ local function getCrash(car)
 	lastChanged[driveSeat] = value
 end
 
-HitSystem.new = function(car: Model)
+local cars = {}
+
+local function ChildAdded(child)
+	task.wait(1)
+	table.insert(cars, child)
+end
+local function ChildRemove(child)
+	table.remove(cars, table.find(cars, child))
+end
+
+HitSystem.init = function()
+	Workspace.CivCars.ChildAdded:Connect(ChildAdded)
+	Workspace.CivCars.ChildRemoved:Connect(ChildRemove)
 	RunService.Heartbeat:Connect(function()
-		getCrash(car)
+		for _, car in cars do
+			getCrash(car)
+		end
 	end)
 end
 

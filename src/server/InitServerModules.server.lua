@@ -11,7 +11,7 @@ local function canInit(theModule: ModuleScript)
 		end)
 
 		if not pass then
-			warn(pass, message)
+			warn(theModule.Name, message)
 		end
 	end
 	return false

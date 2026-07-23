@@ -5,14 +5,12 @@ local remotefunction = ReplicatedStorage.Remotes:WaitForChild("AddAccessorie")
 local chain = {}
 
 function chain.init()
-	local function event(player: Player, command, value)
-		print("start")
-		local tool = player.Character:FindFirstChildOfClass("Tool")
+	local function event(player: Player, value, tool)
+
+		local character = player.Character or player.CharacterAdded:Wait()
 		local name = tool.Name
 
-		-- name = name:gsub("^Girl ", "")
-
-		if command == "protect" then
+		if not character:FindFirstChild(name) then
 			if value[2] then
 				local currentvest = value[1]:FindFirstChild("VestArmour")
 				if currentvest then
@@ -34,7 +32,7 @@ function chain.init()
 					end
 				end
 
-				local vest = ReplicatedStorage.Chains:FindFirstChild(name)
+				local vest = ReplicatedStorage.Accessories:FindFirstChild(name)
 				if not vest then
 					warn(`no_{name}`)
 					return
@@ -43,7 +41,7 @@ function chain.init()
 				value[1].Humanoid:AddAccessory(clone)
 				print("on")
 			end
-		elseif command == "unprotect" then
+		else
 			for _, v in pairs(value[1]:GetChildren()) do
 				if v.ClassName == "Accessory" then
 					v.Handle.Transparency = 0

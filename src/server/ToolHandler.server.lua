@@ -2,7 +2,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local setupClient = ReplicatedStorage:WaitForChild("Remotes").SetupGun
 local gunHandler = ReplicatedStorage.Shared.GunHandler
-local ChainServer = require(ReplicatedStorage.Shared.Accessories.ChainServer)
 local VestServer = require(ReplicatedStorage.Shared.Accessories.VestServer)
 local Drink = require(ReplicatedStorage.Shared.Foods.Drink)
 local Food = require(ReplicatedStorage.Shared.Foods.Food)

@@ -35,7 +35,7 @@ local function setupDoor(door)
 
 	buyPrompt.Triggered:Connect(function(player)
 		if doorsOwned[player] then
-			notification:FireClient(player, "Error", "You already own a house")
+			notification:FireClient(player, "You already own a house", "Error")
 			return
 		end
 

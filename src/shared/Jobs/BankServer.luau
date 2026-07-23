@@ -47,15 +47,15 @@ local function onGoldCollected(promptObject, player)
 			duffel.Type.Value = "Bank"
 		end
 
-		promptObject.parent.Transparency = 1
+		promptObject.Parent.Transparency = 1
 		promptObject.Enabled = false
-		local image = promptObject.parent:FindFirstChildOfClass("Decal")
+		local image = promptObject.Parent:FindFirstChildOfClass("Decal")
 		if image then
 			image.Visible = false
 		end
 
 		task.delay(ResetTime, function()
-			promptObject.parent.Transparency = 0
+			promptObject.Parent.Transparency = 0
 			promptObject.Enabled = true
 		end)
 	end
