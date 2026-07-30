@@ -51,51 +51,42 @@ end
 
 function shopClient.init()
 	for _, item in Workspace.BuyableItems:QueryDescendants("Model") do
-		local gui = item:FindFirstChild("NameTag", true) :: BillboardGui
 		startingCFrame[item] = item.PrimaryPart.CFrame
-		-- gui.Enabled = false
 	end
 
 	for _, item in Workspace.BlackMarket:QueryDescendants("Model") do
-		local gui = item:FindFirstChild("NameTag", true) :: BillboardGui
 		startingCFrame[item] = item.PrimaryPart.CFrame
-		-- gui.Enabled = false
 	end
 
 	local count = 0
 	local disance = 5
 
+	local function getClosest(item)
+		local character = player.Character :: Model
+		local position = item:WaitForChild("Handle").Position :: BasePart
+		local closestMag = closest
+			and (closest:WaitForChild("Handle").Position - character.PrimaryPart.Position).Magnitude
+		local itemMag = (position - character.PrimaryPart.Position).Magnitude
+		if
+			(position - character.PrimaryPart.Position).Magnitude < disance
+			and (not closest or closestMag > itemMag)
+		then
+			closest = item
+		end
+	end
+
 	RunService.Heartbeat:Connect(function(dt: number)
 		count += dt
-
 		local character = player.Character :: Model
 
 		if count < 0.667 and character then
 			count = 0
 			for _, item in Workspace.BuyableItems:QueryDescendants("Model") do
-				local position = item:WaitForChild("Handle").Position :: BasePart
-				local closestMag = closest
-					and (closest:WaitForChild("Handle").Position - character.PrimaryPart.Position).Magnitude
-				local itemMag = (position - character.PrimaryPart.Position).Magnitude
-				if
-					(position - character.PrimaryPart.Position).Magnitude < disance
-					and (not closest or closestMag > itemMag)
-				then
-					closest = item
-				end
+				getClosest(item)
 			end
 
 			for _, item in Workspace.BlackMarket:QueryDescendants("Model") do
-				local position = item:WaitForChild("Handle").Position :: BasePart
-				local closestMag = closest
-					and (closest:WaitForChild("Handle").Position - character.PrimaryPart.Position).Magnitude
-				local itemMag = (position - character.PrimaryPart.Position).Magnitude
-				if
-					(position - character.PrimaryPart.Position).Magnitude < disance
-					and (not closest or closestMag > itemMag)
-				then
-					closest = item
-				end
+				getClosest(item)
 			end
 
 			local lastMag = lastClosest

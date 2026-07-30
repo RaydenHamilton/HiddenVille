@@ -71,12 +71,6 @@ function blackmarket.init()
 		end
 	end)
 
-	for _, part in pairs(DuffelBag:QueryDescendants("BasePart")) do
-		part.CanTouch = false
-	end
-
-	DuffelBag.CanTouch = false
-
 	gunPrompt.ObjectText = "Purchase " .. Gun.Name
 	gunPrompt.ActionText = "$" .. gunPrice.Value
 
@@ -91,10 +85,6 @@ function blackmarket.init()
 			notification:FireClient(Player, `You do not have enough money`, "Error")
 		end
 	end)
-
-	for _, part in pairs(Gun:QueryDescendants("BasePart")) do
-		part.CanTouch = false
-	end
 
 	local BlankPrompt = BlackMarket.Blank.Handle.Buy
 	local Blank = BlankPrompt.Parent.Parent
@@ -132,11 +122,6 @@ function blackmarket.init()
 			notification:FireClient(Player, `You do not have enough money`, "Error")
 		end
 	end)
-
-	-- Disable physical touching on display model
-	for _, part in pairs(Blank:QueryDescendants("BasePart")) do
-		part.CanTouch = false
-	end
 
 	local MoneyGamepassID = 1030750804
 
