@@ -12,6 +12,11 @@ local function stopCar(bool, door)
 
 	local car = driveSeat.Parent :: Model
 
+	for _, part: BasePart in car:QueryDescendants("BasePart") do
+		part.AssemblyLinearVelocity = Vector3.zero
+		part.AssemblyAngularVelocity = Vector3.zero
+	end
+
 	if bool then
 		local moter = door.Value.Value
 		car.PrimaryPart = car.Body["#Weight"]
@@ -24,9 +29,7 @@ local function stopCar(bool, door)
 		car.PrimaryPart = driveSeat
 	end
 
-	for _, wheel: BasePart in driveSeat.Parent.Wheels:GetChildren() do
-		wheel.Anchored = bool
-	end
+	car.DriveSeat.Anchored = bool
 end
 
 function CarControl.init()

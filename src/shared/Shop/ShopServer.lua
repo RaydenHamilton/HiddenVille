@@ -7,13 +7,9 @@ local notification = ReplicatedStorage.Remotes.Notification
 
 local shop = {}
 
-function shop.init()
-	for _, Gun in Workspace.BuyableItems.Normal:GetChildren() do
-		local Prompt = Gun:FindFirstChild("Buy", true)
-		local Price = Gun:FindFirstChild("Price")
-		Prompt.ObjectText = "Purchase " .. Gun.Name
-		Prompt.ActionText = "$" .. Price.Value
-		Prompt.Triggered:Connect(function(Player)
+local function normalBuy(Player,Gun)
+
+			local Price = Gun:FindFirstChild("Price")
 			local GunFolder = ServerStorage:WaitForChild("Tools")
 			-- Validate Price & Required Level
 			if not Price then
@@ -62,6 +58,16 @@ function shop.init()
 
 			task.wait(0.5)
 			debounce[Player] = nil
+		end
+
+function shop.init()
+	for _, Gun in Workspace.BuyableItems.Normal:GetChildren() do
+		local Prompt = Gun:FindFirstChild("Buy", true)
+		local Price = Gun:FindFirstChild("Price")
+		Prompt.ObjectText = "Purchase " .. Gun.Name
+		Prompt.ActionText = "$" .. Price.Value
+		Prompt.Triggered:Connect(function(player)
+			normalBuy(player,Gun)
 		end)
 
 		-- Disable touch triggers so preview gun doesn't cause lag
@@ -77,12 +83,6 @@ function shop.init()
 		local Gui = Prompt.Parent:FindFirstChild("Gui")
 
 		-- Safe Require
-		local GunModule = nil
-		local SettingFolder = Gun:FindFirstChild("Setting")
-		if SettingFolder and SettingFolder:FindFirstChild("1") then
-			GunModule = require(SettingFolder["1"])
-		end
-
 		local gamepassId = Prompt.GamePass.Value
 
 		-- Safety checks
@@ -119,20 +119,6 @@ function shop.init()
 
 			if Frame:FindFirstChild("Price") then
 				Frame.Price.Text = "$R" .. Price.Value
-			end
-
-			if GunModule then
-				if Frame:FindFirstChild("Accuracy") then
-					Frame.Accuracy.Text = Frame.Accuracy.Text .. GunModule.Spread
-				end
-
-				if Frame:FindFirstChild("Damage") then
-					Frame.Damage.Text = Frame.Damage.Text .. GunModule.BaseDamage
-				end
-
-				if Frame:FindFirstChild("Ammo") then
-					Frame.Ammo.Text = Frame.Ammo.Text .. GunModule.AmmoPerMag
-				end
 			end
 		end
 	end

@@ -1,21 +1,23 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 local GarageAnimation = {}
 
 local doorEntered = {}
 
-local function lockCar(bool, humanoid, car, door)
+local function lockCar(bool, humanoid, car: Model, door)
 	if bool then
 		local moter = door.Value.Value
 		car.PrimaryPart = car.Body["#Weight"]
 		local newCframe: CFrame = moter.CFrame
 		local cframe = newCframe * CFrame.new(0, -newCframe.Position.Y + car.PrimaryPart.Position.Y, 0)
 		car:PivotTo(cframe)
+		car.PrimaryPart = car.DriveSeat
 	end
+
 	humanoid.JumpPower = bool and 0 or 50
 	car.PrimaryPart.Anchored = bool
-	task.wait(0.01)
 end
 
 local function openGarage(player, driveSeat, enterPart)
@@ -26,7 +28,7 @@ local function openGarage(player, driveSeat, enterPart)
 		return
 	end
 
-	local humanoid = character:FindFirstChild("Humanoid")
+	local humanoid = character:FindFirstChild("Humanoid") :: Humanoid
 	if not humanoid then
 		warn("no humanoid")
 		return
@@ -85,7 +87,9 @@ local function openGarage(player, driveSeat, enterPart)
 			newGarageUI:Destroy()
 		end
 
-		lockCar(false, humanoid)
+		lockCar(false, humanoid, humanoid.SeatPart.Parent)
+
+		ReplicatedStorage.Remotes.CarControl:FireClient(player, false)
 
 		task.wait(5)
 		doorEntered[driveSeat.Parent] = nil
@@ -126,7 +130,7 @@ local function enterAnimation(car: Model, door: Part)
 	end
 
 	local player = Players:GetPlayerFromCharacter(humanoid.Parent)
-	-- ReplicatedStorage.Remotes.CarControl:FireClient(player, true, door)
+	ReplicatedStorage.Remotes.CarControl:FireClient(player, true, door)
 
 	lockCar(true, humanoid, car, door)
 	openGarage(player, driveseat, door)

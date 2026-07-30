@@ -1,156 +1,388 @@
+--[[	
+		             _____ _                   _     
+	     /\         / ____| |                 (_)    
+	    /  \ ______| |    | |__   __ _ ___ ___ _ ___ 
+	   / /\ \______| |    | '_ \ / _` / __/ __| / __|
+	  / ____ \     | |____| | | | (_| \__ \__ \ \__ \
+	 /_/    \_\     \_____|_| |_|\__,_|___/___/_|___/
+	 Version 1.7
+--]]
+-- By detocoyote
+-- You can edit the sound properties in the sounds under the script, or you can change where sounds are stored and if there is Filtering Enabled in here.
+
+local soundClient = {}
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-
-local player = Players.LocalPlayer
-local soundClient = {}
-
-local connections: { RBXScriptConnection } = {}
 
 function soundClient.new()
-	local gui = player.PlayerGui:WaitForChild("A-Chassis Interface") :: PlayerGui
-
-	local FE = Workspace.FilteringEnabled
+	local gui = Players.LocalPlayer.PlayerGui:WaitForChild("A-Chassis Interface")
 	local car = gui.Car.Value
-	local handler = ReplicatedStorage.Remotes.CarSounds
+	local values = gui.Values
+	local event = ReplicatedStorage.Remotes:FindFirstChild("Sounds")
 
-	local _Tune = require(car["A-Chassis Tune"])
+	-- [[ EDIT ]] -------------------------------------------------------------------------
 
-	local on = 0
-	local mult = 0
-	local det = 0.13
-	local trm = 0.4
-	local trmmult = 0
-	local trmon = 0
-	local throt = 0
-	local redline = 0
-	local shift = 0
+	local FE = true -- If true, this makes sounds play for everyone in the game, not just the driver.
+	local FE_RATE = 1 / 15 -- FE must equal true. This changes how often the sound updates for the player. Higher = updates less often.
+	local DIRECTORY = car.Body.Sounds -- This is the path of the sounds group or model to use.
 
-	gui:WaitForChild("Rev")
+	-- [[ END EDIT ]] -------------------------------------------------------------------------
 
-	local rev = gui:FindFirstChild("Rev")
-	local seat = car:FindFirstChild("DriveSeat")
+	local Units = require(ReplicatedStorage.Shared.Cars.MiscModules.Units)
+	local TuneBase = require(ReplicatedStorage.Shared.Cars.TuneBase)
+	local _Tune = TuneBase
+	local sounds = {}
+	local vvl = 0
+	local AverageRotSpeed = 0
+	local rpmHistory = {}
+	local rpm = 0
+	local soundEQCache = {}
+	local modifierDataCache = {}
 
-	local function clearConnections()
-		handler:FireServer("removeSound")
-		for _, connection in connections do
-			connection:Disconnect()
-		end
-	end
+	local ThrottleValue = values.Throttle
+	local RPMValue = values.RPM
+	local GearValue = values.Gear
+	local ClutchValue = values.Clutch
+	local BoostTurboValue = values.BoostTurbo
+	local BoostSuperValue = values.BoostSuper
+	local StartingValue = gui.IsOn.Starting
+	local IsOnValue = gui.IsOn
 
-	if not rev or not seat then
-		warn("no rev or no seat")
-		return
-	end
-
-	-- /// SAFE SOUNDID (no nil, no blank)
-	local revSoundId = rev.SoundId
-	if not revSoundId or revSoundId == "" then
-		revSoundId = "rbxassetid://9125620646"
-	end
-
-	local revVolume = rev.Volume
-
-	-- /// GEAR CHANGE SHIFT POP FIX
-	connections[#connections + 1] = gui.Values.Gear.Changed:Connect(function()
-		mult = 1
-		if gui.Values.RPM.Value > 5000 then
-			shift = 0.2
-		end
-	end)
-
-	-- /// DESTROY OLD SOUNDS ONLY IF THEY ARE FROM SOUND_MOD
-	for _, child in ipairs(seat:GetChildren()) do
-		if gui:FindFirstChild(child.Name) and child:IsA("Sound") then
-			child:Stop()
-			child:Destroy()
-		end
-	end
-
-	-- /// MAIN FIX — Never recreate "Rev" if it already exists
-	local existingRev = seat:FindFirstChild("Rev")
-
-	if not existingRev then
-		handler:FireServer("newSound", "Rev", seat, revSoundId, 0, revVolume, true)
-		task.wait(0.05)
-	else
-		-- force sync SoundId/Volume
-		handler:FireServer("updateSound", "Rev", revSoundId, existingRev.Pitch, existingRev.Volume)
-	end
-
-	-- /// PLAY ONLY IF IT'S NOT ALREADY PLAYING
-	task.wait(0.05)
-	local soundObj = seat:WaitForChild("Rev")
-
-	if not soundObj.IsPlaying then
-		handler:FireServer("playSound", "Rev")
-	end
-
-	-- /// MAIN LOOP (smooth, lag-free)
-
-	local FRAME_TIME = 1 / 30
-	local nextFireTime = 0
-
-	connections[#connections + 1] = RunService.Heartbeat:Connect(function()
-		if not gui or gui:FindFirstChild("Values") then
+	-- Index all the sounds
+	local function cacheEQData(eq)
+		if eq == nil then
 			return
 		end
-		local currentTime = os.clock()
-		if currentTime < nextFireTime then
+		modifierDataCache[eq] = {
+			HighGain = eq.HighGain,
+			LowGain = eq.LowGain,
+			MidGain = eq.MidGain,
+		}
+	end
+	local function cacheDistortionData(dist)
+		if dist == nil then
 			return
 		end
-		nextFireTime = currentTime + FRAME_TIME
-
-		mult = math.max(0, mult - 0.1)
-		local _RPM = gui.Values.RPM.Value
-
-		if gui.Values.Throttle.Value <= _Tune.IdleThrottle / 100 then
-			throt = math.max(0.3, throt - 0.2)
-			trmmult = math.max(0, trmmult - 0.05)
-			trmon = 1
-		else
-			throt = math.min(1, throt + 0.1)
-			trmmult = 1
-			trmon = 0
+		modifierDataCache[dist] = dist.Level
+	end
+	for _, sound in gui.Sounds:GetChildren() do
+		if not sound:IsA("Sound") then
+			continue
 		end
 
-		shift = math.min(1, shift + 0.2)
+		local soundParent = DIRECTORY:FindFirstChild(sound:GetAttribute("SoundParent")) or car.Body["#Weight"]
+		local newSound = soundParent:FindFirstChild(sound.Name .. "_Local")
 
-		if
-			gui.Values.RPM.Value > _Tune.Redline - _Tune.RevBounce / 4
-			and gui.Values.Throttle.Value > _Tune.IdleThrottle / 100
-		then
-			redline = 0.5
-		else
-			redline = 1
+		local soundData = {}
+		if not newSound then
+			newSound = sound:Clone()
+			newSound.Name = newSound.Name .. "_Local"
+
+			newSound.Playing = false
+			newSound.Volume = 0
+			newSound.Parent = soundParent
+
+			-- Do it the longer way so the user can add their own effects
+			local eq = Instance.new("EqualizerSoundEffect", newSound)
+			eq.Name = "#EQ"
+			eq.HighGain = 0
+			eq.MidGain = 0
+			eq.LowGain = 0
+			local dist = Instance.new("DistortionSoundEffect", newSound)
+			dist.Name = "#Distortion"
+			dist.Level = 0
+
+			soundData.EQ = eq
+			soundData.Distortion = dist
 		end
 
-		if not gui.IsOn.Value then
-			on = math.max(on - 0.015, 0)
-		else
-			on = 1
-		end
-
-		local Volume = (2 * throt * shift * redline) + (trm * trmon * trmmult * (1 - throt) * math.sin(tick() * 50))
-
-		local Pitch = math.max(
-			((rev.SetPitch.Value + rev.SetRev.Value * _RPM / _Tune.Redline) * on ^ 2)
-				+ (det * mult * math.sin(80 * tick())),
-			rev.SetPitch.Value
-		)
-
-		-- /// FINAL FIX — never sends invalid SoundId, never spams, never lags
 		if FE then
-			handler:FireServer("updateSound", "Rev", revSoundId, Pitch, Volume)
-		else
-			if soundObj then
-				soundObj.Volume = Volume
-				soundObj.Pitch = Pitch
+			local serverSound = soundParent:FindFirstChild(sound.Name)
+			if serverSound then
+				serverSound:SetAttribute("SoundId", serverSound.SoundId)
+				serverSound.SoundId = ""
+				soundData.ServerSound = serverSound
 			end
 		end
+
+		local offEQ = sound:FindFirstChild("OffEQ")
+			or sound:FindFirstChild("ThrottleEQ")
+			or sound:FindFirstChild("VVLEQ")
+		local throttleEQ = sound:FindFirstChild("ThrottleEQ")
+			or sound:FindFirstChild("OffEQ")
+			or sound:FindFirstChild("VVLEQ")
+		local vvlEQ = sound:FindFirstChild("VVLEQ")
+			or sound:FindFirstChild("ThrottleEQ")
+			or sound:FindFirstChild("OffEQ")
+		local offDist = sound:FindFirstChild("OffDistortion") or sound:FindFirstChild("ThrottleDistortion")
+		local throttleDist = sound:FindFirstChild("ThrottleDistortion") or sound:FindFirstChild("OffDistortion")
+		soundEQCache[newSound] = { offEQ, throttleEQ, vvlEQ, offDist, throttleDist }
+
+		cacheEQData(offEQ)
+		cacheEQData(throttleEQ)
+		cacheEQData(vvlEQ)
+		cacheDistortionData(offDist)
+		cacheDistortionData(throttleDist)
+
+		if newSound:FindFirstChild("OffDistortion") then
+			newSound.OffDistortion.Enabled = false
+		end
+		if newSound:FindFirstChild("OffEQ") then
+			newSound.OffEQ.Enabled = false
+		end
+		if newSound:FindFirstChild("ThrottleDistortion") then
+			newSound.ThrottleDistortion.Enabled = false
+		end
+		if newSound:FindFirstChild("ThrottleEQ") then
+			newSound.ThrottleEQ.Enabled = false
+		end
+		if newSound:FindFirstChild("VVLEQ") then
+			newSound.VVLEQ.Enabled = false
+		end
+
+		soundData.Sound = newSound
+		soundData.Playing = false
+		soundData.type = string.sub(sound.Name, 1, 3)
+		soundData.EQ = newSound:FindFirstChild("#EQ")
+		soundData.Distortion = newSound:FindFirstChild("#Distortion")
+
+		-- Cache all possible sound attributes
+		soundData.BasePlaybackSpeed = sound:GetAttribute("BasePlaybackSpeed")
+		soundData.BaseVolume = sound:GetAttribute("BaseVolume")
+		soundData.RangeEnd = sound:GetAttribute("RangeEnd")
+		soundData.RangeStart = sound:GetAttribute("RangeStart")
+		soundData.RedlinePlaybackSpeed = sound:GetAttribute("RedlinePlaybackSpeed")
+		soundData.RedlineVolume = sound:GetAttribute("RedlineVolume")
+		soundData.ThrottleVolume = sound:GetAttribute("ThrottleVolume")
+		soundData.TransitionEnd = sound:GetAttribute("TransitionEnd")
+		soundData.TransitionStart = sound:GetAttribute("TransitionStart")
+		soundData.ClutchVolume = sound:GetAttribute("ClutchVolume")
+		soundData.Gears = string.split(string.gsub(soundData.Sound:GetAttribute("Gears") or "", " ", ""), ",")
+		soundData.OffVolume = sound:GetAttribute("OffVolume")
+		soundData.VariablePlaybackSpeed = sound:GetAttribute("VariablePlaybackSpeed")
+		soundData.VariableVolume = sound:GetAttribute("VariableVolume")
+		soundData.PlaybackSpeedIncrease = sound:GetAttribute("PlaybackSpeedIncrease")
+		soundData.VolumeIncrease = sound:GetAttribute("VolumeIncrease")
+		soundData.Sensitivity = sound:GetAttribute("Sensitivity")
+		soundData.MaxPitch = sound:GetAttribute("MaxPitch")
+		soundData.Pitch = sound:GetAttribute("Pitch")
+		soundData.Volume = sound:GetAttribute("Volume")
+
+		table.insert(sounds, soundData)
+	end
+
+	local function f(m, n, p, q, M, b, x) -- Calculation for VVL
+		return math.clamp(M - ((q - n) / (b ^ p - b ^ m) * (b ^ x - b ^ m) + n), 0, M)
+	end
+
+	local function eqGain(sound, gainType, throt)
+		local offEQ = soundEQCache[sound][1]
+		if not offEQ then
+			return
+		end
+		local throttleEQ = soundEQCache[sound][2]
+		local vvlEQ = soundEQCache[sound][3]
+		local eq = modifierDataCache[offEQ][gainType]
+			+ (
+					(
+						modifierDataCache[throttleEQ][gainType]
+						+ (modifierDataCache[vvlEQ][gainType] - modifierDataCache[throttleEQ][gainType]) * vvl
+					) - modifierDataCache[offEQ][gainType]
+				)
+				* throt
+		return eq
+	end
+
+	local function distGain(sound, throt)
+		local offDist = soundEQCache[sound][4]
+		if not offDist then
+			return
+		end
+		local throttleDist = soundEQCache[sound][5]
+		return modifierDataCache[offDist] + (modifierDataCache[throttleDist] - modifierDataCache[offDist]) * throt
+	end
+
+	--man i love linear interpolation
+	local updateBOV = false
+	local lastBOV = tick()
+	local last = tick()
+	local prevBoost = 0
+	local noCustomEngine = ReplicatedStorage.Shared.Cars.MiscModules.CustomEngine == nil
+	local WheelSpeedsChildren = values.WheelSpeeds:GetChildren()
+	local function RuntimeLoop(dt)
+		if tick() - last < 1 / 60 then
+			return
+		end
+		last = tick()
+
+		-- Calculate smooth RPM
+		table.insert(rpmHistory, RPMValue.Value)
+		if #rpmHistory > 8 then
+			table.remove(rpmHistory, 1)
+		end
+		rpm = 0
+		for _, v in rpmHistory do
+			rpm = rpm + v
+		end
+		rpm = rpm / #rpmHistory
+
+		-- Calculate VVL
+		if _Tune.CustomEngineCalculations == false or noCustomEngine then
+			if _Tune.VVLTorque > 0 then
+				vvl = (
+					_Tune.VVLTorque
+					- f(
+						_Tune.VVLRPM / 1000,
+						0,
+						(_Tune.VVLRPM + _Tune.VVLTime) / 1000,
+						_Tune.VVLTorque,
+						_Tune.VVLTorque,
+						_Tune.VVLCurve,
+						rpm / 1000
+					)
+				) / _Tune.VVLTorque
+			else
+				vvl = 0
+			end
+		end
+
+		-- Transmission rotation speed
+		AverageRotSpeed = 0
+		local count = 0
+		for _, wheel in WheelSpeedsChildren do
+			if string.find(wheel.Name, "F") then
+				if not (_Tune.Config == "FWD" or _Tune.Config == "AWD") then
+					continue
+				end
+				AverageRotSpeed += wheel.Value
+				count += 1
+			else
+				if not (_Tune.Config == "RWD" or _Tune.Config == "AWD") then
+					continue
+				end
+				AverageRotSpeed += wheel.Value
+				count += 1
+			end
+		end
+		AverageRotSpeed /= count
+
+		local IsOn = IsOnValue.Value and 1 or 0
+		for _, soundData in sounds do
+			if soundData.type == "ENG" then
+				if soundData.Playing == false then
+					soundData.Playing = true
+					soundData.Sound.Playing = true
+				end
+				soundData.EQ.HighGain = eqGain(soundData.Sound, "HighGain", ThrottleValue.Value)
+				soundData.EQ.MidGain = eqGain(soundData.Sound, "MidGain", ThrottleValue.Value)
+				soundData.EQ.LowGain = eqGain(soundData.Sound, "LowGain", ThrottleValue.Value)
+				soundData.Distortion.Level = distGain(soundData.Sound, ThrottleValue.Value)
+				soundData.Sound.PlaybackSpeed = soundData.BasePlaybackSpeed
+					+ (soundData.RedlinePlaybackSpeed - soundData.BasePlaybackSpeed) * (rpm / _Tune.Redline)
+				soundData.Sound.Volume = IsOn
+					* (soundData.BaseVolume + (soundData.ThrottleVolume * ThrottleValue.Value) + (soundData.RedlineVolume * (rpm / _Tune.Redline)))
+					* math.clamp(1 / soundData.TransitionStart * (rpm - soundData.RangeStart), 0, 1)
+					* math.clamp(-1 / soundData.TransitionEnd * (rpm - soundData.RangeEnd), 0, 1)
+			elseif soundData.type == "TRA" then
+				if soundData.Playing == false then
+					soundData.Playing = true
+					soundData.Sound.Playing = true
+				end
+				soundData.Sound.PlaybackSpeed = soundData.VariablePlaybackSpeed
+					* (AverageRotSpeed / (300 * (Units.Length_mm / 1000) * 3.6))
+				soundData.Sound.Volume = table.find(soundData.Gears, tostring(GearValue.Value))
+						and (soundData.ClutchVolume + ((soundData.BaseVolume + soundData.VariableVolume * (AverageRotSpeed / (300 * (Units.Length_mm / 1000) * 3.6))) - soundData.ClutchVolume) * (1 - ClutchValue.Value) + soundData.ThrottleVolume * ThrottleValue.Value)
+					or soundData.OffVolume
+			elseif soundData.type == "TUR" then
+				if soundData.Playing == false then
+					soundData.Playing = true
+					soundData.Sound.Playing = true
+				end
+				soundData.Sound.PlaybackSpeed = soundData.BasePlaybackSpeed
+					+ soundData.PlaybackSpeedIncrease * BoostTurboValue.Value
+				soundData.Sound.Volume = soundData.VolumeIncrease * BoostTurboValue.Value
+			elseif soundData.type == "SUP" then
+				if soundData.Playing == false then
+					soundData.Playing = true
+					soundData.Sound.Playing = true
+				end
+				soundData.Sound.PlaybackSpeed = soundData.BasePlaybackSpeed
+					+ soundData.PlaybackSpeedIncrease * BoostSuperValue.Value
+				soundData.Sound.Volume = soundData.VolumeIncrease * BoostSuperValue.Value
+			elseif soundData.type == "BOV" then
+				if
+					(BoostTurboValue.Value - soundData.Sensitivity < prevBoost)
+					and (tick() - lastBOV > 1)
+					and ThrottleValue.Value < 0.8
+				then
+					updateBOV = true
+					soundData.Sound.PlaybackSpeed = soundData.BasePlaybackSpeed
+						+ soundData.PlaybackSpeedIncrease * BoostTurboValue.Value
+					soundData.Sound.Volume = soundData.VolumeIncrease * BoostTurboValue.Value
+					soundData.Sound.TimePosition = 0
+					soundData.Sound.Playing = true
+				end
+				prevBoost = BoostTurboValue.Value
+			elseif soundData.type == "IGN" then
+				if StartingValue.Value then
+					if not soundData.Sound:GetAttribute("Played") then
+						soundData.Sound.TimePosition = 0
+						soundData.Sound.Playing = true
+						soundData.Playing = true
+					end
+					soundData.Sound:SetAttribute("Played", true)
+					soundData.Sound.Volume = soundData.Volume
+					soundData.Sound.PlaybackSpeed = soundData.Pitch
+						+ (soundData.MaxPitch - soundData.Pitch) * (rpm / _Tune.IgnitionRPM)
+				else
+					soundData.Sound:SetAttribute("Played", false)
+					if soundData.Playing == true then
+						soundData.Playing = false
+						soundData.Sound.Playing = false
+					end
+				end
+			end
+		end
+		if updateBOV then
+			lastBOV = tick()
+			updateBOV = false
+		end
+	end
+	RunService.Heartbeat:Connect(RuntimeLoop)
+
+	car.DriveSeat.ChildRemoved:Connect(function(child)
+		if child:IsA("Weld") and child.Name == "SeatWeld" then
+			for _, soundData in sounds do
+				soundData.Sound.Playing = false
+				soundData.ServerSound.Playing = false
+				if soundData.ServerSound then
+					soundData.ServerSound.SoundId = soundData.ServerSound:GetAttribute("SoundId")
+				end
+			end
+			--TODO make this stop the script
+		end
 	end)
 
-	connections[#connections + 1] = gui.Destroying:Connect(clearConnections)
+	local function FELoop()
+		while task.wait(FE_RATE) do
+			local packet = buffer.create(17)
+			buffer.writeu16(packet, 0, math.clamp(math.round(rpm), 0, 65535))
+			buffer.writeu8(packet, 2, math.clamp(math.round(ThrottleValue.Value * 255), 0, 255))
+			buffer.writeu16(packet, 3, math.clamp(math.round(AverageRotSpeed), 0, 65535))
+			buffer.writei8(packet, 5, GearValue.Value)
+			buffer.writeu8(packet, 6, math.clamp(math.round(ClutchValue.Value * 255), 0, 255))
+			buffer.writef32(packet, 7, math.round(BoostTurboValue.Value * 100) / 100)
+			buffer.writef32(packet, 11, math.round(BoostSuperValue.Value * 100) / 100)
+			buffer.writeu8(packet, 15, StartingValue.Value and 1 or 0)
+			buffer.writeu8(packet, 16, IsOnValue.Value and 1 or 0)
+			event:FireServer(packet)
+		end
+	end
+	if FE then
+		task.spawn(FELoop)
+	end
 end
+
 return soundClient

@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CameraClient = require(ReplicatedStorage.Shared.Cars.Camera.CameraClient)
 local Drive = require(ReplicatedStorage.Shared.Cars.Drive)
 local GaugesClient = require(ReplicatedStorage.Shared.Cars.GaugesClient)
 local LightClient = require(ReplicatedStorage.Shared.Cars.Lights.LightClient)
@@ -12,10 +11,9 @@ function clientInit.init()
 	Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(a0: Instance)
 		if a0.Name == "A-Chassis Interface" then
 			Drive.new()
-			-- GaugesClient.new()
-			-- SoundClient.new()
-			-- CameraClient.new()
-			-- LightClient.new(a0)
+			GaugesClient.new()
+			SoundClient.new()
+			LightClient.new(a0)
 		end
 	end)
 end

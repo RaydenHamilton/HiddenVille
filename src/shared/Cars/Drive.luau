@@ -23,6 +23,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local driveClient = {}
 
 function driveClient.new()
+	local connections = {}
 	local gui = playerGui:WaitForChild("A-Chassis Interface")
 
 	local car = gui.Car.Value
@@ -108,35 +109,35 @@ function driveClient.new()
 	local _IsOn = _Tune.AutoStart and (_Tune.Engine or _Tune.Electric)
 	local IsOnValue = gui.IsOn
 	IsOnValue.Value = _IsOn
-	IsOnValue.Changed:Connect(function(value)
+	connections[#connections + 1] = IsOnValue.Changed:Connect(function(value)
 		_IsOn = value
 	end)
 
 	local _Starting = false
 	local StartingValue = IsOnValue.Starting
 	StartingValue.Value = _Starting
-	StartingValue.Changed:Connect(function(value)
+	connections[#connections + 1] = StartingValue.Changed:Connect(function(value)
 		_Starting = value
 	end)
 
 	local _InControls = false
 	local ControlsOpenValue = gui.ControlsOpen
 	ControlsOpenValue.Value = _InControls
-	ControlsOpenValue.Changed:Connect(function(value)
+	connections[#connections + 1] = ControlsOpenValue.Changed:Connect(function(value)
 		_InControls = value
 	end)
 
 	local _AutoClutch = true
 	local AutoClutchValue = values.AutoClutch
 	AutoClutchValue.Value = _AutoClutch
-	AutoClutchValue.Changed:Connect(function(value)
+	connections[#connections + 1] = AutoClutchValue.Changed:Connect(function(value)
 		_AutoClutch = value
 	end)
 
 	local _MSteer = false
 	local MouseSteerValue = values.MouseSteerOn
 	MouseSteerValue.Value = _MSteer
-	MouseSteerValue.Changed:Connect(function(value)
+	connections[#connections + 1] = MouseSteerValue.Changed:Connect(function(value)
 		_MSteer = value
 	end)
 
@@ -315,7 +316,7 @@ function driveClient.new()
 			table.insert(Drive, v)
 		end
 
-		v:GetPropertyChangedSignal("Size"):Connect(function()
+		connections[#connections + 1] = v:GetPropertyChangedSignal("Size"):Connect(function()
 			Wheels[v].Size = v.Size
 
 			local size = 0
@@ -327,7 +328,7 @@ function driveClient.new()
 			wDRatio = wDia * math.pi / 60
 		end)
 
-		v:GetAttributeChangedSignal("SteerDisabled"):Connect(function()
+		connections[#connections + 1] = v:GetAttributeChangedSignal("SteerDisabled"):Connect(function()
 			data.CanSteer = v:GetAttribute("SteerDisabled") and 1 or 2
 		end)
 
@@ -340,7 +341,7 @@ function driveClient.new()
 	end
 
 	-- Shutdown
-	driveSeat.ChildRemoved:Connect(function(child: Instance)
+	connections[#connections + 1] = driveSeat.ChildRemoved:Connect(function(child: Instance)
 		if child.Name == "SeatWeld" and child:IsA("Weld") then
 			if _Tune.Mobile and LastInputWasMobile then
 				_Tune.AutoShiftVers = _InitialAutoShiftVers
@@ -354,9 +355,6 @@ function driveClient.new()
 					driveSeat.Flip.MaxTorque = Vector3.new()
 				end
 			end
-
-			-- Save PBrake state
-			gui.Values.PBrake.Value = _PBrake
 
 			-- Remove Wheel Force
 			for _, data in Wheels do
@@ -404,7 +402,7 @@ function driveClient.new()
 		local a = Instance.new("StringValue")
 		a.Name = i
 		a.Value = v.Name
-		a.Changed:Connect(function(value: string)
+		connections[#connections + 1] = a.Changed:Connect(function(value: string)
 			if i == "MouseThrottle" or i == "MouseBrake" then
 				if value == "MouseButton1" or value == "MouseButton2" then
 					_CTRL[i] = Enum.UserInputType[value]
@@ -424,7 +422,7 @@ function driveClient.new()
 		local a = Instance.new("IntValue")
 		a.Name = i
 		a.Value = v
-		a.Changed:Connect(function(value: number)
+		connections[#connections + 1] = a.Changed:Connect(function(value: number)
 			a.Value = math.min(100, math.max(0, value))
 			_PPH[i] = value
 		end)
@@ -666,22 +664,22 @@ function driveClient.new()
 		end
 	end
 
-	UserInputService.InputBegan:Connect(DealWithInput)
-	UserInputService.InputChanged:Connect(DealWithInput)
-	UserInputService.InputEnded:Connect(DealWithInput)
-	VirtualInput.Event:Connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputBegan:Connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputChanged:Connect(DealWithInput)
+	connections[#connections + 1] = UserInputService.InputEnded:Connect(DealWithInput)
+	connections[#connections + 1] = VirtualInput.Event:Connect(DealWithInput)
 
 	local function DealWithMobileInput()
 		local mobile = gui.Mobile
 
-		mobile.Jump.InputBegan:Connect(function(input: InputObject)
+		connections[#connections + 1] = mobile.Jump.InputBegan:Connect(function(input: InputObject)
 			if input.UserInputType ~= Enum.UserInputType.Touch then
 				return
 			end
 			player.Character:FindFirstChildWhichIsA("Humanoid").Jump = true
 		end)
 
-		mobile.ModeSwitch.MouseButton1Click:Connect(function()
+		connections[#connections + 1] = mobile.ModeSwitch.MouseButton1Click:Connect(function()
 			MobileMode = MobileModes[(table.find(MobileModes, MobileMode) or 0) + 1]
 			if not MobileMode then
 				MobileMode = MobileModes[1]
@@ -693,7 +691,7 @@ function driveClient.new()
 			if not button:IsA("ImageButton") then
 				continue
 			end
-			button.InputBegan:Connect(function(input)
+			connections[#connections + 1] = button.InputBegan:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.Touch then
 					return
 				end
@@ -712,7 +710,7 @@ function driveClient.new()
 					_SteerR = true
 				end
 			end)
-			button.InputEnded:Connect(function(input)
+			connections[#connections + 1] = button.InputEnded:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.Touch then
 					return
 				end
@@ -746,7 +744,7 @@ function driveClient.new()
 			if not button:IsA("TextButton") then
 				continue
 			end
-			button.InputBegan:Connect(function(input)
+			connections[#connections + 1] = button.InputBegan:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.Touch then
 					return
 				end
@@ -756,7 +754,7 @@ function driveClient.new()
 					_IBrake = 1
 				end
 			end)
-			button.InputEnded:Connect(function(input)
+			connections[#connections + 1] = button.InputEnded:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.Touch then
 					return
 				end
@@ -768,7 +766,7 @@ function driveClient.new()
 			end)
 		end
 		if UserInputService.GyroscopeEnabled then
-			UserInputService.DeviceRotationChanged:Connect(function(rotation, cframe)
+			connections[#connections + 1] = UserInputService.DeviceRotationChanged:Connect(function(rotation, cframe)
 				if MobileMode == "Tilt" then
 					_GSteerT = -math.clamp(rotation.Position.Z * 2, -1, 1)
 				end
@@ -1912,7 +1910,7 @@ function driveClient.new()
 
 	-- Run
 	-- In case of car death
-	driveSeat.AncestryChanged:Connect(function()
+	connections[#connections + 1] = driveSeat.AncestryChanged:Connect(function()
 		if driveSeat.Parent then
 			return
 		end
@@ -1922,7 +1920,7 @@ function driveClient.new()
 
 	-- Changes
 	onLastInputTypeChanged(UserInputService:GetLastInputType())
-	UserInputService.LastInputTypeChanged:Connect(onLastInputTypeChanged)
+	connections[#connections + 1] = UserInputService.LastInputTypeChanged:Connect(onLastInputTypeChanged)
 
 	-- Runtime Loops
 	local function RuntimeLoop(dt: number)
@@ -2013,7 +2011,7 @@ function driveClient.new()
 	local fixedDeltaTime = 1 / 60 -- Fixed to avoid rewriting old code causing different behaviours at different FPS
 	local accumulatedSimTime = 0
 
-	RunService.PreSimulation:Connect(function(deltaTimeSim: number)
+	connections[#connections + 1] = RunService.PreSimulation:Connect(function(deltaTimeSim: number)
 		accumulatedSimTime += deltaTimeSim
 		while accumulatedSimTime >= fixedDeltaTime do
 			accumulatedSimTime -= fixedDeltaTime
@@ -2022,9 +2020,7 @@ function driveClient.new()
 	end)
 
 	local function SlowRuntimeLoop()
-		while true do
-			local deltaTime = task.wait(1 / 8)
-
+		while task.wait(1 / 8) do
 			-- Mobile UI
 			if _Tune.Mobile and LastInputWasMobile then
 				Mobile()
@@ -2045,6 +2041,16 @@ function driveClient.new()
 		end
 	end
 
-	task.spawn(SlowRuntimeLoop)
+	local slowRuntimeThread = task.spawn(SlowRuntimeLoop)
+
+	local function stopScript()
+		_PBrake = true
+		task.cancel(slowRuntimeThread)
+		for _, connection: RBXScriptConnection in connections do
+			connection:Disconnect()
+		end
+	end
+
+	connections[#connections + 1] = car.DriveSeat:GetPropertyChangedSignal("Occupant"):Connect(stopScript)
 end
 return driveClient

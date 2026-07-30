@@ -11,7 +11,7 @@ local GaugesModule = {}
 
 function GaugesModule.new()
 	local gui = Players.LocalPlayer.PlayerGui:WaitForChild("A-Chassis Interface")
-	local frame = gui.AC6_Stock_Gauges
+	local frame = gui:WaitForChild("AC6_Stock_Gauges",8)
 
 	local autoscaling = false --Estimates top speed
 
@@ -293,7 +293,6 @@ function GaugesModule.new()
 	end
 
 	local function PBrake()
-
 		frame.PBrake.Visible = gui.Values.PBrake.Value
 	end
 

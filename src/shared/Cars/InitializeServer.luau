@@ -839,4 +839,13 @@ end
 
 --[END]]
 
+initCar.init = function()
+	local plugins = ReplicatedStorage.CarAssets:FindFirstChild("Plugins")
+
+	for _, v in pairs(plugins:GetChildren()) do
+		v.Parent = ReplicatedStorage.CarAssets:FindFirstChild("A-Chassis Interface")
+	end
+	plugins:Destroy()
+end
+
 return initCar

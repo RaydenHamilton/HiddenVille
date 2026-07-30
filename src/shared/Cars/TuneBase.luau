@@ -53,7 +53,7 @@ Tune.FSusStiffness = 4.5 -- PILLOW SOFT: Extremely soft springs that immediately
 Tune.FSusDamping = 0.6 -- JELLY EFFECT: Very low dampening makes the car chassis bounce and wobble repeatedly
 Tune.FSwayBar = 0.0 -- REMOVED: Zero roll resistance allows the body to tilt until it almost touches the ground
 Tune.FSusLength = 2.0 -- MONSTER TRUCK HEIGHT: Tall stance gives the car massive clearance to lean over
-Tune.FPreCompress = 0.3
+Tune.FPreCompress = 0.6
 Tune.FExtensionLim = 1.2 -- DEEP TRAVEL: Allows the inside tires to drop far down during a heavy lean
 Tune.FCompressLim = 0.9 -- DEEP TRAVEL: Allows the outside tires to crunch all the way into the wheel wells
 
@@ -62,7 +62,7 @@ Tune.RSusStiffness = 5.0 -- PILLOW SOFT: Matches the front for floppy physics
 Tune.RSusDamping = 0.7 -- JELLY EFFECT: Adds playful rear-end bounce when accelerating or stopping
 Tune.RSwayBar = 0.0 -- REMOVED: Zero roll resistance
 Tune.RSusLength = 2.0 -- MONSTER TRUCK HEIGHT: Tall stance
-Tune.RPreCompress = 0.3
+Tune.RPreCompress = 0.6
 Tune.RExtensionLim = 1.2 -- DEEP TRAVEL
 Tune.RCompressLim = 0.9 -- DEEP TRAVEL
 

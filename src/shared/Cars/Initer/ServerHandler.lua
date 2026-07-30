@@ -1,9 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
-local trove = require(ReplicatedStorage.Packages._Index["sleitnick_trove@1.8.0"].trove)
 local DriverSeatServer = require(ReplicatedStorage.Shared.Cars.DriverSeatServer)
-local Initialize = require(ReplicatedStorage.Shared.Cars.Initialize)
+local Initialize = require(ReplicatedStorage.Shared.Cars.InitializeServer)
 local LightsServer = require(ReplicatedStorage.Shared.Cars.Lights.LightsServer)
 local CarRagdallServer = require(ReplicatedStorage.Shared.Cars.MiscModules.CarRagdollServer)
 local MiscWeld = require(ReplicatedStorage.Shared.Cars.MiscModules.MiscWeld)
@@ -15,14 +14,10 @@ local function createCar(CarModel: Model)
 	MiscWeld.new(CarModel)
 	DriverSeatServer.new(CarModel)
 	Initialize.new(CarModel)
-	-- SoundServer.new(CarModel)
-
-	-- CarRagdallServer.new(CarModel)
-	-- LightsServer.new(CarModel)
+	SoundServer.new(CarModel)
+	CarRagdallServer.new(CarModel)
+	LightsServer.new(CarModel)
 	task.wait(1)
-	if true then
-		return
-	end
 
 	for _, obj in CarModel:QueryDescendants("BasePart") do
 		if obj.Name == "#Weight" then
