@@ -2,6 +2,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Workspace = game:GetService("Workspace")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 local Main = Workspace:WaitForChild("BoxJob 1")
 
 local GrabBoxPrompt = Main:FindFirstChild("GrabBox").ProximityPrompt
@@ -164,9 +166,6 @@ function boxJobServer.init()
 			return
 		end
 
-		local leaderstats = player:FindFirstChild("leaderstats")
-		local hiddenstats = player:FindFirstChild("hiddenstats")
-
 		local reward = Randomize(100, 250)
 
 		local ownsMoneyGamepass = false
@@ -181,13 +180,8 @@ function boxJobServer.init()
 			reward *= 2
 		end
 
-		if leaderstats and leaderstats:FindFirstChild("Money") then
-			leaderstats.Money.Value += reward
-		end
-
-		if hiddenstats and hiddenstats:FindFirstChild("XP") then
-			hiddenstats.XP.Value += 1250
-		end
+		PlayerDataServerService.add(player, "Money", reward)
+		PlayerDataServerService.add(player, "XP", 1250)
 
 		PlaceBoxPrompt.PlaceSound:Play()
 		RemoveBoxFromHand(player)

@@ -1,5 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 
 local phoneServer = {}
 
@@ -21,10 +23,8 @@ function phoneServer.init()
 		if not amount or amount <= 0 then
 			return
 		end
-
-		local senderStats = sender:FindFirstChild("leaderstats")
-		local senderMoney = senderStats and senderStats:FindFirstChild("Money")
-		if not senderMoney or senderMoney.Value < amount then
+		local senderMoney = PlayerDataServerService.get(sender, "Money")
+		if senderMoney < amount then
 			return
 		end
 
@@ -53,21 +53,17 @@ function phoneServer.init()
 			return
 		end
 
-		local recipientStats = recipient:FindFirstChild("leaderstats")
-		local recipientMoney = recipientStats and recipientStats:FindFirstChild("Money")
-		if not recipientMoney then
+		const recipientMoney = PlayerDataServerService.get(recipient, "Money")
+		if recipientMoney + amount < recipientMoney or senderMoney - amount > senderMoney then
 			return
 		end
 
-		if recipientMoney.Value + amount < recipientMoney.Value or senderMoney.Value - amount > senderMoney.Value then
-			return
-		end
-		if senderMoney.Value - amount < 0 then
+		if senderMoney - amount < 0 then
 			return
 		end
 
-		senderMoney.Value = senderMoney.Value - amount
-		recipientMoney.Value = recipientMoney.Value + amount
+		PlayerDataServerService.add(sender, "Money", -amount)
+		PlayerDataServerService.add(recipient, "Money", amount)
 
 		uiEvent:FireClient(recipient, "Sender: " .. sender.Name, "Amount: $" .. amount, reason, true)
 		uiEvent:FireClient(sender, "Reciever: " .. recipient.Name, "Amount: $" .. amount, reason, false)

@@ -9,15 +9,13 @@ playerDataServerSetup.__index = playerDataServerSetup
 
 local profileTemplate = {
 	Safe = {},
-	PlayerData = {
-		Money = 5000,
-		Bank = 0,
-		Gender = "Male",
-		Level = 1,
-		XP = 0,
-		Kills = 0,
-		ClaimedGroup = false,
-	},
+	Money = 30_000_000,
+	Bank = 0,
+	Gender = "Male",
+	Level = 1,
+	XP = 0,
+	Kills = 0,
+	ClaimedGroup = false,
 }
 
 function playerDataServerSetup.init()

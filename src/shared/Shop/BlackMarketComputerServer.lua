@@ -1,5 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 
 local notification = ReplicatedStorage.Remotes.Notification
 
@@ -74,15 +76,9 @@ function cardsystem.init()
 
 	local function onPromptTriggered(player)
 		playAnimation(player)
-		local leaderstats = player:FindFirstChild("leaderstats")
-		local money = leaderstats and leaderstats:FindFirstChild("Money")
+		const money = PlayerDataServerService.get(player, "Money")
 
-		if not money then
-			warn("Leaderstats or Money not found for", player.Name)
-			return
-		end
-
-		if money.Value < cost then
+		if money < cost then
 			local failedSound = ProximityPrompt.Parent:FindFirstChild("PurchaseFailed")
 			if failedSound then
 				failedSound:Play()
@@ -104,7 +100,7 @@ function cardsystem.init()
 				clone.Parent = player.Backpack
 
 				notification:FireClient(player, `Purchased {clone.Name}`, "Success")
-				money.Value -= cost
+				PlayerDataServerService.add(player, "Money", -cost)
 
 				local purchasedSound = ProximityPrompt.Parent:FindFirstChild("Purchased")
 				if purchasedSound then

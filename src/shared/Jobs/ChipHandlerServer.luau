@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Workspace = game:GetService("Workspace")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 local Prompt = Workspace.NPCs.Vender.UpperTorso.Main.SellPrompt
 
 local notification = ReplicatedStorage.Remotes.Notification
@@ -41,16 +43,8 @@ local function sellChips(player, takiType)
 		moneyEarned *= 2
 	end
 
-	local leaderstats = player:FindFirstChild("leaderstats")
-	local hiddenstats = player:FindFirstChild("hiddenstats")
-	if leaderstats and hiddenstats then
-		local money = leaderstats:FindFirstChild("Money")
-		local xp = hiddenstats:FindFirstChild("XP")
-		if money and xp then
-			money.Value = money.Value + moneyEarned
-			xp.Value = xp.Value + xpEarned
-		end
-	end
+	PlayerDataServerService.add(player, "Money", moneyEarned)
+	PlayerDataServerService.add(player, "XP", xpEarned)
 
 	return moneyEarned
 end
@@ -60,9 +54,8 @@ local chipSever = {}
 function chipSever.init()
 	Prompt.Triggered:Connect(function(player)
 		local character = player.Character
-		local leaderstats = player:FindFirstChild("leaderstats")
 
-		if leaderstats and checkForChips(player) then
+		if checkForChips(player) then
 			local moneyEarned = 0
 			local takiToSell = nil
 

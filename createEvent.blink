@@ -29,3 +29,4 @@ event lightsOn {
     call:SingleSync,
     data: string 
 }
+

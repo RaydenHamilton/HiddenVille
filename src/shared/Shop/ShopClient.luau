@@ -63,6 +63,9 @@ function shopClient.init()
 
 	local function getClosest(item)
 		local character = player.Character :: Model
+		if not character then
+			return nil
+		end
 		local position = item:WaitForChild("Handle").Position :: BasePart
 		local closestMag = closest
 			and (closest:WaitForChild("Handle").Position - character.PrimaryPart.Position).Magnitude

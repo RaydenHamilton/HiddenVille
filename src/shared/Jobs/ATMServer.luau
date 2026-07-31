@@ -1,6 +1,9 @@
 local MarketplaceService = game:GetService("MarketplaceService")
+local PlayerDataService = game:GetService("PlayerDataService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 local gamePassId = 1331110346
 local notification = ReplicatedStorage.Remotes.Notification
 
@@ -23,21 +26,9 @@ function ATMServer.init()
 						amount *= 2
 					end
 
-					local stats = player:FindFirstChild("leaderstats")
-					local hidden = player:FindFirstChild("hiddenstats")
-					local money = stats and stats:FindFirstChild("Money")
-					local xp = hidden and hidden:FindFirstChild("XP")
-					if money then
-						notification:FireClient(player, `You claimed {amount}$`, "Success")
-						money.Value += amount
-					else
-						warn("Player's leaderstats or 'Money' stat not found.")
-					end
-					if xp then
-						xp.Value += 18500
-					else
-						warn("Player's hiddenstats or 'XP' stat not found.")
-					end
+					notification:FireClient(player, `You claimed {amount}$`, "Success")
+					PlayerDataServerService.add(player, "Money", amount)
+					PlayerDataServerService.add(player, "XP", 18500)
 
 					local charTool = player.Character:FindFirstChild(tool.Name)
 					if charTool then

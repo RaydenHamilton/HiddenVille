@@ -7,3 +7,4 @@ realm = "shared"
 [server-dependencies]
 Profilestore = "ddashdev/profilestore@1.0.4"
 satchel = "ryanlua/satchel@1.4.1"
+signals = "post-ill/signals@1.0.0"

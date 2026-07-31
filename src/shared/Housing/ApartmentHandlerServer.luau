@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 
 local doorStates = {}
 local doorsOwned = {}
@@ -34,20 +36,16 @@ local function setupDoor(door)
 	doorsOwned[door] = nil
 
 	buyPrompt.Triggered:Connect(function(player)
+		local Money = PlayerDataServerService.get(player, "Money")
 		if doorsOwned[player] then
 			notification:FireClient(player, "You already own a house", "Error")
 			return
 		end
 
-		if
-			not ownerValue.Value
-			and player:FindFirstChild("leaderstats")
-			and player.leaderstats:FindFirstChild("Money")
-		then
-			local cash = player.leaderstats.Money
-			if cash.Value >= priceValue.Value then
-				cash.Value -= priceValue.Value
-				ownerValue.Value = player
+		if Money then
+			if Money >= priceValue then
+				PlayerDataServerService.add(player, "Money", -priceValue)
+				ownerValue = player
 				displayLabel.Text = player.Name
 				signDecal.Transparency = 1
 				buyPrompt.Enabled = false
@@ -57,7 +55,7 @@ local function setupDoor(door)
 	end)
 
 	doorPrompt.Triggered:Connect(function(player)
-		if ownerValue.Value == player then
+		if ownerValue == player then
 			doorlocked.Value = not doorlocked.Value
 			doorPrompt.ActionText = doorlocked.Value and "Unlock" or "Lock"
 			lockSound:Play()

@@ -5,12 +5,20 @@ local Icon = require(ReplicatedStorage.Modules.Icon)
 local EmotesSettings = require(script.Parent.EmotesSettings)
 local Player = Players.LocalPlayer
 
+const requestPlayerData = ReplicatedStorage.Remotes.RequestPlayerData
+
 local topbar = {}
 
 function topbar.init()
-	repeat
-		task.wait()
-	until Player:WaitForChild("PlayerGui"):WaitForChild("MainMenu").Enabled == false
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
+
+	if Player:WaitForChild("PlayerGui"):FindFirstChild("MainMenu") then
+		repeat
+			task.wait()
+		until Player:WaitForChild("PlayerGui"):FindFirstChild("MainMenu").Enabled == false
+	end
 
 	local opened
 
@@ -48,11 +56,8 @@ function topbar.init()
 	end
 
 	local function updateCashLabel(icon)
-		local moneyValue = Player:FindFirstChild("leaderstats")
-				and Player.leaderstats:FindFirstChild("Money")
-				and Player.leaderstats.Money.Value
-			or 0
-		icon:setLabel("💰 $" .. formatMoney(moneyValue))
+		local money = requestPlayerData:InvokeServer("Money")
+		icon:setLabel("💰 $" .. formatMoney(money))
 		icon:setCaption("Cash Amount")
 	end
 
@@ -138,7 +143,7 @@ function topbar.init()
 
 	local createEmotesButton = function()
 		local list = {}
-		for i, v in EmotesSettings do
+		for _, v in EmotesSettings do
 			local button = createButton("", v.Name, v.Image, v.Callback)
 
 			table.insert(list, button)
@@ -194,19 +199,16 @@ function topbar.init()
 		end),
 	})
 
-	local money = Icon.new()
-		:setLabel("$" .. formatMoney(Player:WaitForChild("leaderstats", 10):WaitForChild("Money", 10).Value))
+	local moneyIcon = Icon.new()
+		:setLabel("$" .. formatMoney(requestPlayerData:InvokeServer("Money")))
 		:setCaption("Cash Amount")
 		:oneClick()
 
-	local moneyStat = Player:WaitForChild("leaderstats", 10):FindFirstChild("Money")
-	if moneyStat then
-		moneyStat.Changed:Connect(function()
-			updateCashLabel(money)
-		end)
-	end
+	ReplicatedStorage.Remotes.UpdataPlayerMoney.OnClientEvent:Connect(function()
+		updateCashLabel(moneyIcon)
+	end)
 
-	updateCashLabel(money)
+	updateCashLabel(moneyIcon)
 end
 
 return topbar

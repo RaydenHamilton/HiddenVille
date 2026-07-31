@@ -2,6 +2,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 
 local GunFolder = ServerStorage:WaitForChild("Tools")
 local BlackMarket = Workspace:WaitForChild("BlackMarket")
@@ -27,9 +29,15 @@ function blackmarket.init()
 			notification:FireClient(Player, `You aleary have a duffle bag`, "Error")
 			return
 		end
-		if Player.leaderstats.Money.Value >= Price.Value then
-			Player.leaderstats.Money.Value -= Price.Value
+		const money = PlayerDataServerService.get(Player, "Money")
+		if money >= Price.Value then
+			PlayerDataServerService.add(Player, "Money", -Price.Value)
 
+			if not Player:FindFirstChild("canrob") then
+				local val = Instance.new("BoolValue")
+				val.Parent = Player
+				val.Name = "canrob"
+			end
 			Player:FindFirstChild("canrob").Value = true
 			local DuffelBagClone = Tool:Clone()
 			notification:FireClient(Player, `You purchased {Tool.Name}`, "Success")
@@ -77,8 +85,9 @@ function blackmarket.init()
 	local GunToClone = GunFolder:WaitForChild(Gun.Name)
 
 	gunPrompt.Triggered:Connect(function(Player)
-		if Player.leaderstats.Money.Value >= gunPrice.Value then
-			Player.leaderstats.Money.Value -= gunPrice.Value
+		local money = PlayerDataServerService.get(Player, "Money")
+		if money >= gunPrice.Value then
+			PlayerDataServerService.add(Player, "Money", -gunPrice.Value)
 			GunToClone:Clone().Parent = Player.Backpack
 			notification:FireClient(Player, `You purchased {GunToClone.Name}`, "Success")
 		else
@@ -101,19 +110,10 @@ function blackmarket.init()
 	end
 
 	BlankPrompt.Triggered:Connect(function(Player)
-		local leaderstats = Player:FindFirstChild("leaderstats")
-		if not leaderstats then
-			return
-		end
+		local Money = PlayerDataServerService.get(Player, "Money")
 
-		local Money = leaderstats:FindFirstChild("Money")
-		if not Money then
-			warn("Money Not found")
-			return
-		end
-
-		if Money.Value >= Price.Value then
-			Money.Value -= Price.Value
+		if Money >= Price.Value then
+			PlayerDataServerService.add(Player, "Money", -Price.Value)
 			local clone = BlankToClone:Clone()
 
 			notification:FireClient(Player, `You have Purchased {BlankToClone.Name}`, "Success")
@@ -167,9 +167,8 @@ function blackmarket.init()
 					ownsMoneyGamepass
 				)
 
-				plr:FindFirstChild("leaderstats").Money.Value = plr:FindFirstChild("leaderstats").Money.Value
-					+ totalValue
-				plr:FindFirstChild("hiddenstats").XP.Value = plr:FindFirstChild("hiddenstats").XP.Value + 28700
+				PlayerDataServerService.add(plr, "Money", totalValue)
+				PlayerDataServerService.add(plr, "XP", 28700)
 
 				plr.Character.DuffelBag:Destroy()
 				plr.canrob.Value = false

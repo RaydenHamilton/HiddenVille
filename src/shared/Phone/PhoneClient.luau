@@ -1,6 +1,7 @@
 local phoneClient = {}
 function phoneClient.init()
 	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Player = Players.LocalPlayer
 	local phoneGui = Player:WaitForChild("PlayerGui"):WaitForChild("majicPhoneGUI")
 	for _, button in phoneGui:QueryDescendants("#homeButton") do
@@ -11,8 +12,6 @@ function phoneClient.init()
 		end)
 	end
 	--// Balance display
-	local leaderstats = Player:WaitForChild("leaderstats")
-	local moneyValue = leaderstats:WaitForChild("Money")
 
 	local function addCommas(n)
 		local left, right = tostring(n):match("([^%.]+)%.?(.*)")
@@ -33,14 +32,15 @@ function phoneClient.init()
 	end
 
 	local function updateText()
-		local formatted = "$" .. formatMoney(moneyValue.Value)
+		const money = ReplicatedStorage:WaitForChild("Remotes").RequestPlayerData:InvokeServer("Money")
+		local formatted = "$" .. formatMoney(money)
 		if phoneGui.borderFrame.homeFrame.cashAppFrame.mainFrame.balanceText.Text ~= formatted then
 			phoneGui.borderFrame.homeFrame.cashAppFrame.mainFrame.balanceText.Text = formatted
 		end
 	end
 
 	updateText()
-	moneyValue:GetPropertyChangedSignal("Value"):Connect(updateText)
+	ReplicatedStorage.Remotes.UpdataPlayerMoney.OnClientEvent:Connect(updateText)
 end
 
 return phoneClient

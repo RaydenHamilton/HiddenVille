@@ -2,63 +2,51 @@ local Workspace = game:GetService("Workspace")
 local ServerStorage = game:GetService("ServerStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 
 local notification = ReplicatedStorage.Remotes.Notification
 
 local shop = {}
 
-local function normalBuy(Player,Gun)
+local function normalBuy(Player, Gun)
+	local Price = Gun:FindFirstChild("Price")
+	local GunFolder = ServerStorage:WaitForChild("Tools")
+	-- Validate Price & Required Level
+	if not Price then
+		warn(Gun.Name .. " missing Price")
+		return
+	end
 
-			local Price = Gun:FindFirstChild("Price")
-			local GunFolder = ServerStorage:WaitForChild("Tools")
-			-- Validate Price & Required Level
-			if not Price then
-				warn(Gun.Name .. " missing Price")
-				return
-			end
+	-- Find tool to clone
+	local GunToClone = GunFolder:FindFirstChild(Gun.Name)
 
-			-- Find tool to clone
-			local GunToClone = GunFolder:FindFirstChild(Gun.Name)
+	if not GunToClone then
+		warn("Tool '" .. Gun.Name .. "' not found in ServerStorage > Tools")
+		return
+	end
 
-			if not GunToClone then
-				warn("Tool '" .. Gun.Name .. "' not found in ServerStorage > Tools")
-				return
-			end
+	local debounce = {}
+	if debounce[Player] then
+		return
+	end
+	debounce[Player] = true
 
-			local debounce = {}
-			if debounce[Player] then
-				return
-			end
-			debounce[Player] = true
+	local Money = PlayerDataServerService.get(Player, "Money")
 
-			local stats = Player:FindFirstChild("hiddenstats")
-			local leaderstats = Player:FindFirstChild("leaderstats")
+	if Money >= Price.Value then
+		PlayerDataServerService.add(Player, "Money", -Price.Value)
 
-			if not stats or not leaderstats then
-				debounce[Player] = nil
-				return
-			end
+		local newGun = GunToClone:Clone()
+		newGun.Parent = Player.Backpack
+		notification:FireClient(Player, `You purchased {newGun.Name}`, "Success")
+	else
+		notification:FireClient(Player, `Not enough money`, "Error")
+	end
 
-			local Money = leaderstats:FindFirstChild("Money")
-
-			if not Money then
-				debounce[Player] = nil
-				return
-			end
-
-			if Money.Value >= Price.Value then
-				Money.Value -= Price.Value
-
-				local newGun = GunToClone:Clone()
-				newGun.Parent = Player.Backpack
-				notification:FireClient(Player, `You purchased {newGun.Name}`, "Success")
-			else
-				notification:FireClient(Player, `Not enough money`, "Error")
-			end
-
-			task.wait(0.5)
-			debounce[Player] = nil
-		end
+	task.wait(0.5)
+	debounce[Player] = nil
+end
 
 function shop.init()
 	for _, Gun in Workspace.BuyableItems.Normal:GetChildren() do
@@ -67,7 +55,7 @@ function shop.init()
 		Prompt.ObjectText = "Purchase " .. Gun.Name
 		Prompt.ActionText = "$" .. Price.Value
 		Prompt.Triggered:Connect(function(player)
-			normalBuy(player,Gun)
+			normalBuy(player, Gun)
 		end)
 
 		-- Disable touch triggers so preview gun doesn't cause lag
@@ -153,30 +141,27 @@ function shop.init()
 
 			trigger.Triggered:Connect(function(player)
 				local stick = ServerStorage:WaitForChild("Tools"):WaitForChild(item.Name)
-				local leaderstats = player:FindFirstChild("leaderstats")
 
 				if stock <= 0 then
 					startRestocking()
 					return
 				end
 
-				if leaderstats and leaderstats:FindFirstChild("Money") then
-					local money = leaderstats.Money
-					if money.Value >= price then
-						money.Value -= price
-						local giveObject = stick:Clone()
-						giveObject.Parent = player.Backpack
+				local money = PlayerDataServerService.get(player, "Money")
+				if money >= price.Value then
+					PlayerDataServerService.add(player, "Money", -price.Value)
+					local giveObject = stick:Clone()
+					giveObject.Parent = player.Backpack
 
-						notification:FireClient(player, `You purchased {stick.Name}`, "Success")
-						stock -= 1
-						updateText()
+					notification:FireClient(player, `You purchased {stick.Name}`, "Success")
+					stock -= 1
+					updateText()
 
-						if stock <= 0 then
-							startRestocking()
-						end
-					else
-						notification:FireClient(player, `Not enough money`, "Error")
+					if stock <= 0 then
+						startRestocking()
 					end
+				else
+					notification:FireClient(player, `Not enough money`, "Error")
 				end
 			end)
 

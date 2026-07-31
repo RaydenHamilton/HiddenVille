@@ -1,8 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local PlayerDataServerService =
+	require(ReplicatedStorage.Shared.PlayerDataHandler.SystemPackage.PlayerDataServerService)
 
 local MoneyTaken = {}
-local notification = ReplicatedStorage.Remotes.Notification
 
 local carRobberies = {}
 
@@ -19,7 +20,6 @@ function carRobberies.init()
 		local proximity2 = pad.Prox2
 		local Elbow = Workspace.CarRobberySystem.Animations.Elbow
 		local GrabCash = Workspace.CarRobberySystem.Animations.GrabCash
-		-- local CashPocket = Workspace.CarRobberySystem.Animations.GrabCash
 		local GlassBreak = pad.GlassBreak
 		local CarAlarm = pad.CarAlarm
 
@@ -59,8 +59,6 @@ function carRobberies.init()
 			local character = player.Character
 			local humanoid = character and character:FindFirstChild("Humanoid")
 			local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-			local leaderstats = player:FindFirstChild("leaderstats")
-			local hiddenstats = player:FindFirstChild("hiddenstats")
 
 			if humanoid and humanoidRootPart then
 				local CashGrab = humanoid:LoadAnimation(GrabCash)
@@ -90,9 +88,8 @@ function carRobberies.init()
 				end
 
 				local cash = math.random(1000, 1850) * MoneyTaken[player.UserId]
-				leaderstats.Money.Value += cash
-
-				hiddenstats.XP.Value = hiddenstats.XP.Value + 450
+				PlayerDataServerService.add(player, "Money", cash)
+				PlayerDataServerService.add(player, "XP", 450)
 
 				task.wait(25)
 

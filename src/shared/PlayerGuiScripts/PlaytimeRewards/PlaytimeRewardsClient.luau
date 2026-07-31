@@ -5,6 +5,9 @@ local TweenService = game:GetService("TweenService")
 local playtimeClientModule = {}
 
 function playtimeClientModule.init()
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
 	local NotificationModule = require(ReplicatedStorage.Modules.NotificationModule)
 
 	local Player = Players.LocalPlayer
@@ -12,7 +15,6 @@ function playtimeClientModule.init()
 	local PlayerGui = Player:WaitForChild("PlayerGui")
 	local Main = PlayerGui:WaitForChild("MainScreen"):WaitForChild("PlaytimeRewards"):WaitForChild("Main")
 	local RewardsFrame = Main:WaitForChild("RewardsFrame")
-	local MainMenu = PlayerGui:WaitForChild("MainMenu")
 
 	local GetAllClaims = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("GetAllClaims")
 	local ClaimTool = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ChooseTool")
@@ -264,12 +266,19 @@ function playtimeClientModule.init()
 		end
 	end)
 
-	MainMenu:GetPropertyChangedSignal("Enabled"):Connect(function()
-		if not MainMenu.Enabled and not popup then
-			local transparencyMap = getOriginalTransparencies(Main)
-			makeDescendantsInvisible(transparencyMap)
-			tweenToTransparency(transparencyMap, 0.5)
-		end
-	end)
+	local MainMenu = PlayerGui:WaitForChild("MainMenu", 5)
+	if MainMenu then
+		MainMenu:GetPropertyChangedSignal("Enabled"):Connect(function()
+			if not MainMenu.Enabled and not popup then
+				local transparencyMap = getOriginalTransparencies(Main)
+				makeDescendantsInvisible(transparencyMap)
+				tweenToTransparency(transparencyMap, 0.5)
+			end
+		end)
+	else
+		local transparencyMap = getOriginalTransparencies(Main)
+		makeDescendantsInvisible(transparencyMap)
+		tweenToTransparency(transparencyMap, 0.5)
+	end
 end
 return playtimeClientModule
